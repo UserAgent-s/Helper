@@ -1,0 +1,137 @@
+# MeetingAssistant
+
+Нативное macOS-приложение (Apple Silicon, macOS 14+) с тремя взаимоисключающими режимами: `passive`, `answers`, `recording`. Продуктовый контракт и архитектура — в `docs/product-contract.md` и `docs/architecture.md`. План реализации — в `claude-code-prompts/`.
+
+## Установка готового приложения
+
+Что нужно для того, чтобы просто запустить и пользоваться приложением (без сборки из исходников):
+
+1. **Mac на Apple Silicon (M1/M2/M3/M4), macOS 14+.** Сборка только arm64 — на Intel-Mac не запустится.
+2. **Скачайте `MeetingAssistant.dmg`**, откройте, перетащите `MeetingAssistant.app` в `Applications`.
+3. **Первый запуск заблокирует Gatekeeper** — приложение подписано локальным (ad-hoc) сертификатом, а не сертификатом Apple Developer ID, и не нотаризовано. При первом запуске: правый клик по `MeetingAssistant.app` → «Открыть» → подтвердить «Открыть» в диалоге (обычный двойной клик выдаст «нельзя открыть, разработчик не подтверждён»). Либо: Системные настройки → «Конфиденциальность и безопасность» → внизу страницы кнопка «Всё равно открыть».
+4. **Разрешения** — при первом входе в режим `Answers` или `Recording` macOS запросит Screen Recording, а для `Recording` ещё и Microphone. Оба выдаются через Системные настройки → «Конфиденциальность и безопасность» (подробная таблица — раздел «Разрешения» ниже).
+5. **API-ключ OpenAI** — нужен для `Answers` и для создания саммари; без ключа работают `Passive`, `Recording` (локальная транскрипция через Whisper) и просмотр истории. См. «Установка API-ключа» ниже.
+6. **Локальная модель Whisper** — для `Recording` скачивается сама при первом использовании (нужна сеть один раз, дальше офлайн). См. «Загрузка локальной Whisper-модели» ниже.
+
+Ничего из перечисленного выше не требует Xcode или командной строки — только сама `.dmg`. Разделы ниже («Требования для сборки из исходников» и далее) нужны только тем, кто хочет собрать приложение из кода самостоятельно.
+
+## Требования для сборки из исходников
+
+- macOS 14+ на Apple Silicon.
+- Xcode 16+ с поддержкой Swift 6 (проверено на Xcode 26.1.1 / Swift 6.2.1).
+- [XcodeGen](https://github.com/yonaskolb/XcodeGen) для генерации `.xcodeproj` из `project.yml`:
+  ```bash
+  brew install xcodegen
+  ```
+
+## Структура
+
+- `Package.swift` — локальный Swift-пакет `MeetingAssistantCore` с модулями `Domain`, `AudioCapture`, `RealtimeClient`, `Transcription`, `Persistence`, `SecurityStore`, `Diagnostics`, `Summary`. Собирается и тестируется напрямую через `swift build`/`swift test`, без Xcode.
+- `Sources/App`, `Sources/OverlayUI`, `Sources/HistoryUI` — код уровня приложения (SwiftUI + AppKit `NSPanel`), собирается через сгенерированный Xcode-проект.
+- `project.yml` — спецификация XcodeGen для продукта `MeetingAssistant.app` (bundle id `com.local.MeetingAssistant`).
+- `Resources/Info.plist`, `Resources/MeetingAssistant.entitlements` — App Sandbox, сетевой клиент, доступ к микрофону.
+- `docs/` — продуктовый контракт, архитектура, ADR, статус реализации по этапам.
+- `claude-code-prompts/` — пошаговый план реализации.
+
+`Domain` не импортирует системные фреймворки (ScreenCaptureKit, AVFoundation, WhisperKit, Network, Security) — это позволяет тестировать доменную машину состояний и бизнес-логику без реального захвата экрана/микрофона и без сети.
+
+## Генерация и сборка Xcode-проекта
+
+```bash
+xcodegen generate
+xcodebuild -project MeetingAssistant.xcodeproj -scheme MeetingAssistant -destination 'platform=macOS' build
+xcodebuild -project MeetingAssistant.xcodeproj -scheme MeetingAssistant -destination 'platform=macOS' test
+```
+
+## Сборка и тесты доменного пакета (без Xcode)
+
+```bash
+swift build
+swift test
+```
+
+## Секреты
+
+API-ключ OpenAI хранится только в Keychain (см. `SecretStoring`, этап 10). Ключ не встраивается в исходники, бинарник или логи. Подробности — `docs/privacy.md`.
+
+## Как получить API-ключ OpenAI
+
+1. Зайдите на [platform.openai.com](https://platform.openai.com) и войдите (или зарегистрируйтесь) — это отдельный аккаунт от обычного ChatGPT, оплата тоже отдельная (баланс/карта привязывается в разделе Billing).
+2. Слева откройте **API keys** (или сразу [platform.openai.com/api-keys](https://platform.openai.com/api-keys)).
+3. **Create new secret key** → задайте любое имя (например `MeetingAssistant`) → **Create secret key**.
+4. Скопируйте ключ сразу — он вида `sk-…` и показывается только один раз, повторно посмотреть его нельзя (только удалить и создать новый).
+5. В **Settings → Billing** пополните баланс или подключите карту — без этого запросы к API будут падать с ошибкой оплаты даже с валидным ключом.
+6. Вставьте скопированный ключ в MeetingAssistant (см. ниже, «Установка API-ключа»).
+
+Используются `Realtime API` (режим `Answers`) и `Responses API` (создание саммари) — оба входят в обычный платный доступ, отдельно включать их не нужно. Ключ даёт доступ ко всем API этого аккаунта — храните его так же, как пароль, и не публикуйте.
+
+## Установка API-ключа
+
+1. Запустите приложение — при первом запуске откроется onboarding с полем для ключа (можно пропустить).
+2. Либо в любой момент: главное окно → «Настройки» → «API-ключ OpenAI» → вставьте ключ формата `sk-…` → «Сохранить».
+3. Формат проверяется локально сразу; реальная авторизация проверяется только при первом обращении к API (в `answers` или при создании саммари).
+4. Удалить ключ: там же, кнопка «Удалить» — сразу удаляет из Keychain.
+
+## Загрузка локальной Whisper-модели
+
+Модель (`WhisperKit`, по умолчанию `openai_whisper-small`) скачивается лениво при первом реальном обращении в `recording`. Чтобы проверить/загрузить её заранее, не запуская запись: onboarding-экран → «Проверить/загрузить модель», либо просто запустите `recording` один раз. Требуется сеть при первой загрузке; далее модель кешируется локально.
+
+## Разрешения
+
+| Разрешение | Кто запрашивает | Когда |
+|---|---|---|
+| Screen Recording | `answers`, `recording` | при первом входе в режим, не при простом запуске |
+| Microphone | только `recording` | при первом входе в `recording`; `answers` работает без микрофона |
+
+Статусы обоих разрешений видны в Настройках. `passive` не запрашивает ничего.
+
+## Использование трёх режимов
+
+- **Passive** (по умолчанию) — ничего не захватывается. Переключатель режима — сегментированный Picker в главном окне или в строке меню.
+- **Answers** — выберите приложение-источник звука в Настройках (иначе захватывается весь дисплей), переключитесь на `Answers`. Ответ появляется в overlay-панели по мере генерации. Кнопка/горячая клавиша «Ответить сейчас» (по умолчанию `⌥Return`) форсирует ответ по уже накопленному контексту. Стиль оверлея — «Плавающее окно» (по умолчанию), «Прикреплено к вырезу» (компактная панель под вырезом MacBook в стиле Dynamic Island) или «Во весь экран» (крупный текст, выход по Esc) — настраивается в Настройках → «Оверлей ответов», там же выбор шрифта.
+- **Recording** — переключитесь на `Recording`. Live-transcript отображается в главном окне (обновляется по чанкам ~8 секунд, с метками «Я»/«Участники»). Остановка (переход в другой режим) финализирует последний сегмент, завершает встречу в истории и автоматически сохраняет транскрипт в Markdown на Рабочий стол — папка `<дата-время> Meeting Assistant/transcript.md`. Если включено «Сохранять аудио на диск» (Настройки → «Хранение аудио»), туда же копируются `mic.wav`/`system.wav` этой встречи.
+
+## Создание саммари
+
+Только для завершённой (`completed`) встречи: «История» → вкладка «Митинги» → выбрать встречу → «Создать саммари». Приложение покажет оценку объёма/стоимости и запросит подтверждение перед отправкой текста во внешний API (OpenAI Responses API). Повторная генерация создаёт новую версию, не затирая предыдущую. Экспорт (transcript/summary в Markdown или JSON) — там же, через `NSSavePanel`.
+
+## Диагностика
+
+Главное окно → «Диагностика» — сохраняет JSON с версией приложения, статусами разрешений, текущим режимом и числовыми метриками задержки. Не содержит контента (аудио/transcript/ответы/ключи). Список типичных проблем и их причин — `docs/troubleshooting.md`.
+
+## Расположение и удаление локальных данных
+
+- Данные: `~/Library/Application Support/MeetingAssistant/meetingassistant.sqlite3` (+ WAL-файлы).
+- Удаление одной записи или всей истории — экран «История» в приложении (с подтверждением для полной очистки).
+- Полное ручное удаление и детали по каждому режиму — `docs/privacy.md`.
+
+## Release-сборка
+
+```bash
+xcodegen generate
+xcodebuild -project MeetingAssistant.xcodeproj -scheme MeetingAssistant -configuration Release -destination 'platform=macOS' clean build
+```
+
+Архивация (для последующей подписи/нотаризации):
+
+```bash
+xcodebuild -project MeetingAssistant.xcodeproj -scheme MeetingAssistant -configuration Release archive -archivePath build/MeetingAssistant.xcarchive
+```
+
+## Подпись и нотаризация (документация, не выполняется автоматически)
+
+Требует Apple Developer ID пользователя — команды приведены без подстановки реальных значений:
+
+```bash
+codesign --deep --force --options runtime --sign "Developer ID Application: <ВАШЕ ИМЯ> (<TEAM_ID>)" \
+  build/MeetingAssistant.xcarchive/Products/Applications/MeetingAssistant.app
+
+ditto -c -k --keepParent build/MeetingAssistant.xcarchive/Products/Applications/MeetingAssistant.app build/MeetingAssistant.zip
+
+xcrun notarytool submit build/MeetingAssistant.zip \
+  --apple-id "<ВАШ_APPLE_ID>" --team-id "<TEAM_ID>" --password "<APP_SPECIFIC_PASSWORD>" --wait
+
+xcrun stapler staple build/MeetingAssistant.xcarchive/Products/Applications/MeetingAssistant.app
+```
+
+Ни одна из этих команд не выполнялась в рамках автономной реализации — нет учётных данных разработчика Apple в этом окружении. Hardened Runtime и App Sandbox уже включены в `project.yml`/`Resources/MeetingAssistant.entitlements` (обязательное условие нотаризации).

@@ -1,0 +1,45 @@
+# Xcode / XcodeGen
+*.xcodeproj
+*.xcworkspace
+xcuserdata/
+DerivedData/
+*.moved-aside
+*.xccheckout
+*.xcscmblueprint
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved.bak
+
+# Local Whisper models
+*.mlmodelc
+*.mlpackage
+WhisperModels/
+Models/
+
+# Local user database (SQLite + WAL)
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.db
+*.db-wal
+*.db-shm
+
+# Secrets
+.env
+*.pem
+*.p12
+*.mobileprovision
+*api-key*
+
+# Archives / build artifacts
+*.zip
+*.tar.gz
+build/
+*.dSYM
+*.ipa
+*.app
+
+# macOS
+.DS_Store

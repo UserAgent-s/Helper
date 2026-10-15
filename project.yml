@@ -1,0 +1,109 @@
+name: MeetingAssistant
+options:
+  bundleIdPrefix: com.local
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+
+settingGroups:
+  versioning:
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+
+packages:
+  MeetingAssistantCore:
+    path: .
+
+targets:
+  MeetingAssistant:
+    type: application
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: Sources/App
+      - path: Sources/OverlayUI
+      - path: Sources/HistoryUI
+      - path: Resources/Localizable.xcstrings
+      - path: Resources/Assets.xcassets
+    settings:
+      groups:
+        - versioning
+      base:
+        SWIFT_VERSION: "6.0"
+        PRODUCT_BUNDLE_IDENTIFIER: com.local.MeetingAssistant
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        INFOPLIST_FILE: Resources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Resources/MeetingAssistant.entitlements
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        ENABLE_APP_SANDBOX: NO
+        ENABLE_HARDENED_RUNTIME: YES
+        SWIFT_STRICT_CONCURRENCY: complete
+        ARCHS: arm64
+        VALID_ARCHS: arm64
+        ONLY_ACTIVE_ARCH: YES
+        SWIFT_EMIT_LOC_STRINGS: YES
+        LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+      configs:
+        Debug:
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
+          ONLY_ACTIVE_ARCH: YES
+        Release:
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: RELEASE
+          ONLY_ACTIVE_ARCH: NO
+          SWIFT_COMPILATION_MODE: wholemodule
+    dependencies:
+      - package: MeetingAssistantCore
+        product: Domain
+      - package: MeetingAssistantCore
+        product: AudioCapture
+      - package: MeetingAssistantCore
+        product: RealtimeClient
+      - package: MeetingAssistantCore
+        product: Transcription
+      - package: MeetingAssistantCore
+        product: Persistence
+      - package: MeetingAssistantCore
+        product: SecurityStore
+      - package: MeetingAssistantCore
+        product: Diagnostics
+      - package: MeetingAssistantCore
+        product: Summary
+      - package: MeetingAssistantCore
+        product: OverlayReducer
+
+  MeetingAssistantTests:
+    type: bundle.unit-test
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: Tests/AppTests
+    settings:
+      base:
+        SWIFT_VERSION: "6.0"
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: MeetingAssistant
+
+schemes:
+  MeetingAssistant:
+    build:
+      targets:
+        MeetingAssistant: all
+        MeetingAssistantTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - MeetingAssistantTests
+    archive:
+      config: Release
+
+  MeetingAssistantTests:
+    build:
+      targets:
+        MeetingAssistantTests: all
+    test:
+      config: Debug
+      targets:
+        - MeetingAssistantTests
