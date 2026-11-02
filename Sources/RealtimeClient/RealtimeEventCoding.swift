@@ -1,3 +1,4 @@
+import Domain
 import Foundation
 
 public enum RealtimeClientEvent: Encodable, Sendable {
@@ -39,7 +40,7 @@ public struct SessionConfig: Encodable, Sendable {
     let instructions: String
     let outputModalities: [String]
     let audio: AudioConfig
-    let reasoning: ReasoningConfig
+    let reasoning: ReasoningConfig?
 
     enum CodingKeys: String, CodingKey {
         case type, model, instructions, audio, reasoning
@@ -99,11 +100,13 @@ public struct RealtimeVADSettings: Sendable, Equatable {
     public var threshold: Double
     public var prefixPaddingMs: Int
     public var silenceDurationMs: Int
+    public var automaticResponses: Bool
 
-    public init(threshold: Double = 0.5, prefixPaddingMs: Int = 300, silenceDurationMs: Int = 300) {
+    public init(threshold: Double = 0.5, prefixPaddingMs: Int = 300, silenceDurationMs: Int = 300, automaticResponses: Bool = true) {
         self.threshold = threshold
         self.prefixPaddingMs = prefixPaddingMs
         self.silenceDurationMs = silenceDurationMs
+        self.automaticResponses = automaticResponses
     }
 
     public static let safeDefault = RealtimeVADSettings()
@@ -113,7 +116,7 @@ public struct RealtimeVADSettings: Sendable, Equatable {
             threshold: threshold,
             prefixPaddingMs: prefixPaddingMs,
             silenceDurationMs: silenceDurationMs,
-            createResponse: true,
+            createResponse: automaticResponses,
             interruptResponse: true
         )
     }
@@ -140,7 +143,7 @@ public enum RealtimeServerEvent: Sendable, Equatable {
     case responseCreated(responseID: String)
     case outputTextDelta(responseID: String, itemID: String, delta: String)
     case outputTextDone(responseID: String, itemID: String, text: String)
-    case responseDone(responseID: String, status: String, outputItemIDs: [String])
+    case responseDone(responseID: String, status: String, outputItemIDs: [String], usage: ProviderUsage? = nil)
     case rateLimitsUpdated
     case error(message: String, code: String?)
     case unknown(type: String)
@@ -181,7 +184,7 @@ enum RealtimeServerEventDecoder {
             return .outputTextDone(responseID: p.responseID, itemID: p.itemID, text: p.text)
         case "response.done":
             guard let p = try? decoder.decode(ResponseDonePayload.self, from: data) else { return .unknown(type: envelope.type) }
-            return .responseDone(responseID: p.response.id, status: p.response.status, outputItemIDs: (p.response.output ?? []).map(\.id))
+            return .responseDone(responseID: p.response.id, status: p.response.status, outputItemIDs: (p.response.output ?? []).map(\.id), usage: p.response.usage?.providerUsage)
         case "rate_limits.updated":
             return .rateLimitsUpdated
         case "error":
@@ -244,8 +247,54 @@ enum RealtimeServerEventDecoder {
             let id: String
             let status: String
             let output: [OutputItem]?
+            let usage: UsagePayload?
         }
         let response: ResponseObject
+    }
+
+    struct UsagePayload: Decodable {
+        struct CachedDetails: Decodable {
+            let audioTokens: Int?
+            let textTokens: Int?
+            enum CodingKeys: String, CodingKey { case audioTokens = "audio_tokens", textTokens = "text_tokens" }
+        }
+        struct InputDetails: Decodable {
+            let audioTokens: Int?
+            let textTokens: Int?
+            let cachedTokens: Int?
+            let cachedTokensDetails: CachedDetails?
+            enum CodingKeys: String, CodingKey {
+                case audioTokens = "audio_tokens", textTokens = "text_tokens", cachedTokens = "cached_tokens", cachedTokensDetails = "cached_tokens_details"
+            }
+        }
+        struct OutputDetails: Decodable {
+            let textTokens: Int?
+            let audioTokens: Int?
+            let reasoningTokens: Int?
+            enum CodingKeys: String, CodingKey { case textTokens = "text_tokens", audioTokens = "audio_tokens", reasoningTokens = "reasoning_tokens" }
+        }
+        let inputTokens: Int?
+        let outputTokens: Int?
+        let inputTokenDetails: InputDetails?
+        let outputTokenDetails: OutputDetails?
+        enum CodingKeys: String, CodingKey {
+            case inputTokens = "input_tokens", outputTokens = "output_tokens"
+            case inputTokenDetails = "input_token_details", outputTokenDetails = "output_token_details"
+        }
+
+        var providerUsage: ProviderUsage {
+            ProviderUsage(
+                inputTokens: inputTokens,
+                inputTextTokens: inputTokenDetails?.textTokens,
+                inputAudioTokens: inputTokenDetails?.audioTokens,
+                cachedInputTokens: inputTokenDetails?.cachedTokens,
+                cachedTextTokens: inputTokenDetails?.cachedTokensDetails?.textTokens,
+                cachedAudioTokens: inputTokenDetails?.cachedTokensDetails?.audioTokens,
+                outputTokens: outputTokens,
+                outputTextTokens: outputTokenDetails?.textTokens,
+                reasoningTokens: outputTokenDetails?.reasoningTokens
+            )
+        }
     }
 
     private struct ErrorPayload: Decodable {

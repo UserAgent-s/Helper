@@ -16,6 +16,7 @@ public actor QuestionAnswerLogger {
     private let whisperTimeout: Duration
 
     private var drafts: [String: Draft] = [:]
+    private var persistTail: Task<Void, Never>?
 
     public init(
         localTranscribing: any LocalTranscribing,
@@ -34,7 +35,8 @@ public actor QuestionAnswerLogger {
         triggerKind: AnswerTriggerKind,
         sourceAppBundleID: String?,
         contextWindowStartedAt: Date,
-        contextSnapshot: [PCMAudioFrame]
+        contextSnapshot: [PCMAudioFrame],
+        modelID: String? = nil
     ) {
         guard drafts[responseID] == nil else { return }
 
@@ -47,7 +49,7 @@ public actor QuestionAnswerLogger {
             contextWindowDurationMs: durationMs,
             triggerKind: triggerKind,
             answerText: "",
-            modelID: modelID,
+            modelID: modelID ?? self.modelID,
             responseID: responseID,
             status: .answerStreaming
         )
@@ -59,6 +61,34 @@ public actor QuestionAnswerLogger {
             await self.transcribeAndAttach(responseID: responseID, frames: contextSnapshot)
         }
         drafts[responseID]?.whisperTask = task
+    }
+
+    public func beginTextDraft(
+        responseID: String,
+        triggerKind: AnswerTriggerKind,
+        sourceAppBundleID: String?,
+        contextWindowStartedAt: Date,
+        questionText: String,
+        modelID: String?
+    ) {
+        guard drafts[responseID] == nil else { return }
+        let now = Date()
+        let trimmed = questionText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let pair = QuestionAnswerPair(
+            askedAt: now,
+            sourceAppBundleID: sourceAppBundleID,
+            questionText: trimmed.isEmpty ? nil : trimmed,
+            contextWindowStartedAt: contextWindowStartedAt,
+            contextWindowDurationMs: max(0, Int(now.timeIntervalSince(contextWindowStartedAt) * 1000)),
+            triggerKind: triggerKind,
+            questionTranscriptionStatus: trimmed.isEmpty ? .failed : .completed,
+            answerText: "",
+            modelID: modelID ?? self.modelID,
+            responseID: responseID,
+            status: .answerStreaming
+        )
+        drafts[responseID] = Draft(pair: pair, whisperTask: nil)
+        persist(pair)
     }
 
     public func recordCompleted(responseID: String, finalText: String, responseTotalMs: Int?) {
@@ -102,9 +132,15 @@ public actor QuestionAnswerLogger {
         persist(draft.pair)
     }
 
+    func flushPersistence() async {
+        await persistTail?.value
+    }
+
     private func persist(_ pair: QuestionAnswerPair) {
         let repository = self.repository
-        Task {
+        let previous = persistTail
+        persistTail = Task {
+            await previous?.value
             try? await repository.save(pair)
         }
     }

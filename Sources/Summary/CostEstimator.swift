@@ -10,8 +10,8 @@ public struct SummaryPricing: Sendable, Equatable {
 
 public enum SummaryPricingCatalog {
     public static let byModelID: [String: SummaryPricing] = [
-        SummaryModelCatalog.defaultModelID: SummaryPricing(inputCostPerMillionTokensUSD: 5, outputCostPerMillionTokensUSD: 15),
-        SummaryModelCatalog.economyModelID: SummaryPricing(inputCostPerMillionTokensUSD: 0.5, outputCostPerMillionTokensUSD: 1.5),
+        SummaryModelCatalog.defaultModelID: SummaryPricing(inputCostPerMillionTokensUSD: 2, outputCostPerMillionTokensUSD: 12),
+        SummaryModelCatalog.economyModelID: SummaryPricing(inputCostPerMillionTokensUSD: 0.2, outputCostPerMillionTokensUSD: 1.2),
     ]
 }
 

@@ -66,10 +66,10 @@ import Testing
         for frame in turns {
             await systemAudio.emit(frame)
         }
-        try await Task.sleep(for: .milliseconds(20))
+        _ = await eventually { await realtime.appendedFrameCount == turns.count }
         await realtime.emit(.responseStarted(responseID: "r1", trigger: .automatic))
         await realtime.emit(.textDelta(responseID: "r1", text: "Ответ."))
-        try await Task.sleep(for: .milliseconds(30))
+        _ = await eventually { await transcribing.transcribeCallCount == 1 }
 
         #expect(await transcribing.transcribeCallCount == 1)
         #expect(await transcribing.receivedFrameBatches.first?.count == turns.count)

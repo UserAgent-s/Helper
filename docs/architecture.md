@@ -15,7 +15,8 @@ App (SwiftUI + AppKit NSPanel)
        -> WhisperKitTranscriber: LocalTranscribing               (WhisperKit)
        -> SQLiteMeetingRepository: MeetingRepository             (SQLite3 + WAL + FTS5)
        -> SQLiteQuestionAnswerRepository: QuestionAnswerRepository
-       -> UserDefaultsSecretStore: SecretStoring                 (UserDefaults; KeychainSecretStore доступен как альтернатива при стабильной код-подписи)
+       -> KeychainFirstSecretStore(KeychainSecretStore, legacy UserDefaults fallback) per provider (ADR 0005)
+       -> ProviderRoutingAnswersController: .answers -> AnswersModeController (OpenAI) | TranscribedAnswersModeController (Claude) (ADR 0004)
        -> OSLogLatencyRecorder: LatencyRecording                 (os_signpost/os_log, без содержимого)
 ```
 

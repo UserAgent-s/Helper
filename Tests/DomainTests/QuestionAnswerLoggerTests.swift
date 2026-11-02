@@ -27,6 +27,7 @@ import Testing
             contextSnapshot: []
         )
         try await Task.sleep(for: .milliseconds(30))
+        await logger.flushPersistence()
 
         let saved = await repository.latest(responseID: "r1")
         #expect(saved?.status == .answerStreaming)
@@ -50,6 +51,7 @@ import Testing
             contextSnapshot: frames
         )
         try await Task.sleep(for: .milliseconds(30))
+        await logger.flushPersistence()
 
         #expect(await transcribing.transcribeCallCount == 1)
         #expect(await transcribing.receivedFrameBatches.first?.count == 3)
@@ -87,6 +89,7 @@ import Testing
         )
         await logger.recordCompleted(responseID: "r1", finalText: "Готовый ответ", responseTotalMs: 850)
         try await Task.sleep(for: .milliseconds(30))
+        await logger.flushPersistence()
 
         let saved = await repository.latest(responseID: "r1")
         #expect(saved?.answerText == "Готовый ответ")
@@ -106,7 +109,11 @@ import Testing
 
         await logger.beginDraft(responseID: "r-a", triggerKind: .automatic, sourceAppBundleID: nil, contextWindowStartedAt: Date(), contextSnapshot: [frameA])
         await logger.beginDraft(responseID: "r-b", triggerKind: .automatic, sourceAppBundleID: nil, contextWindowStartedAt: Date(), contextSnapshot: [frameB])
-        try await Task.sleep(for: .milliseconds(30))
+        _ = await eventually {
+            let a = await repository.latest(responseID: "r-a")?.questionText
+            let b = await repository.latest(responseID: "r-b")?.questionText
+            return a != nil && b != nil
+        }
 
         let pairA = await repository.latest(responseID: "r-a")
         let pairB = await repository.latest(responseID: "r-b")
@@ -122,7 +129,7 @@ import Testing
         let logger = QuestionAnswerLogger(localTranscribing: transcribing, repository: repository, modelID: "test-model")
 
         await logger.beginDraft(responseID: "r1", triggerKind: .automatic, sourceAppBundleID: nil, contextWindowStartedAt: Date(), contextSnapshot: [])
-        try await Task.sleep(for: .milliseconds(30))
+        _ = await eventually { await repository.latest(responseID: "r1")?.questionTranscriptionStatus == .failed }
 
         let saved = await repository.latest(responseID: "r1")
         #expect(saved?.questionTranscriptionStatus == .failed)
@@ -136,7 +143,7 @@ import Testing
         let logger = QuestionAnswerLogger(localTranscribing: transcribing, repository: repository, modelID: "test-model", whisperTimeout: .milliseconds(20))
 
         await logger.beginDraft(responseID: "r1", triggerKind: .automatic, sourceAppBundleID: nil, contextWindowStartedAt: Date(), contextSnapshot: [])
-        try await Task.sleep(for: .milliseconds(60))
+        _ = await eventually(timeout: .seconds(2)) { await repository.latest(responseID: "r1")?.questionTranscriptionStatus == .failed }
 
         let saved = await repository.latest(responseID: "r1")
         #expect(saved?.questionTranscriptionStatus == .failed)
@@ -178,6 +185,7 @@ import Testing
         await logger.recordCompleted(responseID: "r1", finalText: "Ответ один", responseTotalMs: 100)
         await logger.recordCompleted(responseID: "r2", finalText: "Ответ два", responseTotalMs: 200)
         try await Task.sleep(for: .milliseconds(30))
+        await logger.flushPersistence()
 
         let pair1 = await repository.latest(responseID: "r1")
         let pair2 = await repository.latest(responseID: "r2")

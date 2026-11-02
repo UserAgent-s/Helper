@@ -112,5 +112,17 @@ enum SQLiteMigrations {
             END
             """,
         ]),
+        SQLiteMigration(version: 2, statements: [
+            """
+            CREATE TABLE IF NOT EXISTS knowledge_notes (
+                id TEXT PRIMARY KEY,
+                title TEXT NOT NULL,
+                content TEXT NOT NULL,
+                is_enabled INTEGER NOT NULL,
+                source_file_name TEXT,
+                updated_at TEXT NOT NULL
+            )
+            """,
+        ]),
     ]
 }

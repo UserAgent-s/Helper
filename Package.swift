@@ -8,6 +8,7 @@ let package = Package(
         .library(name: "Domain", targets: ["Domain"]),
         .library(name: "AudioCapture", targets: ["AudioCapture"]),
         .library(name: "RealtimeClient", targets: ["RealtimeClient"]),
+        .library(name: "AnthropicClient", targets: ["AnthropicClient"]),
         .library(name: "Transcription", targets: ["Transcription"]),
         .library(name: "Persistence", targets: ["Persistence"]),
         .library(name: "SecurityStore", targets: ["SecurityStore"]),
@@ -32,6 +33,11 @@ let package = Package(
         ),
         .target(
             name: "RealtimeClient",
+            dependencies: ["Domain"],
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .target(
+            name: "AnthropicClient",
             dependencies: ["Domain"],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
@@ -87,6 +93,11 @@ let package = Package(
         .testTarget(
             name: "RealtimeClientTests",
             dependencies: ["RealtimeClient"],
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .testTarget(
+            name: "AnthropicClientTests",
+            dependencies: ["AnthropicClient"],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
         .testTarget(

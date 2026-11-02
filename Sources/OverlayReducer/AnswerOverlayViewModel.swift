@@ -6,7 +6,7 @@ import Observation
 @Observable
 public final class AnswerOverlayViewModel {
     private let modeCoordinator: ModeCoordinator
-    private let answersController: AnswersModeController
+    private let answersController: any AnswerSessionControlling
     private let manualAnswerTrigger: ManualAnswerTrigger
 
     public private(set) var state: AnswerOverlayState = .initial
@@ -16,7 +16,7 @@ public final class AnswerOverlayViewModel {
 
     public init(
         modeCoordinator: ModeCoordinator,
-        answersController: AnswersModeController,
+        answersController: any AnswerSessionControlling,
         manualAnswerTrigger: ManualAnswerTrigger
     ) {
         self.modeCoordinator = modeCoordinator
@@ -57,8 +57,7 @@ public final class AnswerOverlayViewModel {
 
         guard shouldDiscardAccumulatingContext else { return }
         Task { [answersController] in
-            await answersController.stop()
-            try? await answersController.start()
+            await answersController.resetContext()
         }
     }
 

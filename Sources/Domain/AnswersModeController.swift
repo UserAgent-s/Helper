@@ -9,6 +9,8 @@ public actor AnswersModeController: ModeController {
     private let answersRingBuffer: AnswersRingBuffer
     private let questionAnswerLogger: QuestionAnswerLogger?
     private let latencyRecording: (any LatencyRecording)?
+    private let telemetry: SessionTelemetry?
+    private let modelIDProvider: @Sendable () -> String?
 
     private var captureTask: Task<Void, Never>?
     private var eventsTask: Task<Void, Never>?
@@ -39,7 +41,9 @@ public actor AnswersModeController: ModeController {
         instructionsProvider: @escaping @Sendable () -> String,
         answersRingBuffer: AnswersRingBuffer = AnswersRingBuffer(),
         questionAnswerLogger: QuestionAnswerLogger? = nil,
-        latencyRecording: (any LatencyRecording)? = nil
+        latencyRecording: (any LatencyRecording)? = nil,
+        telemetry: SessionTelemetry? = nil,
+        modelIDProvider: @escaping @Sendable () -> String? = { nil }
     ) {
         self.systemAudio = systemAudio
         self.realtime = realtime
@@ -49,6 +53,8 @@ public actor AnswersModeController: ModeController {
         self.answersRingBuffer = answersRingBuffer
         self.questionAnswerLogger = questionAnswerLogger
         self.latencyRecording = latencyRecording
+        self.telemetry = telemetry
+        self.modelIDProvider = modelIDProvider
         (self.failureStream, self.failureContinuation) = AsyncStream<String>.makeStream()
         (self.streamEventStream, self.streamEventContinuation) = AsyncStream<AnswerStreamEvent>.makeStream()
     }
@@ -168,7 +174,8 @@ public actor AnswersModeController: ModeController {
                     triggerKind: activeResponseTrigger ?? .automatic,
                     sourceAppBundleID: sourceAppBundleID,
                     contextWindowStartedAt: contextWindowStartedAt,
-                    contextSnapshot: snapshot
+                    contextSnapshot: snapshot,
+                    modelID: modelIDProvider()
                 )
             }
         case .waitingForQuestion:
@@ -203,7 +210,14 @@ public actor AnswersModeController: ModeController {
             activeResponseTrigger = nil
             responseStartedAt = nil
         case .failed(let reason):
+            await telemetry?.recordError(AnswerProviderError.fromOpenAIRealtimeCode(reason))
             failureContinuation.yield(reason)
+        case .usage(_, let usage):
+            if await telemetry?.recordUsage(usage) == true {
+                failureContinuation.yield(AnswerProviderError.spendLimitReached.diagnosticCode)
+            }
+        case .reconnected:
+            await telemetry?.recordReconnect()
         }
     }
 
@@ -228,3 +242,12 @@ public actor AnswersModeController: ModeController {
         streamEventContinuation.yield(.noContext)
     }
 }
+
+extension AnswersModeController: AnswerSessionControlling {
+    public func resetContext() async {
+        await stop()
+        try? await start()
+    }
+}
+
+extension TranscribedAnswersModeController: AnswerSessionControlling {}

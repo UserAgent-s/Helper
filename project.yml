@@ -59,6 +59,8 @@ targets:
       - package: MeetingAssistantCore
         product: RealtimeClient
       - package: MeetingAssistantCore
+        product: AnthropicClient
+      - package: MeetingAssistantCore
         product: Transcription
       - package: MeetingAssistantCore
         product: Persistence
@@ -94,6 +96,8 @@ schemes:
       config: Debug
     test:
       config: Debug
+      environmentVariables:
+        MEETINGASSISTANT_ISOLATED_ROOT: /tmp/MeetingAssistantTestHost
       targets:
         - MeetingAssistantTests
     archive:
@@ -105,5 +109,7 @@ schemes:
         MeetingAssistantTests: all
     test:
       config: Debug
+      environmentVariables:
+        MEETINGASSISTANT_ISOLATED_ROOT: /tmp/MeetingAssistantTestHost
       targets:
         - MeetingAssistantTests

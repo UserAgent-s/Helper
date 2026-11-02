@@ -19,10 +19,12 @@ struct MeetingAssistantApp: App {
                 permissionsChecking: root.permissionsChecking,
                 latencyRecording: root.latencyRecording,
                 navigationState: root.navigationState,
-                secretStoring: root.secretStoring,
                 whisperKitTranscribing: root.whisperKitTranscribing,
                 questionAnswerRepository: root.questionAnswerRepository,
-                meetingRepository: root.meetingRepository
+                meetingRepository: root.meetingRepository,
+                sessionStatus: root.sessionStatusViewModel,
+                knowledgeBase: root.knowledgeBaseViewModel,
+                secretStores: root.secretStores
             )
                 .onAppear {
                     if overlayCoordinator == nil {
@@ -60,7 +62,7 @@ final class OverlayCoordinator {
     private let menuBarController: MenuBarController
 
     init(root: CompositionRoot) {
-        windowController = AnswerOverlayWindowController(viewModel: root.answerOverlayViewModel)
+        windowController = AnswerOverlayWindowController(viewModel: root.answerOverlayViewModel, preferences: OverlayPreferencesStore(defaults: root.environment.defaults))
         menuBarController = MenuBarController(
             overlayViewModel: root.answerOverlayViewModel,
             modeViewModel: root.modeViewModel,

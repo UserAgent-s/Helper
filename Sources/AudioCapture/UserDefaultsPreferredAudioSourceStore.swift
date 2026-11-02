@@ -10,6 +10,10 @@ public actor UserDefaultsPreferredAudioSourceStore: PreferredAudioSourceStoring 
         self.defaults = defaults
     }
 
+    public init(suiteName: String?) {
+        self.defaults = suiteName.flatMap { UserDefaults(suiteName: $0) } ?? .standard
+    }
+
     public func preferredApplicationBundleID() async -> String? {
         guard let stored = defaults.string(forKey: Self.key) else {
             return Self.defaultBundleID

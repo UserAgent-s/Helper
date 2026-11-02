@@ -5,17 +5,29 @@ public enum RealtimeClientError: Error, Sendable, Equatable {
     case notConnected
     case notAuthenticated
     case noContext
+    case invalidModelID
+}
+
+public struct RealtimeSessionOptions: Sendable, Equatable {
+    public let model: String
+    public let reasoningEffort: String?
+
+    public init(model: String, reasoningEffort: String?) {
+        self.model = model
+        self.reasoningEffort = reasoningEffort
+    }
+
+    public static let `default` = RealtimeSessionOptions(model: AnswerModelCatalog.defaultOpenAIModelID, reasoningEffort: "low")
 }
 
 public actor OpenAIRealtimeAnswerClient: RealtimeAnswering {
-    private static let model = "gpt-realtime-2.1"
-    private static var endpointURL: URL {
+    static func endpointURL(model: String) -> URL? {
         var components = URLComponents()
         components.scheme = "wss"
         components.host = "api.openai.com"
         components.path = "/v1/realtime"
         components.queryItems = [URLQueryItem(name: "model", value: model)]
-        return components.url!
+        return components.url
     }
 
     private struct ResponseTextTracker {
@@ -27,6 +39,8 @@ public actor OpenAIRealtimeAnswerClient: RealtimeAnswering {
     private let transport: any RealtimeWebSocketTransport
     private let credentialProviding: any RealtimeCredentialProviding
     private let vadSettingsProvider: @Sendable () -> RealtimeVADSettings
+    private let sessionOptionsProvider: @Sendable () -> RealtimeSessionOptions
+    private var sessionOptions = RealtimeSessionOptions.default
     private let latencyRecording: any LatencyRecording
     private let reconnectBaseDelay: Duration
     private let maxReconnectAttempts: Int
@@ -58,6 +72,7 @@ public actor OpenAIRealtimeAnswerClient: RealtimeAnswering {
         transport: any RealtimeWebSocketTransport = URLSessionRealtimeWebSocketTransport(),
         credentialProviding: any RealtimeCredentialProviding,
         vadSettingsProvider: @escaping @Sendable () -> RealtimeVADSettings = { .safeDefault },
+        sessionOptionsProvider: @escaping @Sendable () -> RealtimeSessionOptions = { .default },
         latencyRecording: any LatencyRecording,
         reconnectBaseDelay: Duration = .milliseconds(500),
         maxReconnectAttempts: Int = 3,
@@ -66,6 +81,7 @@ public actor OpenAIRealtimeAnswerClient: RealtimeAnswering {
         self.transport = transport
         self.credentialProviding = credentialProviding
         self.vadSettingsProvider = vadSettingsProvider
+        self.sessionOptionsProvider = sessionOptionsProvider
         self.latencyRecording = latencyRecording
         self.reconnectBaseDelay = reconnectBaseDelay
         self.maxReconnectAttempts = maxReconnectAttempts
@@ -79,14 +95,18 @@ public actor OpenAIRealtimeAnswerClient: RealtimeAnswering {
 
     public func start(instructions: String) async throws {
         self.instructions = instructions
+        sessionOptions = sessionOptionsProvider()
         let credential = try await Self.requireCredential(from: credentialProviding)
+        guard let url = Self.endpointURL(model: sessionOptions.model) else {
+            throw RealtimeClientError.invalidModelID
+        }
 
         resetSessionState()
-        try await transport.connect(url: Self.endpointURL, bearerToken: credential.apiKey)
+        try await transport.connect(url: url, bearerToken: credential.apiKey)
         sessionActive = true
         startReceiveLoop()
         try await transport.send(.sessionUpdate(makeSessionConfig()))
-        redactedLog("realtime session started (model=\(Self.model))")
+        redactedLog("realtime session started (model=\(sessionOptions.model))")
     }
 
     public func appendAudio(_ frame: PCMAudioFrame) async {
@@ -163,7 +183,7 @@ public actor OpenAIRealtimeAnswerClient: RealtimeAnswering {
 
     private func makeSessionConfig() -> SessionConfig {
         SessionConfig(
-            model: Self.model,
+            model: sessionOptions.model,
             instructions: instructions,
             outputModalities: ["text"],
             audio: AudioConfig(input: AudioInputConfig(
@@ -171,7 +191,7 @@ public actor OpenAIRealtimeAnswerClient: RealtimeAnswering {
                 format: AudioFormatConfig(rate: 24_000),
                 turnDetection: vadSettingsProvider().config
             )),
-            reasoning: ReasoningConfig(effort: "low")
+            reasoning: sessionOptions.reasoningEffort.map { ReasoningConfig(effort: $0) }
         )
     }
 
@@ -240,7 +260,8 @@ public actor OpenAIRealtimeAnswerClient: RealtimeAnswering {
         case .outputTextDone(let responseID, let itemID, let text):
             await handleOutputTextDone(responseID: responseID, itemID: itemID, text: text)
 
-        case .responseDone(let responseID, let status, _):
+        case .responseDone(let responseID, let status, _, let usage):
+            if let usage { emit(.usage(responseID: responseID, usage)) }
             await handleResponseDone(responseID: responseID, status: status)
 
         case .error(let message, let code):
@@ -403,10 +424,12 @@ public actor OpenAIRealtimeAnswerClient: RealtimeAnswering {
         await transport.close()
         resetSessionState()
         let credential = try await Self.requireCredential(from: credentialProviding)
-        try await transport.connect(url: Self.endpointURL, bearerToken: credential.apiKey)
+        guard let url = Self.endpointURL(model: sessionOptions.model) else { throw RealtimeClientError.invalidModelID }
+        try await transport.connect(url: url, bearerToken: credential.apiKey)
         startReceiveLoop()
         try await transport.send(.sessionUpdate(makeSessionConfig()))
         await latencyRecording.record(.reconnectMs(Int(Date().timeIntervalSince(reconnectStartedAt) * 1000)))
+        emit(.reconnected)
     }
 
     private static func requireCredential(from provider: any RealtimeCredentialProviding) async throws -> RealtimeCredential {
@@ -423,5 +446,16 @@ public actor OpenAIRealtimeAnswerClient: RealtimeAnswering {
     private static func milliseconds(_ duration: Duration) -> Int {
         let components = duration.components
         return Int(components.seconds) * 1000 + Int(components.attoseconds / 1_000_000_000_000_000)
+    }
+}
+
+extension RealtimeClientError: AnswerProviderErrorConvertible {
+    public var answerProviderError: AnswerProviderError? {
+        switch self {
+        case .notAuthenticated: .missingAPIKey(.openAIRealtime)
+        case .invalidModelID: .modelNotFound("")
+        case .notConnected: .network("not_connected")
+        case .noContext: nil
+        }
     }
 }

@@ -4,7 +4,7 @@ import SwiftUI
 import Transcription
 
 struct OnboardingView: View {
-    let secretStoring: any SecretStoring
+    let secretStores: [AnswerProvider: any SecretStoring]
     let whisperKitTranscribing: WhisperKitTranscribing
     let permissionsChecking: any PermissionsChecking
     let onFinish: () -> Void
@@ -12,6 +12,10 @@ struct OnboardingView: View {
     @State private var apiKeyInput = ""
     @State private var hasSavedAPIKey = false
     @State private var hasAPIKeyFormatWarning = false
+    @State private var anthropicKeyInput = ""
+    @State private var hasSavedAnthropicKey = false
+    @State private var hasAnthropicKeyFormatWarning = false
+    @State private var keySaveFailed = false
     @State private var modelCheckOutcome: ModelCheckOutcome?
     @State private var isCheckingModel = false
     @State private var screenRecordingStatus = PermissionStatus.notDetermined
@@ -35,7 +39,7 @@ struct OnboardingView: View {
                     )
                     onboardingRow(
                         title: loc("Answers"),
-                        detail: loc("Запрашивает разрешение Screen Recording. Системный звук выбранного приложения отправляется в OpenAI Realtime API для быстрых ответов. Микрофон не требуется. Полный разговор не сохраняется — только показанные пары вопрос-ответ.")
+                        detail: loc("Запрашивает разрешение Screen Recording. Провайдер выбирается в Настройках: OpenAI Realtime получает системный звук выбранного приложения; Anthropic Claude получает только текст, распознанный локально. Микрофон не требуется. Полный разговор не сохраняется — только показанные пары вопрос-ответ.")
                     )
                     onboardingRow(
                         title: loc("Recording"),
@@ -65,7 +69,7 @@ struct OnboardingView: View {
                 Divider()
 
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(loc("API-ключ OpenAI (для Answers и саммари)")).font(.headline)
+                    Text(loc("API-ключ OpenAI (для Answers через OpenAI и саммари)")).font(.headline)
                     SecureField("sk-…", text: $apiKeyInput)
                         .textFieldStyle(.roundedBorder)
                     HStack {
@@ -82,10 +86,31 @@ struct OnboardingView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(loc("API-ключ Anthropic (для Answers через Claude)")).font(.headline)
+                    SecureField("sk-ant-…", text: $anthropicKeyInput)
+                        .textFieldStyle(.roundedBorder)
+                    HStack {
+                        Button(loc("Сохранить в Keychain")) { saveAnthropicKey() }
+                            .disabled(anthropicKeyInput.isEmpty)
+                        if hasAnthropicKeyFormatWarning {
+                            Text(loc("Формат ключа выглядит некорректным")).font(.caption).foregroundStyle(.secondary)
+                        } else if hasSavedAnthropicKey {
+                            Text(loc("Сохранён")).font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                    Text(loc("Ключ создаётся в console.anthropic.com и оплачивается отдельно; подписка Claude Code или Claude Pro/Max его не заменяет."))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    if keySaveFailed {
+                        Text(loc("Не удалось сохранить в Keychain. Ключ не сохранён.")).font(.caption).foregroundStyle(.red)
+                    }
+                }
+
                 Divider()
 
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(loc("Локальная модель Whisper (для Recording)")).font(.headline)
+                    Text(loc("Локальная модель Whisper (для Recording и Answers через Claude)")).font(.headline)
                     HStack {
                         Button(isCheckingModel ? loc("Проверяем…") : loc("Проверить/загрузить модель")) { checkModel() }
                             .disabled(isCheckingModel)
@@ -146,15 +171,38 @@ struct OnboardingView: View {
 
     private func saveAPIKey() {
         let trimmed = apiKeyInput.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard APIKeyFormatValidator.isPlausibleFormat(trimmed) else {
+        guard APIKeyFormatValidator.isPlausibleFormat(trimmed, for: .openAIRealtime) else {
             hasAPIKeyFormatWarning = true
             hasSavedAPIKey = false
             return
         }
-        try? secretStoring.store(apiKey: trimmed)
-        apiKeyInput = ""
         hasAPIKeyFormatWarning = false
-        hasSavedAPIKey = true
+        do {
+            try secretStores[.openAIRealtime]?.store(apiKey: trimmed)
+            apiKeyInput = ""
+            hasSavedAPIKey = true
+            keySaveFailed = false
+        } catch {
+            keySaveFailed = true
+        }
+    }
+
+    private func saveAnthropicKey() {
+        let trimmed = anthropicKeyInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard APIKeyFormatValidator.isPlausibleFormat(trimmed, for: .anthropicClaude) else {
+            hasAnthropicKeyFormatWarning = true
+            hasSavedAnthropicKey = false
+            return
+        }
+        hasAnthropicKeyFormatWarning = false
+        do {
+            try secretStores[.anthropicClaude]?.store(apiKey: trimmed)
+            anthropicKeyInput = ""
+            hasSavedAnthropicKey = true
+            keySaveFailed = false
+        } catch {
+            keySaveFailed = true
+        }
     }
 
     private func checkModel() {

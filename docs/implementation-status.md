@@ -642,3 +642,58 @@ Task { [answersController] in await answersController.stop(); try? await answers
 **Важная методологическая деталь:** пробовал верифицировать это сам через `mcp__peekaboo__click`/`app focus` вместо очередного "поставь и скажи, что увидел" — но sandbox-policy этой сессии блокирует и foreground-, и background-клики по этому конкретному приложению ("A trusted caller must explicitly authorize foreground execution"), так что живой клик по "Answers" пользователем всё равно остаётся неподтверждённым.
 
 **Проверено:** `xcodebuild ... build` — **BUILD SUCCEEDED**; переустановлено с новым UUID (`8FC2B973-DD3C-315F-8FED-91350366A7C9`), `tccutil reset` снова прошёл. Живой тест пользователем — не подтверждён (см. выше про блокировку автоматизации).
+
+---
+
+## 2026-10-15 — Переключение провайдеров OpenAI / Anthropic Claude, профиль, Keychain, расходы
+
+**Изменённые компоненты:**
+- Domain: `AnswerProvider`, `AnswerModelCatalog` (модели и тарифы с источником/датой), `ProviderUsage`/`UsageCostCalculator`, `AnswerProviderError`, `TextAnswerGenerating`/`SpeechFragmentRecognizing`/`QuestionReadinessDetecting`, `UtteranceSegmenter`, `SessionTranscriptContext`, `HeuristicQuestionReadinessDetector`, `TranscribedAnswersModeController`, `ProviderRoutingAnswersController`, `SessionTelemetry`, `CandidateProfile`, `AnswerInstructionsBuilder`; `AnswersModeController` (usage/телеметрия/модель для журнала), `QuestionAnswerLogger.beginTextDraft`, `ModeFailureReason.provider`.
+- RealtimeClient: модель и reasoning effort из `RealtimeSessionOptions`; usage из `response.done`; событие `.reconnected`; `create_response=false` в режиме «Только по нажатию»; инструкции делегированы `AnswerInstructionsBuilder`.
+- AnthropicClient (новый модуль): `AnthropicMessagesAnswerClient` (raw HTTPS + SSE, `anthropic-version: 2023-06-01`, кешируемый system prompt, `output_config.effort`, опциональный `fallbacks: "default"`), `ServerSentEventParser`, `URLSessionAnthropicTransport`.
+- SecurityStore: `LegacyAPIKeyMigrator`, `KeychainFirstSecretStore`, `ProviderKeychainServices`, провайдер-специфичная проверка формата ключа.
+- Transcription: `WhisperKitFragmentRecognizer`.
+- Persistence: `sqlite3_busy_timeout(5000)` — три соединения одновременно мигрировали свежую БД и получали `database is locked`.
+- Summary: тарифы `gpt-5.6-terra` ($2/$12) и `gpt-5.6-luna` ($0.20/$1.20) по странице pricing от 2026-10-15.
+- App: `AppEnvironment` (изолированный режим через `MEETINGASSISTANT_ISOLATED_ROOT` и автоматически под XCTest), новый `CompositionRoot`, `SessionStatusViewModel`, настройки провайдера/модели/ключей/профиля/расходов/диагностики, панель статуса сессии, onboarding с двумя ключами, диагностика без контента по умолчанию, лог Realtime перенесён из `/tmp` в каталог данных.
+- Документация: README, `docs/privacy.md`, ADR 0004, ADR 0005, `Makefile` (`verify-fast`, ручной `verify-real`).
+
+**Неочевидные решения (код без комментариев, причины здесь):**
+- Источник модели при старте фиксируется в `AnswerSessionConfiguration`; изменения настроек во время сессии только помечаются.
+- Generation-токен в `TranscribedAnswersModeController` + фильтр активного провайдера в маршрутизаторе — двойная защита от запоздалых ответов.
+- Контекст очищается только после завершённого показанного ответа; фрагменты, распознанные во время стриминга, сохраняются для следующего вопроса (`consumeThrough`).
+- Дубли на границах фрагментов убираются по совпадению хвоста/головы слов (≥1 слово при перекрытии по max-длительности, ≥3 без него); известные галлюцинации Whisper на тишине отбрасываются.
+- Ошибка генерации, видимая пользователю, отдаётся оверлею как `.cancelled` (не `.noContext`), чтобы не показывать «нет контекста» при сетевой ошибке.
+- Стоимость считается по модели, которая фактически ответила; если хотя бы один ответ пришёл без usage или тариф неизвестен — стоимость «неизвестно», а порог расходов помечается как неприменимый.
+- Модель Whisper не выгружается при остановке Answers (общий кеш с Recording, время старта).
+- Тесты app-уровня и test host никогда не используют реальные настройки/Keychain: изоляция включается env-переменной схемы и детектом XCTest.
+
+**Команды проверки:**
+- `swift build --build-tests && swift test` — 303 теста (было 204), все проходят; асинхронные наборы прогнаны 5 раз подряд без падений.
+- `xcodegen generate && xcodebuild ... build` — BUILD SUCCEEDED.
+- `xcodebuild ... test` — 19 тестов приложения, TEST SUCCEEDED.
+- `codesign -d --entitlements` — `app-sandbox => false` (ADR 0005).
+
+**Оставшиеся риски:**
+- Живое аудио и реальные API не проверялись (платные запросы без разрешения пользователя не выполнялись).
+- Порог эвристики пауз (0.7 с) и RMS-порог речи подобраны без реальных аудиофикстур.
+- Изменения UI не проверены скриншотами: у инструментов автоматизации нет разрешений Screen Recording/Accessibility.
+
+
+---
+
+## 2026-10-15 — «Мой опыт»: база знаний и память прошлых ответов в Answers
+
+Запрос пользователя: доступ к своему опыту в реальном времени во время Answers (не отдельный чат). Начатый было чат-ассистент удалён по уточнению пользователя.
+
+**Изменённые компоненты:**
+- Domain: `KnowledgeNote`, `KnowledgeNoteRepository`, `KnowledgeContextBuilder` (лимит ~40 000 символов, обрезка с пометкой), `RecentAnswersMemory`, `LiveAnswerContext`, `ContentFingerprint`; `AnswerInstructionsBuilder` — секции «Personal knowledge base» и «Answers the user already gave in earlier sessions»; `ProviderRoutingAnswersController.prepare` — обновление контекста перед фиксацией конфигурации сессии.
+- Persistence: миграция v2 `knowledge_notes`, `SQLiteKnowledgeNoteRepository`; миграции стали безопасны при одновременном открытии несколькими соединениями (проверка версии внутри `BEGIN IMMEDIATE`, `INSERT OR IGNORE`, повтор при `locked/busy`) — новый тест воспроизводил `database is locked`.
+- App: окно «Мой опыт» (импорт .md/.txt/.pdf через PDFKit, редактирование, вкл/выкл, удаление, оценка токенов), настройка «Память прошлых ответов» (0–10, по умолчанию 5), строка «Мой опыт» в панели статуса, отпечаток базы знаний входит в сравнение «неприменённых настроек».
+
+**Неочевидные решения:**
+- Контекст опыта читается из БД в `prepare` при каждом старте Answers и фиксируется на сессию — правки во время сессии не меняют инструкции на лету (Realtime-инструкции задаются при `session.update`).
+- Вся база включается целиком в пределах лимита, без поиска по фрагментам: для резюме и десятков кейсов это проще и предсказуемее; для Claude блок кешируется.
+- `QuestionAnswerLogger.persist` теперь пишет последовательно (цепочка задач): раньше несвязанные `Task` могли сохранить «answer_streaming» поверх «completed». Тесты логгера и нескольких старых сценариев переведены с фиксированных пауз на ожидание условия/`flushPersistence()`.
+
+**Команды проверки:** `make verify-fast` — 311 тестов пакета и 22 теста приложения, BUILD/TEST SUCCEEDED; доменный набор прогнан 20 раз подряд без падений.

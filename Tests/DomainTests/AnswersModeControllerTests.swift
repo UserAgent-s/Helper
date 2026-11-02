@@ -125,7 +125,7 @@ import Testing
         await realtime.emit(.textDelta(responseID: "auto-1", text: "Прямой"))
         await realtime.emit(.textDelta(responseID: "auto-1", text: " ответ."))
         await realtime.emit(.completed(responseID: "auto-1"))
-        try await Task.sleep(for: .milliseconds(30))
+        _ = await eventually { await collector.events.contains(.completed(finalText: "Прямой ответ.")) }
 
         let events = await collector.events
         #expect(events.contains(.streaming(text: "Прямой")))
@@ -147,7 +147,7 @@ import Testing
 
         try await controller.start()
         await trigger.fire()
-        try await Task.sleep(for: .milliseconds(30))
+        _ = await eventually { await collector.events.contains(.noContext) }
 
         let events = await collector.events
         #expect(events.contains(.manualResponsePending))

@@ -10,6 +10,7 @@ final class FakeRealtimeWebSocketTransport: RealtimeWebSocketTransport, @uncheck
     private var _connectCallCount = 0
     private var _closeCallCount = 0
     private var _lastBearerToken: String?
+    private var _lastURL: URL?
     private var _sentEvents: [RealtimeClientEvent] = []
     private var currentContinuation: AsyncStream<RealtimeTransportEvent>.Continuation?
     var connectError: TransportTestError?
@@ -24,6 +25,7 @@ final class FakeRealtimeWebSocketTransport: RealtimeWebSocketTransport, @uncheck
         withLockedState {
             _connectCallCount += 1
             _lastBearerToken = bearerToken
+            _lastURL = url
         }
         if let connectError { throw connectError }
     }
@@ -53,6 +55,7 @@ final class FakeRealtimeWebSocketTransport: RealtimeWebSocketTransport, @uncheck
     var connectCallCount: Int { withLockedState { _connectCallCount } }
     var closeCallCount: Int { withLockedState { _closeCallCount } }
     var lastBearerToken: String? { withLockedState { _lastBearerToken } }
+    var lastURL: URL? { withLockedState { _lastURL } }
     var sentEvents: [RealtimeClientEvent] { withLockedState { _sentEvents } }
     var sentEventTypes: [String] { sentEvents.map(\.debugTypeName) }
 }

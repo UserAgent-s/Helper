@@ -51,13 +51,31 @@ actor SQLiteConnection {
     }
 
     func ensureReady() throws {
-        if handle == nil {
-            try open()
+        var attempt = 0
+        while true {
+            do {
+                if handle == nil {
+                    try open()
+                }
+                if !didMigrate {
+                    try runMigrations()
+                    didMigrate = true
+                }
+                return
+            } catch let error as SQLiteError where Self.isTransientLock(error) && attempt < 100 {
+                attempt += 1
+                Thread.sleep(forTimeInterval: 0.02)
+            }
         }
-        if !didMigrate {
-            try runMigrations()
-            didMigrate = true
+    }
+
+    static func isTransientLock(_ error: SQLiteError) -> Bool {
+        let message: String
+        switch error {
+        case .openFailed(let text), .execFailed(let text), .prepareFailed(let text), .stepFailed(let text), .bindFailed(let text):
+            message = text
         }
+        return message.contains("locked") || message.contains("busy")
     }
 
     @discardableResult
@@ -134,6 +152,7 @@ actor SQLiteConnection {
             throw SQLiteError.openFailed(message)
         }
         handle = newHandle
+        sqlite3_busy_timeout(newHandle, 5_000)
         try run("PRAGMA journal_mode = WAL")
         try run("PRAGMA foreign_keys = ON")
     }
@@ -145,14 +164,15 @@ actor SQLiteConnection {
             applied_at TEXT NOT NULL
         )
         """)
-        let appliedVersions = Set(try query("SELECT version FROM schema_migrations", map: { row in row.int(0) ?? 0 }))
-        for migration in SQLiteMigrations.all where !appliedVersions.contains(migration.version) {
+        for migration in SQLiteMigrations.all {
             try withTransaction {
+                let applied = try query("SELECT 1 FROM schema_migrations WHERE version = ?", [.int(migration.version)], map: { _ in true })
+                guard applied.isEmpty else { return }
                 for statement in migration.statements {
                     try run(statement)
                 }
                 try run(
-                    "INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)",
+                    "INSERT OR IGNORE INTO schema_migrations (version, applied_at) VALUES (?, ?)",
                     [.int(migration.version), .text(ISO8601DateFormatter().string(from: Date()))]
                 )
             }

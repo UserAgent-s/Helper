@@ -25,6 +25,8 @@ final class ModeSwitcherViewModel {
             return loc("Приложение") + " «\(bundleID)» " + loc("не запущено. Откройте его и попробуйте снова.")
         case .noControllerRegistered:
             return loc("Этот режим сейчас недоступен.")
+        case .provider(let error):
+            return loc("Answers не запущен:") + " " + ProviderText.error(error)
         case .unknown:
             return loc("Не удалось запустить режим. Попробуйте ещё раз.")
         }
@@ -68,10 +70,12 @@ struct ModeSwitcherView: View {
     var permissionsChecking: any PermissionsChecking
     var latencyRecording: InMemoryLatencyRecorder
     var navigationState: AppNavigationState
-    var secretStoring: any SecretStoring
     var whisperKitTranscribing: WhisperKitTranscribing
     var questionAnswerRepository: any QuestionAnswerRepository
     var meetingRepository: any MeetingRepository
+    var sessionStatus: SessionStatusViewModel
+    var knowledgeBase: KnowledgeBaseViewModel
+    var secretStores: [AnswerProvider: any SecretStoring]
 
     var body: some View {
         VStack(spacing: 16) {
@@ -80,6 +84,7 @@ struct ModeSwitcherView: View {
                     .font(.title2)
                 Spacer()
                 Button(loc("Диагностика")) { exportDiagnostics() }
+                Button(loc("Мой опыт")) { navigationState.isShowingKnowledgeBase = true }
                 Button(loc("Настройки")) { navigationState.isShowingSettings = true }
                 Button(loc("История")) { navigationState.isShowingHistory = true }
             }
@@ -111,24 +116,30 @@ struct ModeSwitcherView: View {
                     .font(.caption)
             }
 
+            sessionPanel
+
             if viewModel.currentMode == .recording {
                 liveTranscriptList
             }
         }
         .padding(24)
-        .frame(minWidth: 360, minHeight: viewModel.currentMode == .recording ? 420 : 160)
+        .frame(minWidth: 460, minHeight: viewModel.currentMode == .recording ? 520 : 300)
         .sheet(isPresented: Binding(get: { navigationState.isShowingHistory }, set: { navigationState.isShowingHistory = $0 })) {
             HistoryView(viewModel: historyViewModel)
+        }
+        .sheet(isPresented: Binding(get: { navigationState.isShowingKnowledgeBase }, set: { navigationState.isShowingKnowledgeBase = $0 })) {
+            KnowledgeBaseView(viewModel: knowledgeBase)
         }
         .sheet(isPresented: Binding(get: { navigationState.isShowingSettings }, set: { navigationState.isShowingSettings = $0 })) {
             SettingsView(viewModel: settingsViewModel)
         }
         .sheet(isPresented: Binding(get: { navigationState.isShowingOnboarding }, set: { navigationState.isShowingOnboarding = $0 })) {
-            OnboardingView(secretStoring: secretStoring, whisperKitTranscribing: whisperKitTranscribing, permissionsChecking: permissionsChecking) {
+            OnboardingView(secretStores: secretStores, whisperKitTranscribing: whisperKitTranscribing, permissionsChecking: permissionsChecking) {
                 settingsStore.onboardingCompleted = true
                 navigationState.isShowingOnboarding = false
             }
         }
+        .task { await knowledgeBase.load() }
         .onAppear {
             if !settingsStore.onboardingCompleted {
                 navigationState.isShowingOnboarding = true
@@ -158,7 +169,9 @@ struct ModeSwitcherView: View {
     private var privacyIndicatorText: String {
         switch viewModel.currentMode {
         case .passive: loc("Passive: ничего не захватывается")
-        case .answers: loc("Answers: системный звук уходит в OpenAI Realtime API")
+        case .answers: sessionStatus.displayedSelection.provider == .openAIRealtime
+            ? loc("Answers: системный звук уходит в OpenAI Realtime API")
+            : loc("Answers: звук распознаётся локально, текст уходит в Anthropic Claude API")
         case .recording: loc("Recording: аудио обрабатывается только локально")
         }
     }
@@ -170,6 +183,8 @@ struct ModeSwitcherView: View {
                 phase: viewModel.phase,
                 permissionsChecking: permissionsChecking,
                 latencyRecorder: latencyRecording,
+                telemetry: sessionStatus.snapshot,
+                includeContent: settingsStore.diagnosticsIncludeContentOptIn,
                 questionAnswerRepository: questionAnswerRepository,
                 meetingRepository: meetingRepository
             )
@@ -188,6 +203,68 @@ struct ModeSwitcherView: View {
                 }
             }
         }
+    }
+
+    private var sessionPanel: some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 4) {
+                statusRow(loc("Провайдер"), sessionStatus.providerLabel)
+                statusRow(loc("Модель"), sessionStatus.modelLabel)
+                statusRow(loc("Захват"), captureDescription)
+                statusRow(loc("Состояние"), sessionStatus.statusText)
+                statusRow(loc("Наружу"), viewModel.currentMode == .passive ? loc("ничего (Passive)") : (viewModel.currentMode == .recording ? loc("ничего, Recording работает локально") : sessionStatus.outboundDataDescription))
+                statusRow(loc("Сохранение"), storageDescription)
+                statusRow(loc("Мой опыт"), sessionStatus.experienceText)
+                statusRow(loc("Usage"), sessionStatus.usageText)
+                statusRow(loc("Стоимость"), sessionStatus.costText)
+                if sessionStatus.recognitionApplies {
+                    statusRow(loc("Распознавание"), sessionStatus.recognitionLatencyText)
+                }
+                statusRow(loc("Вопрос → первый текст"), sessionStatus.firstTextLatencyText)
+                statusRow(loc("Ошибки"), sessionStatus.errorsText)
+                if let spend = sessionStatus.spendText {
+                    Text(spend).font(.caption).foregroundStyle(.orange)
+                }
+                if sessionStatus.hasUnappliedSettings {
+                    Text(loc("Есть изменения настроек, ещё не применённые к активной сессии."))
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+                if viewModel.currentMode == .answers, let heard = sessionStatus.snapshot.lastHeardText, sessionStatus.recognitionApplies {
+                    Text(loc("Распознано:") + " …" + heard)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(3)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func statusRow(_ title: String, _ value: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(width: 150, alignment: .leading)
+            Text(value)
+                .font(.caption)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var captureDescription: String {
+        switch viewModel.currentMode {
+        case .passive: loc("выключен")
+        case .answers: viewModel.phase == .active ? loc("системный звук выбранного приложения") : loc("запускается/останавливается")
+        case .recording: loc("системный звук и микрофон")
+        }
+    }
+
+    private var storageDescription: String {
+        let audio = settingsStore.audioStorageEnabled ? loc("WAV в Recording включён") : loc("аудио не сохраняется")
+        return loc("пары вопрос-ответ Answers и транскрипты Recording — в локальной истории;") + " " + audio
     }
 
     private var liveTranscriptList: some View {

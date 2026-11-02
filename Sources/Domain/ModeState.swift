@@ -12,7 +12,25 @@ public enum ModeFailureReason: Sendable, Equatable {
     case permissionDenied(PermissionKind)
     case targetApplicationNotRunning(bundleID: String)
     case noControllerRegistered
+    case provider(AnswerProviderError)
     case unknown
+}
+
+public protocol AnswerProviderErrorConvertible {
+    var answerProviderError: AnswerProviderError? { get }
+}
+
+extension AnswerProviderError: AnswerProviderErrorConvertible {
+    public var answerProviderError: AnswerProviderError? { self }
+}
+
+extension TranscribedAnswersError: AnswerProviderErrorConvertible {
+    public var answerProviderError: AnswerProviderError? {
+        switch self {
+        case .recognitionUnavailable(let reason): .recognitionUnavailable(reason)
+        case .stoppedDuringStart: nil
+        }
+    }
 }
 
 public protocol PermissionDeniedConvertible {

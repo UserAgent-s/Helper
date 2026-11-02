@@ -70,7 +70,8 @@ enum AppMode: Sendable {
 - В `answers` не хранится полный разговор — только Q&A-пары и метрики.
 - В `recording` не вызывается ни Realtime, ни Responses API.
 - Саммари запускается пользователем вручную после завершения записи.
-- API-ключ хранится локально в `UserDefaults` приложения (`UserDefaultsSecretStore`); не встраивается в бинарник, исходники или логи. См. `docs/privacy.md` про отказ от Keychain при ad-hoc-подписи.
+- API-ключи OpenAI и Anthropic хранятся в macOS Keychain; старый ключ из `UserDefaults` мигрирует с проверкой (ADR 0005). Не встраиваются в бинарник, исходники или логи.
+- В `answers` провайдер выбирается в Passive: OpenAI Realtime (аудио) или Anthropic Claude (локальное распознавание → текст), см. ADR 0004.
 
 ## Целевые метрики (LatencyRecording)
 

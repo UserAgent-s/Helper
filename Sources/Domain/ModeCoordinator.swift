@@ -112,6 +112,8 @@ public actor ModeCoordinator: ModeControlling {
                 failureReason = .permissionDenied(kind)
             } else if let convertible = error as? any TargetApplicationNotRunningConvertible, let bundleID = convertible.notRunningTargetApplicationBundleID {
                 failureReason = .targetApplicationNotRunning(bundleID: bundleID)
+            } else if let convertible = error as? any AnswerProviderErrorConvertible, let providerError = convertible.answerProviderError {
+                failureReason = .provider(providerError)
             } else {
                 failureReason = .unknown
             }

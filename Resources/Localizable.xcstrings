@@ -3566,6 +3566,3548 @@
           }
         }
       }
+    },
+    "(в старом хранилище, не в Keychain)": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "(в старом хранилище, не в Keychain)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "(in legacy storage, not in Keychain)"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "(у старому сховищі, не в Keychain)"
+          }
+        }
+      }
+    },
+    "(оценка, не счёт; тариф от": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "(оценка, не счёт; тариф от"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "(estimate, not an invoice; tariff as of"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "(оцінка, не рахунок; тариф від"
+          }
+        }
+      }
+    },
+    "(указан вручную, не проверен)": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "(указан вручную, не проверен)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "(entered manually, not verified)"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "(вказано вручну, не перевірено)"
+          }
+        }
+      }
+    },
+    "API-ключ Anthropic (для Answers через Claude)": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "API-ключ Anthropic (для Answers через Claude)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anthropic API key (for Answers via Claude)"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "API-ключ Anthropic (для Answers через Claude)"
+          }
+        }
+      }
+    },
+    "API-ключ OpenAI (для Answers через OpenAI и саммари)": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "API-ключ OpenAI (для Answers через OpenAI и саммари)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OpenAI API key (for Answers via OpenAI and summaries)"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "API-ключ OpenAI (для Answers через OpenAI та підсумків)"
+          }
+        }
+      }
+    },
+    "API-ключи (хранятся в Keychain)": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "API-ключи (хранятся в Keychain)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "API keys (stored in Keychain)"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "API-ключі (зберігаються в Keychain)"
+          }
+        }
+      }
+    },
+    "Answers не запущен:": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answers не запущен:"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answers did not start:"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answers не запущено:"
+          }
+        }
+      }
+    },
+    "Answers: звук распознаётся локально, текст уходит в Anthropic Claude API": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answers: звук распознаётся локально, текст уходит в Anthropic Claude API"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answers: audio is transcribed locally, text goes to the Anthropic Claude API"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answers: звук розпізнається локально, текст надсилається в Anthropic Claude API"
+          }
+        }
+      }
+    },
+    "Anthropic API key": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anthropic API key"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anthropic API key"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anthropic API key"
+          }
+        }
+      }
+    },
+    "Claude API оплачивается отдельно по ключу из console.anthropic.com; подписка Claude Pro/Max/Claude Code его не оплачивает и ключом не является.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude API оплачивается отдельно по ключу из console.anthropic.com; подписка Claude Pro/Max/Claude Code его не оплачивает и ключом не является."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Claude API is billed separately via a key from console.anthropic.com; a Claude Pro/Max/Claude Code subscription does not pay for it and is not a key."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude API оплачується окремо за ключем із console.anthropic.com; підписка Claude Pro/Max/Claude Code його не оплачує і ключем не є."
+          }
+        }
+      }
+    },
+    "ID модели": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ID модели"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Model ID"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ID моделі"
+          }
+        }
+      }
+    },
+    "OpenAI API key": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OpenAI API key"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OpenAI API key"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OpenAI API key"
+          }
+        }
+      }
+    },
+    "Usage": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usage"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usage"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usage"
+          }
+        }
+      }
+    },
+    "VAD OpenAI Realtime (developer)": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VAD OpenAI Realtime (developer)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OpenAI Realtime VAD (developer)"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VAD OpenAI Realtime (developer)"
+          }
+        }
+      }
+    },
+    "WAV в Recording включён": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WAV в Recording включён"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WAV in Recording is on"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WAV у Recording увімкнено"
+          }
+        }
+      }
+    },
+    "«Только по нажатию» накапливает вопрос и не отправляет запрос на ответ, пока вы не нажмёте «Ответить сейчас» (⌥↩). В OpenAI Realtime аудио при этом всё равно передаётся непрерывно.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "«Только по нажатию» накапливает вопрос и не отправляет запрос на ответ, пока вы не нажмёте «Ответить сейчас» (⌥↩). В OpenAI Realtime аудио при этом всё равно передаётся непрерывно."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“On demand only” accumulates the question and sends no answer request until you press “Answer now” (⌥↩). With OpenAI Realtime, audio is still streamed continuously."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "«Лише за натисканням» накопичує питання й не надсилає запит на відповідь, доки ви не натиснете «Відповісти зараз» (⌥↩). В OpenAI Realtime аудіо при цьому все одно передається безперервно."
+          }
+        }
+      }
+    },
+    "Авто": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Авто"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Авто"
+          }
+        }
+      }
+    },
+    "Автоматически": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Автоматически"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatically"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Автоматично"
+          }
+        }
+      }
+    },
+    "В Answers звук распознаётся локально (WhisperKit). В Anthropic отправляется только текст: распознанная речь с момента последнего ответа, до двух предыдущих пар вопрос-ответ, инструкции и профиль. Аудио не покидает Mac.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В Answers звук распознаётся локально (WhisperKit). В Anthropic отправляется только текст: распознанная речь с момента последнего ответа, до двух предыдущих пар вопрос-ответ, инструкции и профиль. Аудио не покидает Mac."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In Answers, audio is transcribed locally (WhisperKit). Only text is sent to Anthropic: recognized speech since the last answer, up to two previous question-answer pairs, the instructions and the profile. Audio never leaves the Mac."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В Answers звук розпізнається локально (WhisperKit). В Anthropic надсилається лише текст: розпізнане мовлення з моменту останньої відповіді, до двох попередніх пар питання-відповідь, інструкції та профіль. Аудіо не залишає Mac."
+          }
+        }
+      }
+    },
+    "В Answers системный звук выбранного приложения непрерывно отправляется в OpenAI Realtime API вместе с инструкциями и профилем. Микрофон не используется.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В Answers системный звук выбранного приложения непрерывно отправляется в OpenAI Realtime API вместе с инструкциями и профилем. Микрофон не используется."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In Answers, the selected app's system audio is continuously streamed to the OpenAI Realtime API together with the instructions and the profile. The microphone is not used."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В Answers системний звук вибраного застосунку безперервно надсилається в OpenAI Realtime API разом з інструкціями та профілем. Мікрофон не використовується."
+          }
+        }
+      }
+    },
+    "В Keychain уже есть другой ключ OpenAI; используется он. Старое значение из настроек не удалено.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В Keychain уже есть другой ключ OpenAI; используется он. Старое значение из настроек не удалено."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keychain already holds a different OpenAI key; it is used. The old value in settings was not deleted."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "У Keychain уже є інший ключ OpenAI; використовується він. Старе значення з налаштувань не видалено."
+          }
+        }
+      }
+    },
+    "Включать текст вопросов, ответов и транскрипты в файл диагностики": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Включать текст вопросов, ответов и транскрипты в файл диагностики"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Include question/answer text and transcripts in the diagnostics file"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Включати текст питань, відповідей і транскрипти у файл діагностики"
+          }
+        }
+      }
+    },
+    "Вопрос → первый текст": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вопрос → первый текст"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Question → first text"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Питання → перший текст"
+          }
+        }
+      }
+    },
+    "Вставить шаблон кейса": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вставить шаблон кейса"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Insert case template"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вставити шаблон кейсу"
+          }
+        }
+      }
+    },
+    "Выключено по умолчанию. Относится только к Recording: системный звук и микрофон сохраняются как WAV-файлы для каждой встречи. Answers никогда не пишет аудио на диск.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выключено по умолчанию. Относится только к Recording: системный звук и микрофон сохраняются как WAV-файлы для каждой встречи. Answers никогда не пишет аудио на диск."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off by default. Applies to Recording only: system audio and microphone are saved as WAV files per meeting. Answers never writes audio to disk."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вимкнено за замовчуванням. Стосується лише Recording: системний звук і мікрофон зберігаються як WAV-файли для кожної зустрічі. Answers ніколи не записує аудіо на диск."
+          }
+        }
+      }
+    },
+    "Другая (указать ID вручную)…": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Другая (указать ID вручную)…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other (enter ID manually)…"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Інша (вказати ID вручну)…"
+          }
+        }
+      }
+    },
+    "Есть изменения настроек, ещё не применённые к активной сессии.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Есть изменения настроек, ещё не применённые к активной сессии."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some settings changes are not yet applied to the active session."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Є зміни налаштувань, ще не застосовані до активної сесії."
+          }
+        }
+      }
+    },
+    "Заполняйте только правдой: пустое поле модель считает неизвестным, а не придумывает. Не вставляйте конфиденциальные данные работодателей — профиль отправляется выбранному провайдеру вместе с инструкциями.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Заполняйте только правдой: пустое поле модель считает неизвестным, а не придумывает. Не вставляйте конфиденциальные данные работодателей — профиль отправляется выбранному провайдеру вместе с инструкциями."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fill in only true facts: the model treats an empty field as unknown instead of inventing it. Do not paste confidential employer data — the profile is sent to the selected provider with the instructions."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Заповнюйте лише правдою: порожнє поле модель вважає невідомим, а не вигадує. Не вставляйте конфіденційні дані роботодавців — профіль надсилається вибраному провайдеру разом з інструкціями."
+          }
+        }
+      }
+    },
+    "Запрашивает разрешение Screen Recording. Провайдер выбирается в Настройках: OpenAI Realtime получает системный звук выбранного приложения; Anthropic Claude получает только текст, распознанный локально. Микрофон не требуется. Полный разговор не сохраняется — только показанные пары вопрос-ответ.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запрашивает разрешение Screen Recording. Провайдер выбирается в Настройках: OpenAI Realtime получает системный звук выбранного приложения; Anthropic Claude получает только текст, распознанный локально. Микрофон не требуется. Полный разговор не сохраняется — только показанные пары вопрос-ответ."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Requests the Screen Recording permission. The provider is chosen in Settings: OpenAI Realtime receives the selected app's system audio; Anthropic Claude receives only locally recognized text. No microphone needed. The full conversation is not stored — only the shown question-answer pairs."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запитує дозвіл Screen Recording. Провайдер вибирається в Налаштуваннях: OpenAI Realtime отримує системний звук вибраного застосунку; Anthropic Claude отримує лише текст, розпізнаний локально. Мікрофон не потрібен. Повна розмова не зберігається — лише показані пари питання-відповідь."
+          }
+        }
+      }
+    },
+    "Захват": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Захват"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capture"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Захоплення"
+          }
+        }
+      }
+    },
+    "Источник:": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Источник:"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Source:"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Джерело:"
+          }
+        }
+      }
+    },
+    "Ключ OpenAI перенесён из настроек приложения в Keychain.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ключ OpenAI перенесён из настроек приложения в Keychain."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The OpenAI key was moved from app settings to Keychain."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ключ OpenAI перенесено з налаштувань застосунку в Keychain."
+          }
+        }
+      }
+    },
+    "Ключ создаётся в console.anthropic.com и оплачивается отдельно; подписка Claude Code или Claude Pro/Max его не заменяет.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ключ создаётся в console.anthropic.com и оплачивается отдельно; подписка Claude Code или Claude Pro/Max его не заменяет."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The key is created at console.anthropic.com and billed separately; a Claude Code or Claude Pro/Max subscription does not replace it."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ключ створюється на console.anthropic.com і оплачується окремо; підписка Claude Code або Claude Pro/Max його не замінює."
+          }
+        }
+      }
+    },
+    "Когда отвечать": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Когда отвечать"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When to answer"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Коли відповідати"
+          }
+        }
+      }
+    },
+    "Локальная модель Whisper (для Recording и Answers через Claude)": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Локальная модель Whisper (для Recording и Answers через Claude)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local Whisper model (for Recording and Answers via Claude)"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Локальна модель Whisper (для Recording і Answers через Claude)"
+          }
+        }
+      }
+    },
+    "Модели Recording и саммари": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модели Recording и саммари"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recording and summary models"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Моделі Recording і підсумків"
+          }
+        }
+      }
+    },
+    "Модель": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модель"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Model"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модель"
+          }
+        }
+      }
+    },
+    "Модель, указанная вручную, не проверена: если провайдер её не знает или она недоступна вашему ключу, сессия остановится с понятной ошибкой. Стоимость для неё будет «неизвестно».": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модель, указанная вручную, не проверена: если провайдер её не знает или она недоступна вашему ключу, сессия остановится с понятной ошибкой. Стоимость для неё будет «неизвестно»."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A manually entered model is not verified: if the provider doesn't know it or your key can't use it, the session stops with a clear error. Its cost will show as “unknown”."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модель, вказана вручну, не перевірена: якщо провайдер її не знає або вона недоступна вашому ключу, сесія зупиниться зі зрозумілою помилкою. Вартість для неї буде «невідомо»."
+          }
+        }
+      }
+    },
+    "Мягкий порог расходов достигнут (только предупреждение).": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Мягкий порог расходов достигнут (только предупреждение)."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Soft spend threshold reached (warning only)."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "М'який поріг витрат досягнуто (лише попередження)."
+          }
+        }
+      }
+    },
+    "Наружу": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Наружу"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leaves the Mac"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Назовні"
+          }
+        }
+      }
+    },
+    "Не удалось сохранить в Keychain. Ключ не сохранён.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось сохранить в Keychain. Ключ не сохранён."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not save to Keychain. The key was not saved."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не вдалося зберегти в Keychain. Ключ не збережено."
+          }
+        }
+      }
+    },
+    "Не удалось сохранить в Keychain. Ключ не сохранён; повторите или проверьте доступ к связке ключей.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось сохранить в Keychain. Ключ не сохранён; повторите или проверьте доступ к связке ключей."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not save to Keychain. The key was not saved; retry or check keychain access."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не вдалося зберегти в Keychain. Ключ не збережено; повторіть або перевірте доступ до зв'язки ключів."
+          }
+        }
+      }
+    },
+    "Не удалось удалить ключ из Keychain.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось удалить ключ из Keychain."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not delete the key from Keychain."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не вдалося видалити ключ із Keychain."
+          }
+        }
+      }
+    },
+    "Некорректный идентификатор модели: допустимы латиница, цифры и - _ . : @, от 3 до 100 символов.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Некорректный идентификатор модели: допустимы латиница, цифры и - _ . : @, от 3 до 100 символов."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invalid model ID: Latin letters, digits and - _ . : @ are allowed, 3 to 100 characters."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Некоректний ідентифікатор моделі: допустимі латиниця, цифри та - _ . : @, від 3 до 100 символів."
+          }
+        }
+      }
+    },
+    "Области без коммерческого опыта": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Области без коммерческого опыта"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Areas without commercial experience"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Області без комерційного досвіду"
+          }
+        }
+      }
+    },
+    "Оверлей — обычное окно поверх других: при демонстрации экрана он может быть виден собеседнику. Изменение применится к следующему показу оверлея.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Оверлей — обычное окно поверх других: при демонстрации экрана он может быть виден собеседнику. Изменение применится к следующему показу оверлея."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The overlay is a regular window on top of others: it may be visible to others when you share your screen. Changes apply the next time the overlay is shown."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Оверлей — звичайне вікно поверх інших: під час демонстрації екрана його може бачити співрозмовник. Зміна застосується під час наступного показу оверлея."
+          }
+        }
+      }
+    },
+    "Описание вакансии и темы интервью": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Описание вакансии и темы интервью"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Job description and interview topics"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Опис вакансії та теми інтерв'ю"
+          }
+        }
+      }
+    },
+    "Основной стек": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Основной стек"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Primary stack"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Основний стек"
+          }
+        }
+      }
+    },
+    "Остановить сессию": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Остановить сессию"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop the session"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Зупинити сесію"
+          }
+        }
+      }
+    },
+    "Ошибки": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ошибки"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Errors"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Помилки"
+          }
+        }
+      }
+    },
+    "Перенос старого ключа OpenAI в Keychain не удался; ключ сохранён на прежнем месте и продолжает работать. Сохраните ключ заново, чтобы записать его в Keychain.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Перенос старого ключа OpenAI в Keychain не удался; ключ сохранён на прежнем месте и продолжает работать. Сохраните ключ заново, чтобы записать его в Keychain."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moving the old OpenAI key to Keychain failed; the key is kept where it was and still works. Save the key again to write it to Keychain."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Перенесення старого ключа OpenAI в Keychain не вдалося; ключ збережено на попередньому місці, і він працює. Збережіть ключ знову, щоб записати його в Keychain."
+          }
+        }
+      }
+    },
+    "По умолчанию выключено: файл диагностики содержит только режим, провайдера, модель, счётчики, задержки и коды ошибок — без аудио, текста разговора, профиля и ключей.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "По умолчанию выключено: файл диагностики содержит только режим, провайдера, модель, счётчики, задержки и коды ошибок — без аудио, текста разговора, профиля и ключей."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off by default: the diagnostics file contains only mode, provider, model, counters, latencies and error codes — no audio, conversation text, profile or keys."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "За замовчуванням вимкнено: файл діагностики містить лише режим, провайдера, модель, лічильники, затримки й коди помилок — без аудіо, тексту розмови, профілю та ключів."
+          }
+        }
+      }
+    },
+    "Подсказки": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подсказки"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hints"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Підказки"
+          }
+        }
+      }
+    },
+    "Порог на сессию, $": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Порог на сессию, $"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Threshold per session, $"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Поріг на сесію, $"
+          }
+        }
+      }
+    },
+    "Порог расходов достигнут — сессия остановлена. Запрос, уже отправленный в момент срабатывания, мог превысить порог.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Порог расходов достигнут — сессия остановлена. Запрос, уже отправленный в момент срабатывания, мог превысить порог."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spend threshold reached — the session was stopped. A request already in flight at that moment may have exceeded the threshold."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Поріг витрат досягнуто — сесію зупинено. Запит, уже надісланий у момент спрацювання, міг перевищити поріг."
+          }
+        }
+      }
+    },
+    "Порог расходов задан, но стоимость неизвестна — остановка по порогу не может сработать.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Порог расходов задан, но стоимость неизвестна — остановка по порогу не может сработать."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A spend threshold is set, but the cost is unknown — the threshold cannot stop the session."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Поріг витрат задано, але вартість невідома — зупинка за порогом не може спрацювати."
+          }
+        }
+      }
+    },
+    "При достижении": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "При достижении"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When reached"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "При досягненні"
+          }
+        }
+      }
+    },
+    "Применить": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Применить"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apply"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Застосувати"
+          }
+        }
+      }
+    },
+    "Провайдер": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Провайдер"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Provider"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Провайдер"
+          }
+        }
+      }
+    },
+    "Провайдер и модель меняются только в Passive. Сначала остановите текущую сессию (переключитесь в Passive).": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Провайдер и модель меняются только в Passive. Сначала остановите текущую сессию (переключитесь в Passive)."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Provider and model can only be changed in Passive. Stop the current session first (switch to Passive)."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Провайдер і модель змінюються лише в Passive. Спочатку зупиніть поточну сесію (перемкніться в Passive)."
+          }
+        }
+      }
+    },
+    "Провайдер и модель подсказок": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Провайдер и модель подсказок"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hint provider and model"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Провайдер і модель підказок"
+          }
+        }
+      }
+    },
+    "Профиль кандидата и вакансия (общие для провайдеров)": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Профиль кандидата и вакансия (общие для провайдеров)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Candidate profile and job (shared by providers)"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Профіль кандидата та вакансія (спільні для провайдерів)"
+          }
+        }
+      }
+    },
+    "Профиль ответа": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Профиль ответа"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answer profile"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Профіль відповіді"
+          }
+        }
+      }
+    },
+    "Разрешить Anthropic ответить резервной моделью Claude при отказе (server-side fallback)": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Разрешить Anthropic ответить резервной моделью Claude при отказе (server-side fallback)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow Anthropic to answer with a fallback Claude model on refusal (server-side fallback)"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Дозволити Anthropic відповісти резервною моделлю Claude у разі відмови (server-side fallback)"
+          }
+        }
+      }
+    },
+    "Распознавание": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Распознавание"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recognition"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Розпізнавання"
+          }
+        }
+      }
+    },
+    "Распознано:": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Распознано:"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recognized:"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Розпізнано:"
+          }
+        }
+      }
+    },
+    "Расходы": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Расходы"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spending"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Витрати"
+          }
+        }
+      }
+    },
+    "Реальные кейсы: ситуация, ограничения, решение, альтернативы, результат": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Реальные кейсы: ситуация, ограничения, решение, альтернативы, результат"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Real cases: situation, constraints, decision, alternatives, result"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Реальні кейси: ситуація, обмеження, рішення, альтернативи, результат"
+          }
+        }
+      }
+    },
+    "Реальный опыт": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Реальный опыт"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Real experience"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Реальний досвід"
+          }
+        }
+      }
+    },
+    "Сначала суть, затем детали по выбранной длине. Правила общие для обоих провайдеров.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сначала суть, затем детали по выбранной длине. Правила общие для обоих провайдеров."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Essence first, then details per the selected length. The rules are shared by both providers."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Спочатку суть, потім деталі відповідно до вибраної довжини. Правила спільні для обох провайдерів."
+          }
+        }
+      }
+    },
+    "Состояние": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Состояние"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "State"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Стан"
+          }
+        }
+      }
+    },
+    "Сохранение": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сохранение"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Storage"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Збереження"
+          }
+        }
+      }
+    },
+    "Стоимость": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Стоимость"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cost"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вартість"
+          }
+        }
+      }
+    },
+    "Тариф неизвестен — стоимость будет показана как «неизвестно».": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Тариф неизвестен — стоимость будет показана как «неизвестно»."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tariff unknown — the cost will show as “unknown”."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Тариф невідомий — вартість буде показано як «невідомо»."
+          }
+        }
+      }
+    },
+    "Только для Opus 5.5 и Sonnet 5.5. Резервная модель — тоже Anthropic; данные другому провайдеру не отправляются. Фактическая модель показывается в статусе сессии.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Только для Opus 5.5 и Sonnet 5.5. Резервная модель — тоже Anthropic; данные другому провайдеру не отправляются. Фактическая модель показывается в статусе сессии."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opus 5.5 and Sonnet 5.5 only. The fallback model is also Anthropic; no data is sent to another provider. The model that actually answered is shown in the session status."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Лише для Opus 5.5 і Sonnet 5.5. Резервна модель — теж Anthropic; дані іншому провайдеру не надсилаються. Фактична модель показується в статусі сесії."
+          }
+        }
+      }
+    },
+    "Только по нажатию": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Только по нажатию"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On demand only"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Лише за натисканням"
+          }
+        }
+      }
+    },
+    "Только предупредить": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Только предупредить"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Warn only"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Лише попередити"
+          }
+        }
+      }
+    },
+    "Формат ключа выглядит некорректным (ожидается sk-ant-…)": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Формат ключа выглядит некорректным (ожидается sk-ant-…)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The key format looks invalid (expected sk-ant-…)"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Формат ключа виглядає некоректним (очікується sk-ant-…)"
+          }
+        }
+      }
+    },
+    "Целевая роль": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Целевая роль"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Target role"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Цільова роль"
+          }
+        }
+      }
+    },
+    "Часть изменений ещё не применена к активной сессии Answers — они вступят в силу при следующем запуске Answers.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Часть изменений ещё не применена к активной сессии Answers — они вступят в силу при следующем запуске Answers."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some changes are not applied to the active Answers session yet — they take effect the next time Answers starts."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Частину змін ще не застосовано до активної сесії Answers — вони наберуть чинності під час наступного запуску Answers."
+          }
+        }
+      }
+    },
+    "Это оценка по usage и опубликованному тарифу, а не счёт. Остановка срабатывает после получения usage: запрос, уже находящийся в обработке, может превысить порог. Жёсткий денежный лимит задаётся только в консоли провайдера.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Это оценка по usage и опубликованному тарифу, а не счёт. Остановка срабатывает после получения usage: запрос, уже находящийся в обработке, может превысить порог. Жёсткий денежный лимит задаётся только в консоли провайдера."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This is an estimate from usage and the published tariff, not an invoice. The stop triggers after usage arrives: a request already being processed may exceed the threshold. A hard money limit can only be set in the provider's console."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Це оцінка за usage та опублікованим тарифом, а не рахунок. Зупинка спрацьовує після отримання usage: запит, що вже обробляється, може перевищити поріг. Жорсткий грошовий ліміт задається лише в консолі провайдера."
+          }
+        }
+      }
+    },
+    "аудио": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "аудио"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "audio"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "аудіо"
+          }
+        }
+      }
+    },
+    "аудио не сохраняется": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "аудио не сохраняется"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "audio is not saved"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "аудіо не зберігається"
+          }
+        }
+      }
+    },
+    "без usage:": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "без usage:"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "without usage:"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "без usage:"
+          }
+        }
+      }
+    },
+    "вход": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "вход"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "input"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "вхід"
+          }
+        }
+      }
+    },
+    "выключен": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "выключен"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "off"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "вимкнено"
+          }
+        }
+      }
+    },
+    "выход": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "выход"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "output"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "вихід"
+          }
+        }
+      }
+    },
+    "генерирую подсказку…": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "генерирую подсказку…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "generating a hint…"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "генерую підказку…"
+          }
+        }
+      }
+    },
+    "достигнут порог расходов": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "достигнут порог расходов"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "spend threshold reached"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "досягнуто поріг витрат"
+          }
+        }
+      }
+    },
+    "за 1M аудио-токенов на вход": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "за 1M аудио-токенов на вход"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "per 1M input audio tokens"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "за 1M вхідних аудіотокенів"
+          }
+        }
+      }
+    },
+    "за 1M токенов текста (вход/выход)": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "за 1M токенов текста (вход/выход)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "per 1M text tokens (input/output)"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "за 1M текстових токенів (вхід/вихід)"
+          }
+        }
+      }
+    },
+    "загрузка модели распознавания…": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "загрузка модели распознавания…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "loading the recognition model…"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "завантаження моделі розпізнавання…"
+          }
+        }
+      }
+    },
+    "запись в кеш": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "запись в кеш"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cache write"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "запис у кеш"
+          }
+        }
+      }
+    },
+    "запрос отклонён как некорректный (проверьте модель и параметры)": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "запрос отклонён как некорректный (проверьте модель и параметры)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "request rejected as invalid (check the model and parameters)"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "запит відхилено як некоректний (перевірте модель і параметри)"
+          }
+        }
+      }
+    },
+    "запускается/останавливается": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "запускается/останавливается"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "starting/stopping"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "запускається/зупиняється"
+          }
+        }
+      }
+    },
+    "из кеша": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "из кеша"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "from cache"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "з кешу"
+          }
+        }
+      }
+    },
+    "ключ отклонён (ошибка авторизации)": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ключ отклонён (ошибка авторизации)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "key rejected (authentication error)"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ключ відхилено (помилка авторизації)"
+          }
+        }
+      }
+    },
+    "локальное распознавание недоступно": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "локальное распознавание недоступно"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "local recognition unavailable"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "локальне розпізнавання недоступне"
+          }
+        }
+      }
+    },
+    "модель не найдена или недоступна вашей организации": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "модель не найдена или недоступна вашей организации"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "model not found or not available to your organization"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "модель не знайдено або вона недоступна вашій організації"
+          }
+        }
+      }
+    },
+    "модель отказалась отвечать": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "модель отказалась отвечать"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "the model declined to answer"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "модель відмовилася відповідати"
+          }
+        }
+      }
+    },
+    "накапливаю вопрос, ответ только по нажатию": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "накапливаю вопрос, ответ только по нажатию"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "accumulating the question, answer on demand only"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "накопичую питання, відповідь лише за натисканням"
+          }
+        }
+      }
+    },
+    "не активно": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "не активно"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "inactive"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "неактивно"
+          }
+        }
+      }
+    },
+    "не задан API-ключ": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "не задан API-ключ"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "API key not set:"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "не задано API-ключ"
+          }
+        }
+      }
+    },
+    "неизвестная ошибка": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "неизвестная ошибка"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "unknown error"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "невідома помилка"
+          }
+        }
+      }
+    },
+    "неизвестно": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "неизвестно"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "unknown"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "невідомо"
+          }
+        }
+      }
+    },
+    "неизвестно (ответов ещё не было)": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "неизвестно (ответов ещё не было)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "unknown (no answers yet)"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "невідомо (відповідей ще не було)"
+          }
+        }
+      }
+    },
+    "неизвестно (провайдер не вернул usage)": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "неизвестно (провайдер не вернул usage)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "unknown (the provider returned no usage)"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "невідомо (провайдер не повернув usage)"
+          }
+        }
+      }
+    },
+    "нет данных": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "нет данных"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "no data"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "немає даних"
+          }
+        }
+      }
+    },
+    "нет доступа к этой модели/операции для ключа": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "нет доступа к этой модели/операции для ключа"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "the key has no access to this model/operation"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "немає доступу до цієї моделі/операції для ключа"
+          }
+        }
+      }
+    },
+    "ничего (Passive)": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ничего (Passive)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "nothing (Passive)"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "нічого (Passive)"
+          }
+        }
+      }
+    },
+    "ничего, Recording работает локально": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ничего, Recording работает локально"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "nothing, Recording works locally"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "нічого, Recording працює локально"
+          }
+        }
+      }
+    },
+    "ошибка сервера": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ошибка сервера"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "server error"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "помилка сервера"
+          }
+        }
+      }
+    },
+    "ошибка:": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ошибка:"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "error:"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "помилка:"
+          }
+        }
+      }
+    },
+    "ошибок:": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ошибок:"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "errors:"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "помилок:"
+          }
+        }
+      }
+    },
+    "пары вопрос-ответ Answers и транскрипты Recording — в локальной истории;": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "пары вопрос-ответ Answers и транскрипты Recording — в локальной истории;"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answers question-answer pairs and Recording transcripts are kept in local history;"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "пари питання-відповідь Answers і транскрипти Recording — у локальній історії;"
+          }
+        }
+      }
+    },
+    "переподключений:": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "переподключений:"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "reconnects:"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "перепідключень:"
+          }
+        }
+      }
+    },
+    "повтор через": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "повтор через"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "retry in"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "повтор через"
+          }
+        }
+      }
+    },
+    "превышен лимит запросов": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "превышен лимит запросов"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "rate limit exceeded"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "перевищено ліміт запитів"
+          }
+        }
+      }
+    },
+    "проблема с оплатой или квотой аккаунта": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "проблема с оплатой или квотой аккаунта"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "billing or account quota problem"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "проблема з оплатою або квотою акаунта"
+          }
+        }
+      }
+    },
+    "проверено": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "проверено"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "verified"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "перевірено"
+          }
+        }
+      }
+    },
+    "распознаю фрагмент речи…": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "распознаю фрагмент речи…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "recognizing a speech fragment…"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "розпізнаю фрагмент мовлення…"
+          }
+        }
+      }
+    },
+    "сервис временно перегружен": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "сервис временно перегружен"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "service temporarily overloaded"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "сервіс тимчасово перевантажений"
+          }
+        }
+      }
+    },
+    "сетевая ошибка": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "сетевая ошибка"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "network error"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "мережева помилка"
+          }
+        }
+      }
+    },
+    "системный звук выбранного приложения": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "системный звук выбранного приложения"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "system audio of the selected app"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "системний звук вибраного застосунку"
+          }
+        }
+      }
+    },
+    "системный звук и микрофон": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "системный звук и микрофон"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "system audio and microphone"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "системний звук і мікрофон"
+          }
+        }
+      }
+    },
+    "слушаю, автоответ включён": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "слушаю, автоответ включён"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "listening, auto-answer on"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "слухаю, автовідповідь увімкнено"
+          }
+        }
+      }
+    },
+    "фактически ответила": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "фактически ответила"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "actually answered:"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "фактично відповіла"
+          }
+        }
+      }
+    },
+    "Без названия": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Без названия"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Untitled"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Без назви"
+          }
+        }
+      }
+    },
+    "В Answers звук распознаётся локально (WhisperKit). В Anthropic отправляется только текст: распознанная речь с момента последнего ответа, предыдущие пары вопрос-ответ, инструкции, профиль и включённые заметки «Мой опыт». Аудио не покидает Mac.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В Answers звук распознаётся локально (WhisperKit). В Anthropic отправляется только текст: распознанная речь с момента последнего ответа, предыдущие пары вопрос-ответ, инструкции, профиль и включённые заметки «Мой опыт». Аудио не покидает Mac."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In Answers, audio is transcribed locally (WhisperKit). Only text is sent to Anthropic: speech recognized since the last answer, previous question-answer pairs, the instructions, the profile and enabled “My experience” notes. Audio never leaves the Mac."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В Answers звук розпізнається локально (WhisperKit). В Anthropic надсилається лише текст: мовлення з моменту останньої відповіді, попередні пари питання-відповідь, інструкції, профіль і увімкнені нотатки «Мій досвід». Аудіо не залишає Mac."
+          }
+        }
+      }
+    },
+    "В Answers системный звук выбранного приложения непрерывно отправляется в OpenAI Realtime API вместе с инструкциями, профилем, включёнными заметками «Мой опыт» и памятью прошлых ответов. Микрофон не используется.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В Answers системный звук выбранного приложения непрерывно отправляется в OpenAI Realtime API вместе с инструкциями, профилем, включёнными заметками «Мой опыт» и памятью прошлых ответов. Микрофон не используется."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In Answers, the selected app's system audio is continuously streamed to the OpenAI Realtime API with the instructions, the profile, enabled “My experience” notes and past-answer memory. The microphone is not used."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В Answers системний звук вибраного застосунку безперервно надсилається в OpenAI Realtime API разом з інструкціями, профілем, увімкненими нотатками «Мій досвід» і пам'яттю минулих відповідей. Мікрофон не використовується."
+          }
+        }
+      }
+    },
+    "В подсказки уходит:": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В подсказки уходит:"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sent with hints:"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "У підказки йде:"
+          }
+        }
+      }
+    },
+    "Включённые заметки подставляются в каждую подсказку Answers (OpenAI и Claude) вместе с профилем. Добавьте резюме, описания проектов, реальные кейсы, свои подходы к архитектуре и AI harness. Пишите только правду — модель опирается на эти факты и не должна их додумывать.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Включённые заметки подставляются в каждую подсказку Answers (OpenAI и Claude) вместе с профилем. Добавьте резюме, описания проектов, реальные кейсы, свои подходы к архитектуре и AI harness. Пишите только правду — модель опирается на эти факты и не должна их додумывать."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enabled notes are added to every Answers hint (OpenAI and Claude) together with the profile. Add your resume, project descriptions, real cases, and your approaches to architecture and AI harnesses. Write only true facts — the model relies on them and must not embellish them."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Увімкнені нотатки додаються до кожної підказки Answers (OpenAI і Claude) разом із профілем. Додайте резюме, описи проєктів, реальні кейси, свої підходи до архітектури та AI harness. Пишіть лише правду — модель спирається на ці факти й не повинна їх домислювати."
+          }
+        }
+      }
+    },
+    "Добавить заметку": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Добавить заметку"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add note"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Додати нотатку"
+          }
+        }
+      }
+    },
+    "Изменить": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Изменить"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Змінити"
+          }
+        }
+      }
+    },
+    "Импорт файлов (.md, .txt, .pdf)…": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Импорт файлов (.md, .txt, .pdf)…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import files (.md, .txt, .pdf)…"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Імпорт файлів (.md, .txt, .pdf)…"
+          }
+        }
+      }
+    },
+    "Импортировано:": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Импортировано:"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Imported:"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Імпортовано:"
+          }
+        }
+      }
+    },
+    "Мой опыт": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Мой опыт"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My experience"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Мій досвід"
+          }
+        }
+      }
+    },
+    "Мой опыт — база знаний для подсказок": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Мой опыт — база знаний для подсказок"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My experience — knowledge base for hints"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Мій досвід — база знань для підказок"
+          }
+        }
+      }
+    },
+    "Название": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Название"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Title"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Назва"
+          }
+        }
+      }
+    },
+    "Не добавляйте конфиденциальные данные работодателей и чужие персональные данные: включённые заметки отправляются выбранному провайдеру в каждой сессии Answers. Изменения применяются со следующего запуска Answers.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не добавляйте конфиденциальные данные работодателей и чужие персональные данные: включённые заметки отправляются выбранному провайдеру в каждой сессии Answers. Изменения применяются со следующего запуска Answers."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Do not add confidential employer data or other people's personal data: enabled notes are sent to the selected provider in every Answers session. Changes apply from the next Answers start."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не додавайте конфіденційні дані роботодавців і чужі персональні дані: увімкнені нотатки надсилаються вибраному провайдеру в кожній сесії Answers. Зміни застосовуються з наступного запуску Answers."
+          }
+        }
+      }
+    },
+    "Не удалось импортировать": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось импортировать"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not import"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не вдалося імпортувати"
+          }
+        }
+      }
+    },
+    "Новая заметка": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Новая заметка"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New note"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нова нотатка"
+          }
+        }
+      }
+    },
+    "Память прошлых ответов из Истории:": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Память прошлых ответов из Истории:"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Past answers memory from History:"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Пам'ять минулих відповідей з Історії:"
+          }
+        }
+      }
+    },
+    "Пока пусто. Импортируйте резюме или добавьте заметку.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Пока пусто. Импортируйте резюме или добавьте заметку."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empty so far. Import your resume or add a note."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Поки порожньо. Імпортуйте резюме або додайте нотатку."
+          }
+        }
+      }
+    },
+    "Последние ответы из прошлых сессий добавляются в инструкции, чтобы подсказки не противоречили сказанному раньше. 0 — выключено. Эти ответы отправляются провайдеру.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Последние ответы из прошлых сессий добавляются в инструкции, чтобы подсказки не противоречили сказанному раньше. 0 — выключено. Эти ответы отправляются провайдеру."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recent answers from past sessions are added to the instructions so hints don't contradict what you said earlier. 0 turns it off. These answers are sent to the provider."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Останні відповіді з минулих сесій додаються до інструкцій, щоб підказки не суперечили сказаному раніше. 0 — вимкнено. Ці відповіді надсилаються провайдеру."
+          }
+        }
+      }
+    },
+    "выключена — не отправляется": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "выключена — не отправляется"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "disabled — not sent"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "вимкнена — не надсилається"
+          }
+        }
+      }
+    },
+    "заметок": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "заметок"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "notes"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "нотаток"
+          }
+        }
+      }
+    },
+    "заметок в подсказках:": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "заметок в подсказках:"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "notes in hints:"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "нотаток у підказках:"
+          }
+        }
+      }
+    },
+    "обрезано по лимиту:": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "обрезано по лимиту:"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "truncated by limit:"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "обрізано за лімітом:"
+          }
+        }
+      }
+    },
+    "профиль заполнен": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "профиль заполнен"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "profile filled"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "профіль заповнено"
+          }
+        }
+      }
+    },
+    "профиль пуст": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "профиль пуст"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "profile empty"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "профіль порожній"
+          }
+        }
+      }
+    },
+    "прошлых ответов в памяти:": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "прошлых ответов в памяти:"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "past answers in memory:"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "минулих відповідей у пам'яті:"
+          }
+        }
+      }
+    },
+    "символов": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "символов"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "characters"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "символів"
+          }
+        }
+      }
+    },
+    "токенов": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "токенов"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tokens"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "токенів"
+          }
+        }
+      }
     }
   }
 }
