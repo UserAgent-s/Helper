@@ -29,3 +29,8 @@
 12. `11-tests-and-latency.md`
 13. `12-release-packaging.md`
 14. `13-final-audit.md`
+15. `14-expert-domains-and-memory.md`
+16. `15-structured-hints.md`
+17. `16-remote-display.md`
+
+Этапы 14–16 добавлены 2026-11-02 и реализуют цель из `docs/product-vision.md`: мульти-эксперт с подключаемой памятью и удалённый экран. Выполняются после финального аудита 13 на отдельной ветке.

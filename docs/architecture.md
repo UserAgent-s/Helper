@@ -18,9 +18,13 @@ App (SwiftUI + AppKit NSPanel)
        -> KeychainFirstSecretStore(KeychainSecretStore, legacy UserDefaults fallback) per provider (ADR 0005)
        -> ProviderRoutingAnswersController: .answers -> AnswersModeController (OpenAI) | TranscribedAnswersModeController (Claude) (ADR 0004)
        -> OSLogLatencyRecorder: LatencyRecording                 (os_signpost/os_log, без содержимого)
+       -> SQLiteExpertDomainRepository: ExpertDomainRepository    (ADR 0006)
+       -> KnowledgeLibrary (domain actor): области + заметки + папка Knowledge/ (FSEvents-читатель в App)
+       -> HintFeed (domain actor): AnswerStreamEvent -> Hint; ProviderHintExpander: HintExpanding (ADR 0007)
+       -> RemoteDisplayServer (модуль RemoteDisplay, Network.framework): HTTP + WebSocket в локальной сети (ADR 0007)
 ```
 
-Правило зависимостей: домен (протоколы + координаторы + модели) не импортирует `ScreenCaptureKit`, `AVFoundation`, `WhisperKit`, `Network`/`URLSessionWebSocketTask`, `Security`. Эти импорты существуют только в Adapters. Домен тестируется через fake-реализации протоколов.
+Правило зависимостей: домен (протоколы + координаторы + модели) не импортирует `ScreenCaptureKit`, `AVFoundation`, `WhisperKit`, `Network`/`URLSessionWebSocketTask`, `Security`, `CoreServices` (FSEvents). Эти импорты существуют только в Adapters. Домен тестируется через fake-реализации протоколов.
 
 ## Доменные протоколы (черновой контракт типов)
 
