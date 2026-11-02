@@ -35,7 +35,12 @@ final class AppSettingsStore: @unchecked Sendable {
         static let lastKeyMigrationOutcome = "com.local.MeetingAssistant.settings.lastKeyMigrationOutcome"
         static let answersMemoryCount = "com.local.MeetingAssistant.settings.answersMemoryCount"
         static let expertDomainsSeeded = "com.local.MeetingAssistant.settings.expertDomainsSeeded"
+        static let remoteDisplayEnabled = "com.local.MeetingAssistant.settings.remoteDisplayEnabled"
+        static let remoteDisplayPort = "com.local.MeetingAssistant.settings.remoteDisplayPort"
+        static let remoteDisplayToken = "com.local.MeetingAssistant.settings.remoteDisplayToken"
     }
+
+    static let defaultRemoteDisplayPort = 8765
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -230,6 +235,37 @@ final class AppSettingsStore: @unchecked Sendable {
             knowledge: liveContext.knowledgeContext,
             recentExchanges: liveContext.recentExchanges
         )
+    }
+
+    var remoteDisplayEnabled: Bool {
+        get { defaults.bool(forKey: Keys.remoteDisplayEnabled) }
+        set { defaults.set(newValue, forKey: Keys.remoteDisplayEnabled) }
+    }
+
+    var remoteDisplayPort: Int {
+        get {
+            let stored = defaults.object(forKey: Keys.remoteDisplayPort) as? Int ?? Self.defaultRemoteDisplayPort
+            return (1_024...65_000).contains(stored) ? stored : Self.defaultRemoteDisplayPort
+        }
+        set { defaults.set((1_024...65_000).contains(newValue) ? newValue : Self.defaultRemoteDisplayPort, forKey: Keys.remoteDisplayPort) }
+    }
+
+    var remoteDisplayToken: String {
+        if let token = defaults.string(forKey: Keys.remoteDisplayToken), token.count >= 16 {
+            return token
+        }
+        let token = Self.makeRemoteDisplayToken()
+        defaults.set(token, forKey: Keys.remoteDisplayToken)
+        return token
+    }
+
+    func regenerateRemoteDisplayToken() {
+        defaults.set(Self.makeRemoteDisplayToken(), forKey: Keys.remoteDisplayToken)
+    }
+
+    static func makeRemoteDisplayToken() -> String {
+        var generator = SystemRandomNumberGenerator()
+        return (0..<3).map { _ in String(UInt64.random(in: 0...UInt64.max, using: &generator), radix: 36) }.joined().prefix(24).lowercased()
     }
 
     func expansionInstructions() -> String {

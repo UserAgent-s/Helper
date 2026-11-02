@@ -24,6 +24,12 @@
 	<string>public.app-category.productivity</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>MeetingAssistant использует микрофон только в режиме записи митинга (Recording), чтобы локально расшифровать вашу реплику. Аудио с микрофона не покидает устройство и не сохраняется в исходном виде.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>MeetingAssistant использует локальную сеть только для «Удалённого экрана»: показывает подсказки на вашем втором Mac или телефоне в той же сети, если вы включили эту функцию в настройках.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_meetinghints._tcp</string>
+	</array>
 	<key>NSHumanReadableCopyright</key>
 	<string>MeetingAssistant</string>
 	<key>LSApplicationIsAgent</key>

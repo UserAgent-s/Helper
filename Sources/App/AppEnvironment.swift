@@ -9,8 +9,13 @@ struct AppEnvironment {
     let desktopExportDirectory: URL
     let keychainNamespace: String
     let isIsolated: Bool
+    let isTestHost: Bool
 
-    static func isolated(root rootURL: URL, suffix: String) -> AppEnvironment {
+    static func detectsTestHost(_ processInfo: ProcessInfo = .processInfo) -> Bool {
+        processInfo.environment["XCTestConfigurationFilePath"] != nil || processInfo.environment["XCTestSessionIdentifier"] != nil
+    }
+
+    static func isolated(root rootURL: URL, suffix: String, isTestHost: Bool = detectsTestHost()) -> AppEnvironment {
         try? FileManager.default.createDirectory(at: rootURL, withIntermediateDirectories: true)
         let suiteName = "com.local.MeetingAssistant.\(suffix)"
         return AppEnvironment(
@@ -19,15 +24,16 @@ struct AppEnvironment {
             dataDirectory: rootURL.appendingPathComponent("MeetingAssistant", isDirectory: true),
             desktopExportDirectory: rootURL.appendingPathComponent("Desktop", isDirectory: true),
             keychainNamespace: "com.local.MeetingAssistant.\(suffix)",
-            isIsolated: true
+            isIsolated: true,
+            isTestHost: isTestHost
         )
     }
 
     static func current(processInfo: ProcessInfo = .processInfo) -> AppEnvironment {
         if let root = processInfo.environment[isolatedRootVariable], !root.isEmpty {
-            return isolated(root: URL(fileURLWithPath: root, isDirectory: true), suffix: "isolated")
+            return isolated(root: URL(fileURLWithPath: root, isDirectory: true), suffix: "isolated", isTestHost: detectsTestHost(processInfo))
         }
-        if processInfo.environment["XCTestConfigurationFilePath"] != nil || processInfo.environment["XCTestSessionIdentifier"] != nil {
+        if detectsTestHost(processInfo) {
             let root = FileManager.default.temporaryDirectory.appendingPathComponent("MeetingAssistantTestHost", isDirectory: true)
             return isolated(root: root, suffix: "testhost")
         }
@@ -39,7 +45,8 @@ struct AppEnvironment {
             dataDirectory: appSupport.appendingPathComponent("MeetingAssistant", isDirectory: true),
             desktopExportDirectory: desktop,
             keychainNamespace: "com.local.MeetingAssistant",
-            isIsolated: false
+            isIsolated: false,
+            isTestHost: false
         )
     }
 }

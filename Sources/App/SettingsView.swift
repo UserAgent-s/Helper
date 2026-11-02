@@ -100,6 +100,10 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
+            if let remote = viewModel.remoteDisplay {
+                RemoteDisplaySettingsSection(coordinator: remote)
+            }
+
             Section(loc("Модели Recording и саммари")) {
                 TextField(loc("Whisper модель"), text: $viewModel.whisperModelID)
                 TextField(loc("Модель саммари"), text: $viewModel.summaryModelID)
@@ -328,5 +332,69 @@ struct SettingsView: View {
         case .denied: loc("отклонено")
         case .notDetermined: loc("не запрошено")
         }
+    }
+}
+
+struct RemoteDisplaySettingsSection: View {
+    @Bindable var coordinator: RemoteDisplayCoordinator
+    @State private var portText = ""
+
+    var body: some View {
+        Section(loc("Удалённый экран (другой Mac или телефон в той же сети)")) {
+            Toggle(loc("Показывать подсказки на другом устройстве"), isOn: $coordinator.isEnabled)
+            HStack {
+                Text(loc("Порт"))
+                TextField("", text: $portText)
+                    .frame(width: 90)
+                    .onSubmit { applyPort() }
+                Button(loc("Применить")) { applyPort() }
+                    .disabled(Int(portText) == coordinator.port)
+                Spacer()
+                Text(statusText)
+                    .font(.caption)
+                    .foregroundStyle(coordinator.startError == nil ? Color.secondary : Color.red)
+            }
+            if coordinator.status.isRunning {
+                ForEach(coordinator.urls, id: \.absoluteString) { url in
+                    HStack {
+                        Text(url.absoluteString)
+                            .font(.system(.caption, design: .monospaced))
+                            .textSelection(.enabled)
+                        Spacer()
+                        Button(loc("Копировать")) {
+                            NSPasteboard.general.clearContents()
+                            NSPasteboard.general.setString(url.absoluteString, forType: .string)
+                        }
+                        Button(loc("Открыть")) { NSWorkspace.shared.open(url) }
+                    }
+                }
+                if let image = coordinator.qrImage {
+                    Image(nsImage: image)
+                        .interpolation(.none)
+                        .resizable()
+                        .frame(width: 160, height: 160)
+                }
+                Button(loc("Перевыпустить токен сопряжения")) { coordinator.regenerateToken() }
+            }
+            Text(loc("Откройте ссылку в браузере второго устройства в той же Wi‑Fi сети. Любой, кто знает ссылку с токеном и находится в вашей сети, видит подсказки и может переключать режимы; передача идёт без шифрования — не включайте в публичных сетях. Токен и текст подсказок не пишутся в логи."))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .onAppear { portText = String(coordinator.port) }
+    }
+
+    private var statusText: String {
+        if let error = coordinator.startError { return error }
+        guard coordinator.status.isRunning else { return loc("выключен") }
+        let clients = coordinator.status.clientCount
+        return loc("работает · подключено устройств:") + " \(clients)"
+    }
+
+    private func applyPort() {
+        guard let value = Int(portText), (1_024...65_000).contains(value) else {
+            portText = String(coordinator.port)
+            return
+        }
+        coordinator.port = value
     }
 }

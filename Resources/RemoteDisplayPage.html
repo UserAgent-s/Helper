@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>MeetingAssistant · подсказки</title>
+<style>
+  :root {
+    --bg: #f4f5f7; --panel: #ffffff; --text: #16181d; --muted: #6b7280; --line: #e3e5ea;
+    --accent: #2f6fed; --accent-text: #ffffff; --warn: #c2410c; --ok: #15803d; --stream: #b45309;
+    --selected: #e8efff; --radius: 14px; --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f1115; --panel: #171a21; --text: #f3f4f6; --muted: #9aa3b2; --line: #262b35; --accent: #5b8cff; --selected: #1d2740; --stream: #f59e0b; --ok: #34d399; --warn: #fb923c; }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); }
+  body { display: flex; flex-direction: column; min-height: 100vh; }
+  header { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding: 12px 18px; border-bottom: 1px solid var(--line); background: var(--panel); position: sticky; top: 0; z-index: 5; }
+  header h1 { font-size: 17px; margin: 0; font-weight: 600; letter-spacing: 0.2px; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 12.5px; background: var(--bg); border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+  .pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .pill.ok .dot { background: var(--ok); } .pill.warn .dot { background: var(--warn); } .pill.stream .dot { background: var(--stream); animation: blink 1s infinite; }
+  @keyframes blink { 50% { opacity: 0.3; } }
+  .spacer { flex: 1; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  button { font: inherit; font-size: 14px; padding: 8px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--text); cursor: pointer; }
+  button.primary { background: var(--accent); color: var(--accent-text); border-color: transparent; font-weight: 600; }
+  button:disabled { opacity: 0.45; cursor: default; }
+  main { flex: 1; display: grid; grid-template-columns: minmax(320px, 2fr) minmax(360px, 3fr); gap: 16px; padding: 16px 18px 24px; max-width: 1600px; width: 100%; margin: 0 auto; }
+  section { min-width: 0; }
+  .feed { display: flex; flex-direction: column; gap: 10px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; cursor: pointer; transition: border-color .15s, background .15s; }
+  .card:hover { border-color: var(--accent); }
+  .card.selected { background: var(--selected); border-color: var(--accent); }
+  .card .meta { display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--muted); margin-bottom: 6px; flex-wrap: wrap; }
+  .card .q { font-size: 14px; color: var(--muted); margin-bottom: 6px; }
+  .card .a { font-size: 17px; line-height: 1.4; white-space: pre-wrap; word-wrap: break-word; }
+  .card.streaming .a::after { content: "▍"; color: var(--stream); animation: blink 1s infinite; }
+  .tag { font-size: 11px; padding: 2px 7px; border-radius: 6px; background: var(--bg); border: 1px solid var(--line); }
+  .detail { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 22px; position: sticky; top: 72px; max-height: calc(100vh - 96px); overflow: auto; }
+  .detail h2 { margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; }
+  .detail .question { font-size: 17px; line-height: 1.45; margin-bottom: 18px; white-space: pre-wrap; }
+  .detail .answer { font-size: 22px; line-height: 1.45; margin-bottom: 22px; white-space: pre-wrap; word-wrap: break-word; }
+  .detail .expansion { font-size: 17px; line-height: 1.55; white-space: pre-wrap; word-wrap: break-word; border-top: 1px solid var(--line); padding-top: 16px; }
+  .detail .status { font-size: 13px; color: var(--muted); margin-top: 8px; }
+  .empty { color: var(--muted); font-size: 15px; padding: 24px; text-align: center; }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 10; }
+  .toast.show { opacity: 1; }
+  .auth { padding: 40px 20px; max-width: 520px; margin: 40px auto; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
+  .auth input { font: inherit; font-size: 16px; width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text); margin: 12px 0; }
+  .hidden { display: none !important; }
+  @media (max-width: 800px) {
+    main { grid-template-columns: 1fr; padding: 12px; }
+    .detail { position: static; max-height: none; order: -1; }
+    .detail .answer { font-size: 19px; }
+    header { padding: 10px 12px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>MeetingAssistant</h1>
+  <span id="conn" class="pill"><span class="dot"></span><span id="connText">подключение…</span></span>
+  <span id="mode" class="pill"><span class="dot"></span><span id="modeText">—</span></span>
+  <span id="model" class="pill hidden"><span id="modelText"></span></span>
+  <span class="spacer"></span>
+  <div class="actions">
+    <button id="btnAnswer" class="primary" title="A">Ответить сейчас</button>
+    <button id="btnReset" title="R">Сбросить контекст</button>
+    <button id="btnMode">Включить Answers</button>
+  </div>
+</header>
+<div id="auth" class="auth hidden">
+  <h2>Нужен код сопряжения</h2>
+  <p>Откройте ссылку из настроек MeetingAssistant («Удалённый экран») или введите токен вручную.</p>
+  <input id="tokenInput" placeholder="токен сопряжения" autocomplete="off">
+  <button id="tokenSubmit" class="primary">Подключиться</button>
+</div>
+<main id="main">
+  <section>
+    <div id="feed" class="feed"></div>
+    <div id="feedEmpty" class="empty">Подсказок пока нет. Запустите Answers на Mac — ответы появятся здесь.</div>
+  </section>
+  <section>
+    <div id="detail" class="detail">
+      <div id="detailEmpty" class="empty">Выберите подсказку слева, чтобы увидеть вопрос, ответ и раскрытие.</div>
+      <div id="detailBody" class="hidden">
+        <h2>Вопрос</h2>
+        <div id="dQuestion" class="question"></div>
+        <h2>Подсказка</h2>
+        <div id="dAnswer" class="answer"></div>
+        <div class="actions" style="margin-bottom:10px">
+          <button id="btnExpand" class="primary" title="E">Подробнее</button>
+          <button id="btnFollow">К последней</button>
+        </div>
+        <div id="dExpansionWrap" class="hidden">
+          <h2>Раскрытие</h2>
+          <div id="dExpansion" class="expansion"></div>
+          <div id="dExpansionStatus" class="status"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+<div id="toast" class="toast"></div>
+<script>
+(function () {
+  const WS_PORT = "__WS_PORT__";
+  const params = new URLSearchParams(location.search);
+  let token = params.get("t") || sessionStorage.getItem("ma.token") || "";
+  if (params.get("t")) { sessionStorage.setItem("ma.token", token); history.replaceState(null, "", location.pathname); }
+
+  const state = { hints: [], session: null, selectedID: null, follow: true, socket: null, backoff: 500, authFailed: false };
+  const el = (id) => document.getElementById(id);
+  const feed = el("feed"), feedEmpty = el("feedEmpty");
+  const phaseLabels = { inactive: "не активно", starting: "запуск…", collectingContext: "слушаю", manualResponsePending: "жду ответ…", streaming: "отвечаю…", completed: "готово" };
+  const modeLabels = { passive: "Passive", answers: "Answers", recording: "Recording" };
+  const providerLabels = { openAIRealtime: "OpenAI Realtime", anthropicClaude: "Claude" };
+
+  const errorLabels = { missing_api_key: "На Mac не задан API-ключ провайдера", permission_screen_recording: "На Mac нет разрешения Screen Recording", permission_microphone: "На Mac нет разрешения Microphone", target_app_not_running: "Выбранное приложение-источник звука не запущено", authentication: "Ключ провайдера отклонён", billing: "Проблема с оплатой у провайдера", network: "Сетевая ошибка на Mac", unknown: "Не удалось запустить режим на Mac" };
+  function errorLabel(code) { return errorLabels[code] || ("Ошибка на Mac: " + code); }
+  function toast(text) { const t = el("toast"); t.textContent = text; t.classList.add("show"); clearTimeout(toast.timer); toast.timer = setTimeout(() => t.classList.remove("show"), 2200); }
+  function timeLabel(iso) { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); }
+  function send(obj) { if (state.socket && state.socket.readyState === 1) state.socket.send(JSON.stringify(obj)); }
+
+  function connect() {
+    if (!token) { showAuth(); return; }
+    setConn("warn", "подключение…");
+    const url = (location.protocol === "https:" ? "wss://" : "ws://") + location.hostname + ":" + WS_PORT;
+    let ws;
+    try { ws = new WebSocket(url); } catch (e) { scheduleReconnect(); return; }
+    state.socket = ws;
+    ws.onopen = () => { state.authFailed = false; ws.send(JSON.stringify({ type: "auth", token })); };
+    ws.onmessage = (ev) => { let msg; try { msg = JSON.parse(ev.data); } catch (e) { return; } handle(msg); };
+    ws.onclose = () => { state.socket = null; if (state.authFailed) { showAuth(); return; } setConn("warn", "нет связи, переподключение…"); scheduleReconnect(); };
+    ws.onerror = () => { try { ws.close(); } catch (e) {} };
+  }
+  function scheduleReconnect() { clearTimeout(connect.timer); connect.timer = setTimeout(connect, state.backoff); state.backoff = Math.min(state.backoff * 1.6, 8000); }
+  function showAuth() { el("auth").classList.remove("hidden"); el("main").classList.add("hidden"); setConn("warn", "нужен токен"); }
+  function hideAuth() { el("auth").classList.add("hidden"); el("main").classList.remove("hidden"); }
+  function setConn(kind, text) { const c = el("conn"); c.className = "pill " + kind; el("connText").textContent = text; }
+
+  function handle(msg) {
+    switch (msg.type) {
+      case "hello": state.backoff = 500; hideAuth(); setConn("ok", "подключено"); break;
+      case "auth.failed": state.authFailed = true; sessionStorage.removeItem("ma.token"); token = ""; toast("Неверный токен сопряжения"); break;
+      case "snapshot": state.hints = msg.hints || []; state.session = msg.session; if (state.follow) selectLatest(); render(); renderSession(); break;
+      case "hint.started": upsert(msg.hint); if (state.follow) state.selectedID = msg.hint.id; render(); break;
+      case "hint.updated": upsert(msg.hint); render(); break;
+      case "hint.completed": upsert(msg.hint); if (state.follow) state.selectedID = msg.hint.id; render(); break;
+      case "hint.expansion": { const h = state.hints.find(x => x.id === msg.hintID); if (h) { h.expansion = msg.expansion; render(); } break; }
+      case "session": { const previous = state.session && state.session.error; state.session = msg.session; renderSession(); if (msg.session && msg.session.error && msg.session.error !== previous) toast(errorLabel(msg.session.error)); break; }
+      case "toast": toast(msg.code === "noContext" ? "Вопрос ещё не прозвучал — контекст пуст" : msg.code === "expansionUnavailable" ? "Раскрытие недоступно" : msg.code); break;
+      case "pong": break;
+    }
+  }
+  function upsert(hint) { const i = state.hints.findIndex(x => x.id === hint.id); if (i >= 0) state.hints[i] = hint; else state.hints.push(hint); if (state.hints.length > 200) state.hints.splice(0, state.hints.length - 200); }
+  function selectLatest() { const last = state.hints[state.hints.length - 1]; state.selectedID = last ? last.id : null; }
+  function selected() { return state.hints.find(x => x.id === state.selectedID) || null; }
+
+  function render() {
+    feed.innerHTML = "";
+    const ordered = state.hints.slice().reverse();
+    feedEmpty.classList.toggle("hidden", ordered.length > 0);
+    for (const h of ordered) {
+      const card = document.createElement("div");
+      card.className = "card" + (h.id === state.selectedID ? " selected" : "") + (h.status === "streaming" ? " streaming" : "");
+      const meta = document.createElement("div"); meta.className = "meta";
+      meta.textContent = timeLabel(h.createdAt);
+      if (h.fromPreviousSession) { const tag = document.createElement("span"); tag.className = "tag"; tag.textContent = "прошлая сессия"; meta.appendChild(tag); }
+      if (h.status === "failed") { const tag = document.createElement("span"); tag.className = "tag"; tag.textContent = "прервано"; meta.appendChild(tag); }
+      if (h.expansion && h.expansion.status === "completed") { const tag = document.createElement("span"); tag.className = "tag"; tag.textContent = "есть раскрытие"; meta.appendChild(tag); }
+      card.appendChild(meta);
+      if (h.question) { const q = document.createElement("div"); q.className = "q"; q.textContent = h.question; card.appendChild(q); }
+      const a = document.createElement("div"); a.className = "a"; a.textContent = h.text || ""; card.appendChild(a);
+      card.onclick = () => { state.selectedID = h.id; state.follow = (ordered[0] && ordered[0].id === h.id); render(); };
+      feed.appendChild(card);
+    }
+    renderDetail();
+  }
+  function renderDetail() {
+    const h = selected();
+    el("detailEmpty").classList.toggle("hidden", !!h);
+    el("detailBody").classList.toggle("hidden", !h);
+    if (!h) return;
+    el("dQuestion").textContent = h.question || "Вопрос ещё распознаётся…";
+    el("dAnswer").textContent = h.text || "";
+    const exp = h.expansion;
+    el("dExpansionWrap").classList.toggle("hidden", !exp);
+    if (exp) {
+      el("dExpansion").textContent = exp.text || "";
+      el("dExpansionStatus").textContent = exp.status === "streaming" ? "генерирую…" : exp.status === "failed" ? "ошибка: " + (exp.error || "неизвестно") : "";
+    }
+    el("btnExpand").disabled = !(h.status === "completed" && (!exp || exp.status === "failed"));
+    el("btnFollow").classList.toggle("hidden", state.follow);
+  }
+  function renderSession() {
+    const s = state.session; const m = el("mode");
+    if (!s) { m.className = "pill"; el("modeText").textContent = "—"; return; }
+    const streaming = s.phase === "streaming" || s.phase === "manualResponsePending";
+    m.className = "pill " + (s.mode === "answers" ? (streaming ? "stream" : "ok") : "");
+    el("modeText").textContent = (modeLabels[s.mode] || s.mode) + (s.mode === "answers" ? " · " + (phaseLabels[s.phase] || s.phase) : "");
+    const hasModel = s.provider || s.modelID;
+    el("model").classList.toggle("hidden", !hasModel);
+    if (hasModel) el("modelText").textContent = [providerLabels[s.provider] || s.provider, s.modelID, (s.expertAreas || []).join(", ")].filter(Boolean).join(" · ");
+    el("btnMode").textContent = s.mode === "answers" ? "Остановить (Passive)" : "Включить Answers";
+    el("btnAnswer").disabled = s.mode !== "answers";
+    el("btnReset").disabled = s.mode !== "answers";
+  }
+
+  el("btnAnswer").onclick = () => send({ type: "answer_now" });
+  el("btnReset").onclick = () => send({ type: "reset_context" });
+  el("btnMode").onclick = () => send({ type: "set_mode", mode: state.session && state.session.mode === "answers" ? "passive" : "answers" });
+  el("btnExpand").onclick = () => { const h = selected(); if (h) send({ type: "expand", hintID: h.id }); };
+  el("btnFollow").onclick = () => { state.follow = true; selectLatest(); render(); };
+  el("tokenSubmit").onclick = () => { token = el("tokenInput").value.trim(); if (!token) return; sessionStorage.setItem("ma.token", token); hideAuth(); state.backoff = 500; connect(); };
+  document.addEventListener("keydown", (e) => {
+    if (e.target && e.target.tagName === "INPUT") return;
+    if (e.key === "a" || e.key === "A" || e.key === "ф" || e.key === "Ф") el("btnAnswer").click();
+    if (e.key === "e" || e.key === "E" || e.key === "у" || e.key === "У") el("btnExpand").click();
+    if (e.key === "r" || e.key === "R" || e.key === "к" || e.key === "К") el("btnReset").click();
+  });
+  setInterval(() => send({ type: "ping" }), 25000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && !state.socket) { state.backoff = 500; connect(); } });
+  connect();
+})();
+</script>
+</body>
+</html>

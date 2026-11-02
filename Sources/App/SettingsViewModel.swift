@@ -68,6 +68,7 @@ final class SettingsViewModel {
     private let overlayPreferences: OverlayPreferencesStore
     let modeViewModel: ModeSwitcherViewModel
     let sessionStatus: SessionStatusViewModel
+    let remoteDisplay: RemoteDisplayCoordinator?
 
     let openAIKey = APIKeyFieldState(provider: .openAIRealtime)
     let anthropicKey = APIKeyFieldState(provider: .anthropicClaude)
@@ -92,8 +93,10 @@ final class SettingsViewModel {
         recordingsDirectory: URL,
         modeViewModel: ModeSwitcherViewModel,
         sessionStatus: SessionStatusViewModel,
-        overlayPreferences: OverlayPreferencesStore
+        overlayPreferences: OverlayPreferencesStore,
+        remoteDisplay: RemoteDisplayCoordinator? = nil
     ) {
+        self.remoteDisplay = remoteDisplay
         self.settingsStore = settingsStore
         self.secretStores = secretStores
         self.preferredAudioSource = preferredAudioSource

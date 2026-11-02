@@ -9,6 +9,7 @@ import SecurityStore
 import Diagnostics
 import Summary
 import OverlayReducer
+import RemoteDisplay
 
 struct TelemetryLatencyRecorder: LatencyRecording {
     let base: InMemoryLatencyRecorder
@@ -67,6 +68,7 @@ final class CompositionRoot {
     let transcribedAnswersModeController: TranscribedAnswersModeController
     let answersRouter: ProviderRoutingAnswersController
     let hintFeed: HintFeed
+    let remoteDisplay: RemoteDisplayCoordinator
     let answerOverlayViewModel: AnswerOverlayViewModel
     let recordingTranscriptViewModel: RecordingTranscriptViewModel
     let historyViewModel: HistoryViewModel
@@ -279,13 +281,23 @@ final class CompositionRoot {
             sessionStatus: sessionStatusViewModel
         )
         self.knowledgeBaseViewModel = knowledgeBaseViewModel
-        if !environment.isIsolated {
+        if !environment.isTestHost {
             knowledgeFolderWatcher.start { [weak knowledgeBaseViewModel] in
                 Task { @MainActor in
                     await knowledgeBaseViewModel?.syncFolder()
                 }
             }
         }
+        let remoteDisplay = RemoteDisplayCoordinator(
+            hintFeed: hintFeed,
+            manualAnswerTrigger: manualAnswerTrigger,
+            answersController: router,
+            modeCoordinator: modeCoordinator,
+            settingsStore: settingsStore,
+            pageHTML: RemoteDisplayCoordinator.loadPageHTML(),
+            bonjourName: environment.isTestHost ? nil : "MeetingAssistant"
+        )
+        self.remoteDisplay = remoteDisplay
         settingsViewModel = SettingsViewModel(
             settingsStore: settingsStore,
             secretStores: secretStores,
@@ -294,8 +306,12 @@ final class CompositionRoot {
             recordingsDirectory: recordingsDirectory,
             modeViewModel: modeViewModel,
             sessionStatus: sessionStatusViewModel,
-            overlayPreferences: OverlayPreferencesStore(defaults: environment.defaults)
+            overlayPreferences: OverlayPreferencesStore(defaults: environment.defaults),
+            remoteDisplay: remoteDisplay
         )
+        if !environment.isTestHost {
+            Task { await remoteDisplay.applySettings() }
+        }
 
         let meetingRepository = self.meetingRepository
         Task {

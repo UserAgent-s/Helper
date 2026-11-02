@@ -14,6 +14,17 @@ public enum ModeFailureReason: Sendable, Equatable {
     case noControllerRegistered
     case provider(AnswerProviderError)
     case unknown
+
+    public var diagnosticCode: String {
+        switch self {
+        case .permissionDenied(.screenRecording): "permission_screen_recording"
+        case .permissionDenied(.microphone): "permission_microphone"
+        case .targetApplicationNotRunning: "target_app_not_running"
+        case .noControllerRegistered: "no_controller"
+        case .provider(let error): error.diagnosticCode
+        case .unknown: "unknown"
+        }
+    }
 }
 
 public protocol AnswerProviderErrorConvertible {

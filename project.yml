@@ -25,6 +25,7 @@ targets:
       - path: Sources/HistoryUI
       - path: Resources/Localizable.xcstrings
       - path: Resources/Assets.xcassets
+      - path: Resources/RemoteDisplayPage.html
     settings:
       groups:
         - versioning
@@ -72,6 +73,8 @@ targets:
         product: Summary
       - package: MeetingAssistantCore
         product: OverlayReducer
+      - package: MeetingAssistantCore
+        product: RemoteDisplay
 
   MeetingAssistantTests:
     type: bundle.unit-test

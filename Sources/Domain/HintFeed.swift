@@ -201,14 +201,24 @@ public actor HintFeed {
 
     nonisolated public func events() -> AsyncStream<HintFeedEvent> {
         let (stream, continuation) = AsyncStream<HintFeedEvent>.makeStream()
-        Task { [weak self] in
-            guard let self else {
-                continuation.finish()
-                return
+        let relay = broadcaster.subscribe()
+        let forwarder = Task { [weak self] in
+            if let self {
+                let (hints, session) = await self.snapshotState()
+                continuation.yield(.snapshot(hints: hints, session: session))
             }
-            await self.attach(continuation)
+            for await event in relay {
+                if Task.isCancelled { break }
+                continuation.yield(event)
+            }
+            continuation.finish()
         }
+        continuation.onTermination = { _ in forwarder.cancel() }
         return stream
+    }
+
+    private func snapshotState() -> ([Hint], HintSessionState) {
+        (hints, session)
     }
 
     public var currentHints: [Hint] { hints }
@@ -246,18 +256,6 @@ public actor HintFeed {
             }
             await self?.finishExpansion(hintID: hintID, expansion)
         }
-    }
-
-    private func attach(_ continuation: AsyncStream<HintFeedEvent>.Continuation) {
-        continuation.yield(.snapshot(hints: hints, session: session))
-        let relay = broadcaster.subscribe()
-        let forwarder = Task {
-            for await event in relay {
-                continuation.yield(event)
-            }
-            continuation.finish()
-        }
-        continuation.onTermination = { _ in forwarder.cancel() }
     }
 
     private func handle(_ event: AnswerStreamEvent) {
@@ -320,7 +318,7 @@ public actor HintFeed {
 
     private func applyMode(_ state: ModeState) {
         session.mode = state.mode
-        session.errorDescription = state.userFacingError.map { String(describing: $0) }
+        session.errorDescription = state.userFacingError?.diagnosticCode
         switch (state.mode, state.phase) {
         case (.answers, .starting):
             session.phase = .starting

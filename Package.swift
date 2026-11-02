@@ -15,6 +15,7 @@ let package = Package(
         .library(name: "Diagnostics", targets: ["Diagnostics"]),
         .library(name: "Summary", targets: ["Summary"]),
         .library(name: "OverlayReducer", targets: ["OverlayReducer"]),
+        .library(name: "RemoteDisplay", targets: ["RemoteDisplay"]),
     ],
     dependencies: [
         // Точная версия закреплена (v1.1.0, последний стабильный релиз на 2026-08-22).
@@ -75,6 +76,11 @@ let package = Package(
             dependencies: ["Domain"],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
+        .target(
+            name: "RemoteDisplay",
+            dependencies: ["Domain"],
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
         .testTarget(
             name: "DomainTests",
             dependencies: ["Domain"],
@@ -123,6 +129,11 @@ let package = Package(
         .testTarget(
             name: "DiagnosticsTests",
             dependencies: ["Diagnostics"],
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .testTarget(
+            name: "RemoteDisplayTests",
+            dependencies: ["RemoteDisplay"],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
     ]

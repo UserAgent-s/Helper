@@ -252,6 +252,20 @@ private func makePair(id: UUID = UUID(), question: String?, answer: String, stat
         #expect(inactive)
     }
 
+    @Test func modeFailureIsExposedAsShortDiagnosticCode() async {
+        let session = FakeAnswerSession()
+        let modes = EventBroadcaster<ModeState>()
+        let feed = HintFeed(answers: session)
+        await feed.start(modeUpdates: modes.subscribe())
+        let collector = HintEventCollector()
+        await collector.start(feed.events())
+        modes.yield(ModeState(mode: .passive, phase: .idle, startedAt: nil, userFacingError: .provider(.missingAPIKey(.openAIRealtime))))
+        let seen = await collector.waitUntil { events in events.contains { if case .sessionChanged(let state) = $0 { return state.errorDescription == "missing_api_key" }; return false } }
+        #expect(seen)
+        #expect(ModeFailureReason.permissionDenied(.screenRecording).diagnosticCode == "permission_screen_recording")
+        #expect(ModeFailureReason.targetApplicationNotRunning(bundleID: "x").diagnosticCode == "target_app_not_running")
+    }
+
     @Test func noContextProducesNotice() async {
         let session = FakeAnswerSession()
         let feed = HintFeed(answers: session)

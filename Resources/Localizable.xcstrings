@@ -7729,6 +7729,236 @@
           }
         }
       }
+    },
+    "Удалённый экран (другой Mac или телефон в той же сети)": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Удалённый экран (другой Mac или телефон в той же сети)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remote display (another Mac or phone on the same network)"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Віддалений екран (інший Mac або телефон у тій самій мережі)"
+          }
+        }
+      }
+    },
+    "Показывать подсказки на другом устройстве": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показывать подсказки на другом устройстве"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show hints on another device"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показувати підказки на іншому пристрої"
+          }
+        }
+      }
+    },
+    "Порт": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Порт"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Port"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Порт"
+          }
+        }
+      }
+    },
+    "Открыть": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Открыть"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Відкрити"
+          }
+        }
+      }
+    },
+    "Перевыпустить токен сопряжения": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Перевыпустить токен сопряжения"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regenerate pairing token"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Перевипустити токен сполучення"
+          }
+        }
+      }
+    },
+    "Откройте ссылку в браузере второго устройства в той же Wi‑Fi сети. Любой, кто знает ссылку с токеном и находится в вашей сети, видит подсказки и может переключать режимы; передача идёт без шифрования — не включайте в публичных сетях. Токен и текст подсказок не пишутся в логи.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Откройте ссылку в браузере второго устройства в той же Wi‑Fi сети. Любой, кто знает ссылку с токеном и находится в вашей сети, видит подсказки и может переключать режимы; передача идёт без шифрования — не включайте в публичных сетях. Токен и текст подсказок не пишутся в логи."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open the link in the browser of a second device on the same Wi‑Fi network. Anyone who knows the link with the token and is on your network can see the hints and switch modes; the traffic is unencrypted — do not enable this on public networks. The token and hint text are never logged."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Відкрийте посилання в браузері другого пристрою в тій самій Wi‑Fi мережі. Будь-хто, хто знає посилання з токеном і перебуває у вашій мережі, бачить підказки та може перемикати режими; передача йде без шифрування — не вмикайте в публічних мережах. Токен і текст підказок не пишуться в логи."
+          }
+        }
+      }
+    },
+    "работает · подключено устройств:": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "работает · подключено устройств:"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "running · devices connected:"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "працює · підключено пристроїв:"
+          }
+        }
+      }
+    },
+    "сервер уже запущен": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "сервер уже запущен"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "server is already running"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "сервер уже запущено"
+          }
+        }
+      }
+    },
+    "недопустимый порт": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "недопустимый порт"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "invalid port"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "недопустимий порт"
+          }
+        }
+      }
+    },
+    "не удалось открыть порт (возможно, занят):": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "не удалось открыть порт (возможно, занят):"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "could not open the port (it may be in use):"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "не вдалося відкрити порт (можливо, зайнятий):"
+          }
+        }
+      }
     }
   }
 }
