@@ -719,3 +719,49 @@ Task { [answersController] in await answersController.stop(); try? await answers
 **Команды проверки:** `swift build --build-tests` на исходном дереве — успешно (базовая линия перед этапом 14).
 
 **Оставшиеся риски:** этапы 14–16 ещё не реализованы; этапы 17–18 потребуют смены контракта.
+
+---
+
+## 2026-11-02 — Этап 14: профильные области и подключаемая память (ADR 0006)
+
+**Изменённые компоненты:**
+- Domain: `ExpertDomain`, `ExpertDomainRepository`, `ExpertDomainPresets` (три встроенные области с фиксированными UUID и текстами прежних профилей, `seedPlan` с переносом `LegacyAnswerProfile`), `KnowledgeNote.domainID`/`origin`, `KnowledgeContextBuilder.build(_:domains:budgetCharacters:)`, `KnowledgeLibrary` (actor: сидирование, синхронизация папки, снимок), `KnowledgeFolderSyncPlan` (чистый план синхронизации, детерминированный id заметки от пути), `LiveAnswerContext.domains`, `AnswerInstructionsBuilder.expertAreasSection` вместо `InterviewAnswerProfile`, `AnswerSessionConfiguration.expertAreas`.
+- Persistence: миграция v3 (`expert_domains`, `knowledge_notes.domain_id`/`origin`), `SQLiteExpertDomainRepository` (удаление области обнуляет привязку заметок в одной транзакции), `SQLiteConnection.runInTransaction`.
+- App: `KnowledgeFolderReader` (`.md`/`.txt`/`.markdown`, корень + один уровень подпапок, лимит 2 МБ), `KnowledgeFolderWatcher` (FSEvents, задержка 1 с, выключен в изолированном окружении тестов), окно «Память» (области с переключателями и редактором, папка знаний, назначение области заметке), настройка «Профиль ответа» удалена, строка статуса «Память», диагностика отдаёт `expertAreas`.
+- Localizable.xcstrings: 27 новых строк (ru/en/uk). README, `docs/privacy.md`.
+
+**Неочевидные решения:**
+- Имя подпапки сопоставляется с областью по ключу без регистра, пунктуации и диакритики (`php-backend` → «PHP / Backend»): встроенное имя содержит «/», которого не может быть в имени папки.
+- Заметки папки нельзя редактировать и переназначать в UI: источник правды — файл; можно только выключить. Выключенность сохраняется при обновлении файла.
+- Заметка с неизвестной областью (например, удалённой другим соединением) считается общей, а не теряется.
+- Пустой список активных областей даёт прежний текст «Interview focus», поэтому поведение для пользователя без настроек не меняется.
+- Секция роли в инструкциях обобщена («живой разговор: интервью, тренировка, профессиональное обсуждение»), дефолт — senior backend.
+
+**Команды проверки:**
+- `swift build --build-tests && swift test` — 332 теста (было 311), все проходят.
+- `xcodegen generate && xcodebuild ... build` — BUILD SUCCEEDED; `xcodebuild ... test` — 25 тестов приложения (новые: сидирование с миграцией профиля, импорт из папки с автосозданием области, неактивная область не попадает в инструкции).
+
+**Оставшиеся риски:** FSEvents-наблюдатель не покрыт автотестами (проверяется вручную); бюджет 40 000 символов общий на все области, поиска по заметкам нет.
+
+---
+
+## 2026-11-02 — Этап 15: структурированные подсказки и раскрытие (ADR 0007, часть 1)
+
+**Изменённые компоненты:**
+- Domain: `EventBroadcaster` (многоподписочная рассылка с воспроизведением последнего элемента); `ModeCoordinator.stateUpdates()` и `ProviderRoutingAnswersController.streamEvents()` теперь выдают отдельный поток каждому подписчику; `QuestionAnswerLogger.updates()`; `Hint`, `HintExpansion`, `HintSessionState`, `HintFeedEvent`, `HintFeed` (actor), `HintExpanding`, `TextAnswerHintExpander`, `RoutingHintExpander`; `TextAnswerRequest.userMessage`; `AnswerInstructionsBuilder.expansionInstructions`/`expansionUserMessage`; `QuestionAnswerPair.expansionText`.
+- Summary: `OpenAIResponsesHintExpander` (Responses API, без стрима, текстовая модель саммари).
+- AnthropicClient: тело запроса берёт `resolvedUserMessage`.
+- Persistence: миграция v4 `qa_entries.expansion_text`; `COALESCE` при обновлении, чтобы повторное сохранение пары логгером не стирало раскрытие.
+- App: `CompositionRoot` создаёт `HintFeed` (история 20 пар, подписки на режим и пары) и маршрутизатор раскрытий по провайдеру; `AppSettingsStore.expansionInstructions`/`claudeExpansionSettings`; история показывает раскрытие под ответом.
+
+**Неочевидные решения:**
+- До этого этапа `ModeCoordinator.stateUpdates()` возвращал один и тот же `AsyncStream` двум потребителям (главное окно и оверлей) — элементы делились между ними. Broadcaster с воспроизведением последнего состояния убирает гонку и даёт новым подписчикам текущее состояние.
+- Вопрос привязывается к подсказке без изменения `AnswerStreamEvent`: по черновику пары со статусом `answerStreaming` во время стрима (путь Claude) или по совпадению текста завершённого ответа (путь OpenAI, когда распознавание приходит позже).
+- Раскрытие запускается только для завершённой подсказки, один раз; ошибка раскрытия не трогает мгновенный текст.
+- Для OpenAI раскрытие идёт через Responses API моделью саммари: Realtime-модели недоступны вне сокета, а данные не должны уходить другому провайдеру.
+
+**Команды проверки:**
+- `swift build --build-tests && swift test` — 348 тестов, все проходят (HintFeed: поток событий, привязка вопроса двумя путями, раскрытие и его сохранение, ошибка раскрытия, история, состояние сессии; Responses-расширитель; COALESCE раскрытия; пользовательское сообщение Anthropic).
+- `xcodebuild ... build` — BUILD SUCCEEDED; `xcodebuild ... test` — 25 тестов, TEST SUCCEEDED.
+
+**Оставшиеся риски:** локальный оверлей по-прежнему не показывает раскрытие (сознательно, см. ADR 0007); раскрытие на пути OpenAI приходит целиком без стрима.

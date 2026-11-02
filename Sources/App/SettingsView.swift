@@ -245,13 +245,9 @@ struct SettingsView: View {
             }
             .pickerStyle(.segmented)
 
-            Picker(loc("Профиль ответа"), selection: $viewModel.answerProfile) {
-                Text(loc("Авто")).tag(InterviewAnswerProfile.automatic)
-                Text("PHP / Backend").tag(InterviewAnswerProfile.phpBackend)
-                Text("System Design").tag(InterviewAnswerProfile.systemDesign)
-                Text("Behavioral").tag(InterviewAnswerProfile.behavioral)
-            }
-            .pickerStyle(.segmented)
+            Text(loc("Роль эксперта и правила ответа задаются профильными областями в окне «Память»: активные области и их заметки входят в инструкции, остальные не покидают Mac."))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
             Stepper(loc("Память прошлых ответов из Истории:") + " \(viewModel.answersMemoryCount)", value: $viewModel.answersMemoryCount, in: 0...10)
             Text(loc("Последние ответы из прошлых сессий добавляются в инструкции, чтобы подсказки не противоречили сказанному раньше. 0 — выключено. Эти ответы отправляются провайдеру."))
                 .font(.caption2)

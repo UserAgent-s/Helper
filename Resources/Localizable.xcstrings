@@ -7108,6 +7108,627 @@
           }
         }
       }
+    },
+    "Память": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Память"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Memory"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Пам'ять"
+          }
+        }
+      }
+    },
+    "Роль эксперта и правила ответа задаются профильными областями в окне «Память»: активные области и их заметки входят в инструкции, остальные не покидают Mac.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Роль эксперта и правила ответа задаются профильными областями в окне «Память»: активные области и их заметки входят в инструкции, остальные не покидают Mac."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The expert role and answer rules come from the expert areas in the “Memory” window: active areas and their notes go into the instructions, the rest never leave the Mac."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Роль експерта та правила відповіді задаються профільними областями у вікні «Пам'ять»: активні області та їх нотатки входять до інструкцій, решта не залишають Mac."
+          }
+        }
+      }
+    },
+    "областей нет (режим «Авто»)": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "областей нет (режим «Авто»)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "no areas (“Auto” mode)"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "областей немає (режим «Авто»)"
+          }
+        }
+      }
+    },
+    "области:": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "области:"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "areas:"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "області:"
+          }
+        }
+      }
+    },
+    "Память: профильные области и заметки": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Память: профильные области и заметки"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Memory: expert areas and notes"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Пам'ять: профільні області та нотатки"
+          }
+        }
+      }
+    },
+    "Активные области задают роль эксперта и правила ответа; их заметки и общие заметки входят в каждую подсказку Answers вместе с профилем. Модель сама выбирает область под вопрос. Неактивные области и выключенные заметки не покидают Mac. Пишите только правду — модель опирается на эти факты.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Активные области задают роль эксперта и правила ответа; их заметки и общие заметки входят в каждую подсказку Answers вместе с профилем. Модель сама выбирает область под вопрос. Неактивные области и выключенные заметки не покидают Mac. Пишите только правду — модель опирается на эти факты."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active areas define the expert role and answer rules; their notes and shared notes go into every Answers hint together with the profile. The model picks the area for each question itself. Inactive areas and disabled notes never leave the Mac. Write only the truth — the model relies on these facts."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Активні області задають роль експерта та правила відповіді; їх нотатки та спільні нотатки входять до кожної підказки Answers разом із профілем. Модель сама обирає область під питання. Неактивні області та вимкнені нотатки не залишають Mac. Пишіть лише правду — модель спирається на ці факти."
+          }
+        }
+      }
+    },
+    "В область": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В область"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Into area"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В область"
+          }
+        }
+      }
+    },
+    "Общие": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Общие"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shared"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Спільні"
+          }
+        }
+      }
+    },
+    "Не добавляйте конфиденциальные данные работодателей и чужие персональные данные: включённые заметки активных областей отправляются выбранному провайдеру в каждой сессии Answers. Изменения применяются со следующего запуска Answers.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не добавляйте конфиденциальные данные работодателей и чужие персональные данные: включённые заметки активных областей отправляются выбранному провайдеру в каждой сессии Answers. Изменения применяются со следующего запуска Answers."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Do not add employers' confidential data or other people's personal data: enabled notes of active areas are sent to the selected provider in every Answers session. Changes apply from the next Answers start."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не додавайте конфіденційні дані роботодавців і чужі персональні дані: увімкнені нотатки активних областей надсилаються обраному провайдеру в кожній сесії Answers. Зміни застосовуються з наступного запуску Answers."
+          }
+        }
+      }
+    },
+    "Профильные области": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Профильные области"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expert areas"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Профільні області"
+          }
+        }
+      }
+    },
+    "Областей нет: действует режим «Авто» (backend, system design, behavioral).": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Областей нет: действует режим «Авто» (backend, system design, behavioral)."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No areas: “Auto” mode applies (backend, system design, behavioral)."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Областей немає: діє режим «Авто» (backend, system design, behavioral)."
+          }
+        }
+      }
+    },
+    "Добавить область": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Добавить область"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add area"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Додати область"
+          }
+        }
+      }
+    },
+    "Активно:": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Активно:"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active:"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Активно:"
+          }
+        }
+      }
+    },
+    "Папка знаний": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Папка знаний"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Knowledge folder"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Папка знань"
+          }
+        }
+      }
+    },
+    "Открыть папку": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Открыть папку"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open folder"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Відкрити папку"
+          }
+        }
+      }
+    },
+    "Синхронизировать": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Синхронизировать"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sync now"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Синхронізувати"
+          }
+        }
+      }
+    },
+    "Файлы .md и .txt в папке становятся заметками автоматически: подпапка — область (создаётся сама), файлы в корне — общие. Сюда можно сохранять результаты исследования из Claude Code. Удалённый файл удаляет свою заметку.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Файлы .md и .txt в папке становятся заметками автоматически: подпапка — область (создаётся сама), файлы в корне — общие. Сюда можно сохранять результаты исследования из Claude Code. Удалённый файл удаляет свою заметку."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ".md and .txt files in the folder become notes automatically: a subfolder is an area (created on its own), root files are shared. Save Claude Code research results here. Deleting a file deletes its note."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Файли .md і .txt у папці стають нотатками автоматично: підпапка — область (створюється сама), файли в корені — спільні. Сюди можна зберігати результати дослідження з Claude Code. Видалений файл видаляє свою нотатку."
+          }
+        }
+      }
+    },
+    "Последняя синхронизация:": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Последняя синхронизация:"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last sync:"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Остання синхронізація:"
+          }
+        }
+      }
+    },
+    "Пока пусто. Импортируйте резюме, добавьте заметку или положите файлы в папку знаний.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Пока пусто. Импортируйте резюме, добавьте заметку или положите файлы в папку знаний."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empty so far. Import a resume, add a note, or drop files into the knowledge folder."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Поки порожньо. Імпортуйте резюме, додайте нотатку або покладіть файли в папку знань."
+          }
+        }
+      }
+    },
+    "не уходит (область выключена):": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "не уходит (область выключена):"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "kept local (area inactive):"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "не надсилається (область вимкнена):"
+          }
+        }
+      }
+    },
+    "область:": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "область:"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "area:"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "область:"
+          }
+        }
+      }
+    },
+    "из папки знаний": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "из папки знаний"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "from knowledge folder"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "з папки знань"
+          }
+        }
+      }
+    },
+    "Область": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Область"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Area"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Область"
+          }
+        }
+      }
+    },
+    "Название области (совпадает с подпапкой в папке знаний)": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Название области (совпадает с подпапкой в папке знаний)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Area name (matches the subfolder in the knowledge folder)"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Назва області (збігається з підпапкою в папці знань)"
+          }
+        }
+      }
+    },
+    "Роль эксперта: кто отвечает, одним-двумя предложениями": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Роль эксперта: кто отвечает, одним-двумя предложениями"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expert role: who answers, in one or two sentences"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Роль експерта: хто відповідає, одним-двома реченнями"
+          }
+        }
+      }
+    },
+    "Правила ответа для этой области: на что опираться, какую структуру держать, чего избегать": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Правила ответа для этой области: на что опираться, какую структуру держать, чего избегать"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answer rules for this area: what to rely on, which structure to keep, what to avoid"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Правила відповіді для цієї області: на що спиратися, яку структуру тримати, чого уникати"
+          }
+        }
+      }
+    },
+    "Активна": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Активна"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Активна"
+          }
+        }
+      }
     }
   }
 }

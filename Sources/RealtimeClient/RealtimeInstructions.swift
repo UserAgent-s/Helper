@@ -4,11 +4,11 @@ public enum RealtimeInstructions {
     public static let version = AnswerInstructionsBuilder.version
 
     public static func system(for length: AnswerLength, background: String = "") -> String {
-        system(for: length, answerProfile: .automatic, candidate: .migratedFromLegacyBackground(background))
+        system(for: length, domains: [], candidate: .migratedFromLegacyBackground(background))
     }
 
-    public static func system(for length: AnswerLength, answerProfile: InterviewAnswerProfile, candidate: CandidateProfile) -> String {
-        AnswerInstructionsBuilder.build(adaptation: .realtimeAudio, length: length, answerProfile: answerProfile, candidate: candidate)
+    public static func system(for length: AnswerLength, domains: [ExpertDomain], candidate: CandidateProfile) -> String {
+        AnswerInstructionsBuilder.build(adaptation: .realtimeAudio, length: length, domains: domains, candidate: candidate)
     }
 
     public static let forceAnswerNow = """

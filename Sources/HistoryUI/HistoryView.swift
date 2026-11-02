@@ -75,6 +75,11 @@ struct HistoryView: View {
                         .font(.subheadline.bold())
                     Text(pair.answerText)
                         .font(.body)
+                    if let expansion = pair.expansionText, !expansion.isEmpty {
+                        Text(expansion)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 .swipeActions {
                     Button(loc("Удалить"), role: .destructive) {

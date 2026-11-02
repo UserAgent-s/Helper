@@ -19,6 +19,7 @@ public struct TextAnswerRequest: Sendable, Equatable {
     public let maxOutputTokens: Int
     public let reasoningEffort: String?
     public let useServerSideFallback: Bool
+    public let userMessage: String?
 
     public init(
         modelID: String,
@@ -28,7 +29,8 @@ public struct TextAnswerRequest: Sendable, Equatable {
         trigger: AnswerTriggerKind,
         maxOutputTokens: Int,
         reasoningEffort: String?,
-        useServerSideFallback: Bool
+        useServerSideFallback: Bool,
+        userMessage: String? = nil
     ) {
         self.modelID = modelID
         self.systemInstructions = systemInstructions
@@ -38,6 +40,11 @@ public struct TextAnswerRequest: Sendable, Equatable {
         self.maxOutputTokens = maxOutputTokens
         self.reasoningEffort = reasoningEffort
         self.useServerSideFallback = useServerSideFallback
+        self.userMessage = userMessage
+    }
+
+    public var resolvedUserMessage: String {
+        userMessage ?? AnswerInstructionsBuilder.transcriptUserMessage(transcript: transcript, priorExchanges: priorExchanges, trigger: trigger)
     }
 }
 

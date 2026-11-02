@@ -27,7 +27,7 @@ private final class IdleModeController: ModeController, Sendable {
         first.setModelSelection(AnswerModelSelection(provider: .anthropicClaude, modelID: "claude-sonnet-5-5", isCustom: false))
         first.setModelSelection(AnswerModelSelection(provider: .openAIRealtime, modelID: "gpt-realtime-next-preview", isCustom: true))
         first.answerTriggerMode = .manualOnly
-        first.answerProfile = .systemDesign
+        defaults.set("systemDesign", forKey: "com.local.MeetingAssistant.settings.answerProfile")
         first.candidateProfile = CandidateProfile(primaryStack: "PHP, Laravel", targetRole: "Architect")
         first.spendLimitUSD = 1.5
         first.spendLimitMode = .stopSession
@@ -37,7 +37,8 @@ private final class IdleModeController: ModeController, Sendable {
         #expect(relaunched.modelSelection(for: .anthropicClaude) == AnswerModelSelection(provider: .anthropicClaude, modelID: "claude-sonnet-5-5", isCustom: false))
         #expect(relaunched.modelSelection(for: .openAIRealtime) == AnswerModelSelection(provider: .openAIRealtime, modelID: "gpt-realtime-next-preview", isCustom: true))
         #expect(relaunched.answerTriggerMode == .manualOnly)
-        #expect(relaunched.answerProfile == .systemDesign)
+        #expect(relaunched.legacyAnswerProfile == .systemDesign)
+        #expect(relaunched.expertDomainsSeeded == false)
         #expect(relaunched.candidateProfile.primaryStack == "PHP, Laravel")
         #expect(relaunched.spendPolicy == SpendPolicy(limitUSD: 1.5, mode: .stopSession))
     }
@@ -169,7 +170,7 @@ private final class IdleModeController: ModeController, Sendable {
             contextWindowStartedAt: Date(), contextWindowDurationMs: 0, triggerKind: .automatic,
             answerText: "Партиционированием по ключу.", modelID: "m", responseID: "r1", status: .completed
         ))
-        await CompositionRoot.refreshLiveContext(settingsStore: root.settingsStore, notes: root.knowledgeNoteRepository, history: root.questionAnswerRepository)
+        await CompositionRoot.refreshLiveContext(settingsStore: root.settingsStore, library: root.knowledgeLibrary, history: root.questionAnswerRepository)
         let realtime = root.settingsStore.instructions(for: .realtimeAudio)
         let claude = root.settingsStore.transcribedSessionSettings().systemInstructions
         for text in [realtime, claude] {
@@ -186,7 +187,7 @@ private final class IdleModeController: ModeController, Sendable {
             contextWindowStartedAt: Date(), contextWindowDurationMs: 0, triggerKind: .automatic,
             answerText: "x", modelID: "m", responseID: "r2", status: .completed
         ))
-        await CompositionRoot.refreshLiveContext(settingsStore: root.settingsStore, notes: root.knowledgeNoteRepository, history: root.questionAnswerRepository)
+        await CompositionRoot.refreshLiveContext(settingsStore: root.settingsStore, library: root.knowledgeLibrary, history: root.questionAnswerRepository)
         #expect(!root.settingsStore.instructions(for: .transcriptText).contains("MEMORY-MARKER"))
     }
 

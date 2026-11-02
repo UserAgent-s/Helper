@@ -34,6 +34,7 @@ final class AppSettingsStore: @unchecked Sendable {
         static let anthropicServerSideFallback = "com.local.MeetingAssistant.settings.anthropicServerSideFallback"
         static let lastKeyMigrationOutcome = "com.local.MeetingAssistant.settings.lastKeyMigrationOutcome"
         static let answersMemoryCount = "com.local.MeetingAssistant.settings.answersMemoryCount"
+        static let expertDomainsSeeded = "com.local.MeetingAssistant.settings.expertDomainsSeeded"
     }
 
     init(defaults: UserDefaults = .standard) {
@@ -140,9 +141,21 @@ final class AppSettingsStore: @unchecked Sendable {
         set { defaults.set(newValue.rawValue, forKey: Keys.answerTriggerMode) }
     }
 
-    var answerProfile: InterviewAnswerProfile {
-        get { InterviewAnswerProfile(rawValue: defaults.string(forKey: Keys.answerProfile) ?? "") ?? .automatic }
-        set { defaults.set(newValue.rawValue, forKey: Keys.answerProfile) }
+    var legacyAnswerProfile: LegacyAnswerProfile? {
+        defaults.string(forKey: Keys.answerProfile).flatMap(LegacyAnswerProfile.init(rawValue:))
+    }
+
+    var expertDomainsSeeded: Bool {
+        get { defaults.bool(forKey: Keys.expertDomainsSeeded) }
+        set { defaults.set(newValue, forKey: Keys.expertDomainsSeeded) }
+    }
+
+    var knowledgeSeedPolicy: KnowledgeSeedPolicy {
+        KnowledgeSeedPolicy(
+            isSeeded: { [self] in self.expertDomainsSeeded },
+            legacyProfile: { [self] in self.legacyAnswerProfile },
+            markSeeded: { [self] in self.expertDomainsSeeded = true }
+        )
     }
 
     var candidateProfile: CandidateProfile {
@@ -203,7 +216,7 @@ final class AppSettingsStore: @unchecked Sendable {
             selection: modelSelection(for: provider),
             triggerMode: answerTriggerMode,
             answerLength: answerLength,
-            answerProfile: answerProfile,
+            expertAreas: liveContext.activeDomainNames,
             profileFingerprint: candidateProfile.fingerprint + "-" + liveContext.fingerprint
         )
     }
@@ -212,10 +225,30 @@ final class AppSettingsStore: @unchecked Sendable {
         AnswerInstructionsBuilder.build(
             adaptation: adaptation,
             length: answerLength,
-            answerProfile: answerProfile,
+            domains: liveContext.activeDomains,
             candidate: candidateProfile,
             knowledge: liveContext.knowledgeContext,
             recentExchanges: liveContext.recentExchanges
+        )
+    }
+
+    func expansionInstructions() -> String {
+        AnswerInstructionsBuilder.expansionInstructions(
+            domains: liveContext.activeDomains,
+            candidate: candidateProfile,
+            knowledge: liveContext.knowledgeContext
+        )
+    }
+
+    func claudeExpansionSettings() -> TextAnswerHintExpander.Settings {
+        let selection = modelSelection(for: .anthropicClaude)
+        let descriptor = AnswerModelCatalog.descriptor(provider: .anthropicClaude, modelID: selection.modelID)
+        return TextAnswerHintExpander.Settings(
+            modelID: selection.modelID,
+            systemInstructions: expansionInstructions(),
+            maxOutputTokens: 4_096,
+            reasoningEffort: descriptor?.supportsReasoningEffort == true ? "low" : nil,
+            useServerSideFallback: anthropicServerSideFallback && descriptor?.supportsServerSideFallback == true
         )
     }
 

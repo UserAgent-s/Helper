@@ -40,13 +40,13 @@ import Testing
         let knowledge = KnowledgeContextBuilder.build([KnowledgeNote(title: "Harness", content: "Built an eval loop for an LLM agent")])
         let memory = [PriorExchange(question: "Почему Redis?", answer: "Из-за latency.")]
         for adaptation in [InstructionsAdaptation.realtimeAudio, .transcriptText] {
-            let text = AnswerInstructionsBuilder.build(adaptation: adaptation, length: .standard, answerProfile: .automatic, candidate: .empty, knowledge: knowledge, recentExchanges: memory)
+            let text = AnswerInstructionsBuilder.build(adaptation: adaptation, length: .standard, domains: [], candidate: .empty, knowledge: knowledge, recentExchanges: memory)
             #expect(text.contains("# Personal knowledge base"))
             #expect(text.contains("Built an eval loop for an LLM agent"))
             #expect(text.contains("never extrapolate"))
             #expect(text.contains("Q: Почему Redis?"))
         }
-        let empty = AnswerInstructionsBuilder.build(adaptation: .transcriptText, length: .standard, answerProfile: .automatic, candidate: .empty)
+        let empty = AnswerInstructionsBuilder.build(adaptation: .transcriptText, length: .standard, domains: [], candidate: .empty)
         #expect(!empty.contains("# Personal knowledge base"))
         #expect(!empty.contains("earlier sessions"))
     }

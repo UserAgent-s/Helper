@@ -68,8 +68,7 @@ public actor ProviderRoutingAnswersController: ModeController, AnswerSessionCont
 
     private let failureStream: AsyncStream<String>
     private let failureContinuation: AsyncStream<String>.Continuation
-    private let streamEventStream: AsyncStream<AnswerStreamEvent>
-    private let streamEventContinuation: AsyncStream<AnswerStreamEvent>.Continuation
+    private let streamEventBroadcaster = EventBroadcaster<AnswerStreamEvent>()
 
     public init(
         routes: [AnswerProvider: ProviderRoute],
@@ -84,7 +83,6 @@ public actor ProviderRoutingAnswersController: ModeController, AnswerSessionCont
         self.prepare = prepare
         self.telemetry = telemetry
         (failureStream, failureContinuation) = AsyncStream<String>.makeStream()
-        (streamEventStream, streamEventContinuation) = AsyncStream<AnswerStreamEvent>.makeStream()
     }
 
     nonisolated public func failures() -> AsyncStream<String> {
@@ -92,7 +90,7 @@ public actor ProviderRoutingAnswersController: ModeController, AnswerSessionCont
     }
 
     nonisolated public func streamEvents() -> AsyncStream<AnswerStreamEvent> {
-        streamEventStream
+        streamEventBroadcaster.subscribe()
     }
 
     public var currentProvider: AnswerProvider? {
@@ -156,7 +154,7 @@ public actor ProviderRoutingAnswersController: ModeController, AnswerSessionCont
 
     private func forward(_ event: AnswerStreamEvent, from provider: AnswerProvider) {
         guard provider == activeProvider else { return }
-        streamEventContinuation.yield(event)
+        streamEventBroadcaster.yield(event)
     }
 
     private func forwardFailure(_ reason: String, from provider: AnswerProvider) {

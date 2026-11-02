@@ -125,14 +125,7 @@ public struct AnthropicMessagesAnswerClient: TextAnswerGenerating {
             model = request.modelID
             maxTokens = request.maxOutputTokens
             system = [SystemBlock(text: request.systemInstructions)]
-            messages = [Message(
-                role: "user",
-                content: AnswerInstructionsBuilder.transcriptUserMessage(
-                    transcript: request.transcript,
-                    priorExchanges: request.priorExchanges,
-                    trigger: request.trigger
-                )
-            )]
+            messages = [Message(role: "user", content: request.resolvedUserMessage)]
             outputConfig = request.reasoningEffort.map(OutputConfig.init(effort:))
             fallbacks = request.useServerSideFallback ? "default" : nil
         }

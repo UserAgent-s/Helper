@@ -17,6 +17,7 @@ public actor QuestionAnswerLogger {
 
     private var drafts: [String: Draft] = [:]
     private var persistTail: Task<Void, Never>?
+    private let updatesBroadcaster = EventBroadcaster<QuestionAnswerPair>()
 
     public init(
         localTranscribing: any LocalTranscribing,
@@ -136,12 +137,18 @@ public actor QuestionAnswerLogger {
         await persistTail?.value
     }
 
+    nonisolated public func updates() -> AsyncStream<QuestionAnswerPair> {
+        updatesBroadcaster.subscribe()
+    }
+
     private func persist(_ pair: QuestionAnswerPair) {
         let repository = self.repository
+        let broadcaster = updatesBroadcaster
         let previous = persistTail
         persistTail = Task {
             await previous?.value
             try? await repository.save(pair)
+            broadcaster.yield(pair)
         }
     }
 

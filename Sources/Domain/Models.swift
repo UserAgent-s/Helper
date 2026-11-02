@@ -133,6 +133,7 @@ public struct QuestionAnswerPair: Sendable, Equatable, Identifiable {
     public var responseTotalMs: Int?
     public var usageTokens: Int?
     public var estimatedCostUSD: Double?
+    public var expansionText: String?
     public var status: AnswerRecordStatus
 
     public init(
@@ -152,6 +153,7 @@ public struct QuestionAnswerPair: Sendable, Equatable, Identifiable {
         responseTotalMs: Int? = nil,
         usageTokens: Int? = nil,
         estimatedCostUSD: Double? = nil,
+        expansionText: String? = nil,
         status: AnswerRecordStatus
     ) {
         self.id = id
@@ -170,6 +172,7 @@ public struct QuestionAnswerPair: Sendable, Equatable, Identifiable {
         self.responseTotalMs = responseTotalMs
         self.usageTokens = usageTokens
         self.estimatedCostUSD = estimatedCostUSD
+        self.expansionText = expansionText
         self.status = status
     }
 }

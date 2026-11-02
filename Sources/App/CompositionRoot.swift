@@ -44,6 +44,10 @@ final class CompositionRoot {
     let questionAnswerRepository: any QuestionAnswerRepository
     let summaryRepository: any SummaryRepository
     let knowledgeNoteRepository: any KnowledgeNoteRepository
+    let expertDomainRepository: any ExpertDomainRepository
+    let knowledgeLibrary: KnowledgeLibrary
+    let knowledgeFolderURL: URL
+    private let knowledgeFolderWatcher: KnowledgeFolderWatcher
     let summaryGenerating: any SummaryGenerating
     let secretStoring: any SecretStoring
     let secretStores: [AnswerProvider: any SecretStoring]
@@ -62,6 +66,7 @@ final class CompositionRoot {
     let answersModeController: AnswersModeController
     let transcribedAnswersModeController: TranscribedAnswersModeController
     let answersRouter: ProviderRoutingAnswersController
+    let hintFeed: HintFeed
     let answerOverlayViewModel: AnswerOverlayViewModel
     let recordingTranscriptViewModel: RecordingTranscriptViewModel
     let historyViewModel: HistoryViewModel
@@ -95,6 +100,19 @@ final class CompositionRoot {
         summaryRepository = SQLiteSummaryRepository(path: databasePath)
         let knowledgeNoteRepository = SQLiteKnowledgeNoteRepository(path: databasePath)
         self.knowledgeNoteRepository = knowledgeNoteRepository
+        let expertDomainRepository = SQLiteExpertDomainRepository(path: databasePath)
+        self.expertDomainRepository = expertDomainRepository
+        let knowledgeFolderURL = environment.dataDirectory.appendingPathComponent("Knowledge", isDirectory: true)
+        self.knowledgeFolderURL = knowledgeFolderURL
+        try? FileManager.default.createDirectory(at: knowledgeFolderURL, withIntermediateDirectories: true)
+        let knowledgeLibrary = KnowledgeLibrary(
+            notes: knowledgeNoteRepository,
+            domains: expertDomainRepository,
+            folder: KnowledgeFolderReader(directory: knowledgeFolderURL),
+            seedPolicy: settingsStore.knowledgeSeedPolicy
+        )
+        self.knowledgeLibrary = knowledgeLibrary
+        knowledgeFolderWatcher = KnowledgeFolderWatcher(directory: knowledgeFolderURL)
 
         let legacyOpenAIStore = UserDefaultsSecretStore(defaults: environment.defaults)
         let openAIKeychain = KeychainSecretStore(service: ProviderKeychainServices.service(for: .openAIRealtime, namespace: environment.keychainNamespace))
@@ -180,8 +198,8 @@ final class CompositionRoot {
             ],
             configurationProvider: { [settingsStore] in settingsStore.currentAnswerConfiguration() },
             spendPolicyProvider: { [settingsStore] in settingsStore.spendPolicy },
-            prepare: { [settingsStore, knowledgeNoteRepository, questionAnswerRepository] in
-                await Self.refreshLiveContext(settingsStore: settingsStore, notes: knowledgeNoteRepository, history: questionAnswerRepository)
+            prepare: { [settingsStore, knowledgeLibrary, questionAnswerRepository] in
+                await Self.refreshLiveContext(settingsStore: settingsStore, library: knowledgeLibrary, history: questionAnswerRepository)
             },
             telemetry: sessionTelemetry
         )
@@ -202,6 +220,35 @@ final class CompositionRoot {
             ],
             latencyRecording: latencyRecording
         )
+
+        let hintExpander = RoutingHintExpander(
+            routes: [
+                .anthropicClaude: TextAnswerHintExpander(generator: claudeClient, settingsProvider: { [settingsStore] in settingsStore.claudeExpansionSettings() }),
+                .openAIRealtime: OpenAIResponsesHintExpander(
+                    secretStoring: openAIStore,
+                    modelIDProvider: { [settingsStore] in settingsStore.summaryModelID },
+                    instructionsProvider: { [settingsStore] in settingsStore.expansionInstructions() }
+                ),
+            ],
+            activeProvider: { [settingsStore] in settingsStore.answerProvider }
+        )
+        let hintFeed = HintFeed(
+            answers: router,
+            expander: hintExpander,
+            repository: questionAnswerRepository,
+            configurationProvider: { [router] in await router.activeConfiguration }
+        )
+        self.hintFeed = hintFeed
+        let modeCoordinator = self.modeCoordinator
+        let questionAnswerLogger = self.questionAnswerLogger
+        Task {
+            await hintFeed.loadHistory(limit: 20)
+            await hintFeed.start(
+                modeUpdates: modeCoordinator.stateUpdates(),
+                pairUpdates: questionAnswerLogger.updates(),
+                initialMode: await modeCoordinator.currentState
+            )
+        }
 
         modeViewModel = ModeSwitcherViewModel(modeCoordinator: modeCoordinator)
         answersModeController = answersController
@@ -225,11 +272,20 @@ final class CompositionRoot {
             router: router,
             settingsStore: settingsStore
         )
-        knowledgeBaseViewModel = KnowledgeBaseViewModel(
-            repository: knowledgeNoteRepository,
+        let knowledgeBaseViewModel = KnowledgeBaseViewModel(
+            library: knowledgeLibrary,
+            folderURL: knowledgeFolderURL,
             settingsStore: settingsStore,
             sessionStatus: sessionStatusViewModel
         )
+        self.knowledgeBaseViewModel = knowledgeBaseViewModel
+        if !environment.isIsolated {
+            knowledgeFolderWatcher.start { [weak knowledgeBaseViewModel] in
+                Task { @MainActor in
+                    await knowledgeBaseViewModel?.syncFolder()
+                }
+            }
+        }
         settingsViewModel = SettingsViewModel(
             settingsStore: settingsStore,
             secretStores: secretStores,
@@ -258,11 +314,12 @@ final class CompositionRoot {
 
     nonisolated static func refreshLiveContext(
         settingsStore: AppSettingsStore,
-        notes: any KnowledgeNoteRepository,
+        library: KnowledgeLibrary,
         history: any QuestionAnswerRepository
     ) async {
-        let allNotes = (try? await notes.all()) ?? []
-        settingsStore.liveContext.update(knowledge: KnowledgeContextBuilder.build(allNotes))
+        let snapshot = await library.refresh()
+        settingsStore.liveContext.update(domains: snapshot.domains)
+        settingsStore.liveContext.update(knowledge: snapshot.context)
         let limit = settingsStore.answersMemoryCount
         let pairs = limit > 0 ? ((try? await history.history(limit: 50)) ?? []) : []
         settingsStore.liveContext.update(recentExchanges: RecentAnswersMemory.exchanges(from: pairs, limit: limit))

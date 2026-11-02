@@ -122,10 +122,13 @@ final class SessionStatusViewModel {
     }
 
     var experienceText: String {
-        let knowledge = settingsStore.liveContext.knowledgeContext
-        let memory = settingsStore.liveContext.recentExchanges.count
+        let live = settingsStore.liveContext
+        let knowledge = live.knowledgeContext
+        let memory = live.recentExchanges.count
         let profile = settingsStore.candidateProfile.isEmpty ? loc("профиль пуст") : loc("профиль заполнен")
-        return profile + " · " + loc("заметок в подсказках:") + " \(knowledge.includedNoteCount) · " + loc("прошлых ответов в памяти:") + " \(memory)/\(settingsStore.answersMemoryCount)"
+        let areas = live.activeDomainNames
+        let areasText = areas.isEmpty ? loc("областей нет (режим «Авто»)") : loc("области:") + " " + areas.joined(separator: ", ")
+        return areasText + " · " + profile + " · " + loc("заметок в подсказках:") + " \(knowledge.includedNoteCount) · " + loc("прошлых ответов в памяти:") + " \(memory)/\(settingsStore.answersMemoryCount)"
     }
 
     var recognitionApplies: Bool {

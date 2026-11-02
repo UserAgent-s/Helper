@@ -17,8 +17,8 @@ public final class SQLiteQuestionAnswerRepository: QuestionAnswerRepository, Sen
                 id, asked_at, source_bundle_id, question_text, question_status,
                 context_started_at, context_duration_ms, trigger_kind, answer_text, answer_status,
                 model_id, response_id, speech_end_to_first_delta_ms, first_delta_to_first_paint_ms,
-                response_total_ms, usage_tokens, estimated_cost_usd, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                response_total_ms, usage_tokens, estimated_cost_usd, expansion_text, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
                 question_text = excluded.question_text,
                 question_status = excluded.question_status,
@@ -29,6 +29,7 @@ public final class SQLiteQuestionAnswerRepository: QuestionAnswerRepository, Sen
                 response_total_ms = excluded.response_total_ms,
                 usage_tokens = excluded.usage_tokens,
                 estimated_cost_usd = excluded.estimated_cost_usd,
+                expansion_text = COALESCE(excluded.expansion_text, qa_entries.expansion_text),
                 updated_at = excluded.updated_at
             """,
             [
@@ -49,6 +50,7 @@ public final class SQLiteQuestionAnswerRepository: QuestionAnswerRepository, Sen
                 pair.responseTotalMs.map(SQLiteValue.int) ?? .null,
                 pair.usageTokens.map(SQLiteValue.int) ?? .null,
                 pair.estimatedCostUSD.map(SQLiteValue.double) ?? .null,
+                pair.expansionText.map(SQLiteValue.text) ?? .null,
                 .text(now),
                 .text(now),
             ]
@@ -91,7 +93,7 @@ public final class SQLiteQuestionAnswerRepository: QuestionAnswerRepository, Sen
     private static let columns = """
     id, asked_at, source_bundle_id, question_text, question_status, context_started_at, context_duration_ms,
     trigger_kind, answer_text, answer_status, model_id, response_id, speech_end_to_first_delta_ms,
-    first_delta_to_first_paint_ms, response_total_ms, usage_tokens, estimated_cost_usd
+    first_delta_to_first_paint_ms, response_total_ms, usage_tokens, estimated_cost_usd, expansion_text
     """
 
     private static func rowMapper(_ row: SQLiteRow) -> QuestionAnswerPair {
@@ -112,6 +114,7 @@ public final class SQLiteQuestionAnswerRepository: QuestionAnswerRepository, Sen
             responseTotalMs: row.int(14),
             usageTokens: row.int(15),
             estimatedCostUSD: row.double(16),
+            expansionText: row.string(17),
             status: AnswerRecordStatus(rawValueString: row.string(9) ?? "") ?? .completed
         )
     }

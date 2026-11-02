@@ -129,6 +129,29 @@ private func collect(_ stream: AsyncThrowingStream<TextAnswerEvent, Error>) asyn
         #expect((messages.first?["content"] as? String)?.contains("<transcript>\nКак работает индекс?\n</transcript>") == true)
     }
 
+    @Test func customUserMessageReplacesTranscriptEnvelope() throws {
+        let request = TextAnswerRequest(
+            modelID: "claude-opus-5-5",
+            systemInstructions: "EXPANSION RULES",
+            transcript: "",
+            priorExchanges: [],
+            trigger: .manual,
+            maxOutputTokens: 4096,
+            reasoningEffort: nil,
+            useServerSideFallback: false,
+            userMessage: AnswerInstructionsBuilder.expansionUserMessage(question: "Why Redis?", answer: "Latency.")
+        )
+        let urlRequest = try AnthropicMessagesAnswerClient.makeURLRequest(request, apiKey: "sk-ant-test-key-000000")
+        let body = try #require(urlRequest.httpBody)
+        let json = try #require(try JSONSerialization.jsonObject(with: body) as? [String: Any])
+        let messages = try #require(json["messages"] as? [[String: Any]])
+        let content = try #require(messages.first?["content"] as? String)
+        #expect(content.contains("<short_answer>\nLatency.\n</short_answer>"))
+        #expect(content.contains("<question>\nWhy Redis?\n</question>"))
+        #expect(!content.contains("<transcript>"))
+        #expect(!content.contains("TRIGGER:"))
+    }
+
     @Test func serverSideFallbackAddsBetaHeaderAndDefaultMode() throws {
         let urlRequest = try AnthropicMessagesAnswerClient.makeURLRequest(makeRequest(fallback: true), apiKey: "sk-ant-test-key-000000")
         #expect(urlRequest.value(forHTTPHeaderField: "anthropic-beta") == "server-side-fallback-2026-07-01")

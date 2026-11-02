@@ -31,7 +31,7 @@ struct DiagnosticsAnswerSession: Codable {
     let servedModel: String?
     let triggerMode: String?
     let answerLength: String?
-    let answerProfile: String?
+    let expertAreas: [String]?
     let status: String
     let usage: ProviderUsage
     let responsesWithUsage: Int
@@ -132,7 +132,7 @@ enum DiagnosticsExporter {
             servedModel: telemetry.servedModel,
             triggerMode: configuration?.triggerMode.rawValue,
             answerLength: configuration?.answerLength.rawValue,
-            answerProfile: configuration?.answerProfile.rawValue,
+            expertAreas: configuration?.expertAreas,
             status: status,
             usage: telemetry.usage,
             responsesWithUsage: telemetry.responsesWithUsage,

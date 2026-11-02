@@ -2,7 +2,7 @@ import Foundation
 
 public actor ModeCoordinator: ModeControlling {
     private var state: ModeState = .initialPassive {
-        didSet { stateContinuation.yield(state) }
+        didSet { stateBroadcaster.yield(state) }
     }
     private let controllers: [AppMode: any ModeController]
     private let latencyRecording: (any LatencyRecording)?
@@ -10,14 +10,12 @@ public actor ModeCoordinator: ModeControlling {
     private var activeFailureWatcher: Task<Void, Never>?
     private(set) var transitionLog: [ModeTransition] = []
 
-    private let stateStream: AsyncStream<ModeState>
-    private let stateContinuation: AsyncStream<ModeState>.Continuation
+    private let stateBroadcaster = EventBroadcaster<ModeState>(latest: .initialPassive)
 
     public init(controllers: [AppMode: any ModeController], latencyRecording: (any LatencyRecording)? = nil) {
         precondition(controllers[.passive] == nil, "passive не имеет ModeController")
         self.controllers = controllers
         self.latencyRecording = latencyRecording
-        (stateStream, stateContinuation) = AsyncStream<ModeState>.makeStream()
     }
 
     public var currentMode: AppMode {
@@ -29,7 +27,7 @@ public actor ModeCoordinator: ModeControlling {
     }
 
     nonisolated public func stateUpdates() -> AsyncStream<ModeState> {
-        stateStream
+        stateBroadcaster.subscribe(replayingLatest: true)
     }
 
     public func history() async -> [ModeTransition] {

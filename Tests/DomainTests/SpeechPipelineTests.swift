@@ -251,7 +251,6 @@ extension AnswerSessionConfiguration {
             selection: AnswerModelSelection(provider: .anthropicClaude, modelID: modelID, isCustom: isCustom),
             triggerMode: .automatic,
             answerLength: .standard,
-            answerProfile: .automatic,
             profileFingerprint: ""
         )
     }
@@ -261,7 +260,6 @@ extension AnswerSessionConfiguration {
             selection: AnswerModelSelection(provider: .openAIRealtime, modelID: "gpt-realtime-2.1", isCustom: false),
             triggerMode: .automatic,
             answerLength: .standard,
-            answerProfile: .automatic,
             profileFingerprint: ""
         )
     }

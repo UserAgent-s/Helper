@@ -10,24 +10,28 @@ import UniformTypeIdentifiers
 final class KnowledgeBaseViewModel {
     nonisolated static let maxImportBytes = 2_000_000
 
-    private let repository: any KnowledgeNoteRepository
+    private let library: KnowledgeLibrary
     private let settingsStore: AppSettingsStore
     private let sessionStatus: SessionStatusViewModel
+    let folderURL: URL
 
-    private(set) var notes: [KnowledgeNote] = []
+    private(set) var snapshot = KnowledgeLibrarySnapshot.empty
     private(set) var importMessages: [String] = []
-    private(set) var context = KnowledgeContext.empty
+    private(set) var isSyncing = false
     var editingNote: KnowledgeNote?
+    var editingDomain: ExpertDomain?
+    var importTargetDomainID: UUID?
 
-    init(repository: any KnowledgeNoteRepository, settingsStore: AppSettingsStore, sessionStatus: SessionStatusViewModel) {
-        self.repository = repository
+    init(library: KnowledgeLibrary, folderURL: URL, settingsStore: AppSettingsStore, sessionStatus: SessionStatusViewModel) {
+        self.library = library
+        self.folderURL = folderURL
         self.settingsStore = settingsStore
         self.sessionStatus = sessionStatus
     }
 
-    var totalEnabledCharacters: Int {
-        notes.filter(\.isEnabled).reduce(0) { $0 + $1.content.count }
-    }
+    var notes: [KnowledgeNote] { snapshot.notes }
+    var domains: [ExpertDomain] { snapshot.domains }
+    var context: KnowledgeContext { snapshot.context }
 
     var approximateTokens: Int {
         Int(Double(context.text.count) / 3.0)
@@ -37,34 +41,96 @@ final class KnowledgeBaseViewModel {
         KnowledgeContextBuilder.defaultBudgetCharacters
     }
 
+    var lastSyncSummary: String? {
+        snapshot.lastSyncSummary
+    }
+
     func load() async {
-        notes = (try? await repository.all()) ?? []
-        recomputeContext()
+        isSyncing = true
+        apply(await library.refresh())
+        isSyncing = false
+    }
+
+    func reload() async {
+        apply(await library.snapshot())
+    }
+
+    func syncFolder() async {
+        guard !isSyncing else { return }
+        isSyncing = true
+        apply(await library.refresh())
+        isSyncing = false
+    }
+
+    func openFolder() {
+        try? FileManager.default.createDirectory(at: folderURL, withIntermediateDirectories: true)
+        NSWorkspace.shared.open(folderURL)
+    }
+
+    func domainName(for id: UUID?) -> String? {
+        guard let id else { return nil }
+        return domains.first { $0.id == id }?.trimmedName
+    }
+
+    func noteCount(for domain: ExpertDomain) -> Int {
+        snapshot.noteCount(for: domain)
     }
 
     func addEmptyNote() {
-        editingNote = KnowledgeNote(title: loc("Новая заметка"), content: CandidateProfile.caseTemplate)
+        editingNote = KnowledgeNote(title: loc("Новая заметка"), content: CandidateProfile.caseTemplate, domainID: importTargetDomainID)
     }
 
     func save(_ note: KnowledgeNote) async {
         var updated = note
         updated.updatedAt = Date()
         updated.title = updated.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? loc("Без названия") : updated.title
-        try? await repository.save(updated)
+        await library.saveNote(updated)
         editingNote = nil
-        await load()
+        await reload()
     }
 
     func setEnabled(_ enabled: Bool, for note: KnowledgeNote) async {
         var updated = note
         updated.isEnabled = enabled
-        try? await repository.save(updated)
-        await load()
+        await library.saveNote(updated)
+        await reload()
+    }
+
+    func assign(_ note: KnowledgeNote, to domainID: UUID?) async {
+        var updated = note
+        updated.domainID = domainID
+        updated.updatedAt = Date()
+        await library.saveNote(updated)
+        await reload()
     }
 
     func delete(_ note: KnowledgeNote) async {
-        try? await repository.delete(id: note.id)
-        await load()
+        await library.deleteNote(id: note.id)
+        await reload()
+    }
+
+    func addDomain() {
+        let nextOrder = (domains.map(\.sortOrder).max() ?? -1) + 1
+        editingDomain = ExpertDomain(name: "", role: "", guidance: "", isActive: true, sortOrder: nextOrder)
+    }
+
+    func save(_ domain: ExpertDomain) async {
+        await library.saveDomain(domain)
+        editingDomain = nil
+        await reload()
+    }
+
+    func setActive(_ active: Bool, for domain: ExpertDomain) async {
+        var updated = domain
+        updated.isActive = active
+        await library.saveDomain(updated)
+        await reload()
+    }
+
+    func delete(_ domain: ExpertDomain) async {
+        await library.deleteDomain(id: domain.id)
+        if importTargetDomainID == domain.id { importTargetDomainID = nil }
+        await reload()
     }
 
     func chooseFilesToImport() {
@@ -86,15 +152,15 @@ final class KnowledgeBaseViewModel {
         for url in urls {
             switch Self.extractText(from: url) {
             case .success(let text):
-                let note = KnowledgeNote(title: url.deletingPathExtension().lastPathComponent, content: text, sourceFileName: url.lastPathComponent)
-                try? await repository.save(note)
+                let note = KnowledgeNote(title: url.deletingPathExtension().lastPathComponent, content: text, sourceFileName: url.lastPathComponent, domainID: importTargetDomainID)
+                await library.saveNote(note)
                 messages.append(loc("Импортировано:") + " \(url.lastPathComponent) (\(text.count) " + loc("символов") + ")")
             case .failure(let reason):
                 messages.append(loc("Не удалось импортировать") + " \(url.lastPathComponent): \(reason.message)")
             }
         }
         importMessages = messages
-        await load()
+        await reload()
     }
 
     struct ImportFailure: Error {
@@ -122,9 +188,10 @@ final class KnowledgeBaseViewModel {
         return .success(trimmed)
     }
 
-    private func recomputeContext() {
-        context = KnowledgeContextBuilder.build(notes)
-        settingsStore.liveContext.update(knowledge: context)
+    private func apply(_ snapshot: KnowledgeLibrarySnapshot) {
+        self.snapshot = snapshot
+        settingsStore.liveContext.update(domains: snapshot.domains)
+        settingsStore.liveContext.update(knowledge: snapshot.context)
         sessionStatus.refreshPendingState()
     }
 }

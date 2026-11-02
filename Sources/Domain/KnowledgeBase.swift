@@ -1,19 +1,37 @@
 import Foundation
 
+public enum KnowledgeNoteOrigin: String, Sendable, Codable, Equatable {
+    case manual
+    case folder
+}
+
 public struct KnowledgeNote: Sendable, Equatable, Identifiable {
     public let id: UUID
     public var title: String
     public var content: String
     public var isEnabled: Bool
     public var sourceFileName: String?
+    public var domainID: UUID?
+    public var origin: KnowledgeNoteOrigin
     public var updatedAt: Date
 
-    public init(id: UUID = UUID(), title: String, content: String, isEnabled: Bool = true, sourceFileName: String? = nil, updatedAt: Date = Date()) {
+    public init(
+        id: UUID = UUID(),
+        title: String,
+        content: String,
+        isEnabled: Bool = true,
+        sourceFileName: String? = nil,
+        domainID: UUID? = nil,
+        origin: KnowledgeNoteOrigin = .manual,
+        updatedAt: Date = Date()
+    ) {
         self.id = id
         self.title = title
         self.content = content
         self.isEnabled = isEnabled
         self.sourceFileName = sourceFileName
+        self.domainID = domainID
+        self.origin = origin
         self.updatedAt = updatedAt
     }
 }
@@ -28,6 +46,16 @@ public struct KnowledgeContext: Sendable, Equatable {
     public let text: String
     public let includedNoteCount: Int
     public let truncatedNoteCount: Int
+    public let activeDomainNames: [String]
+    public let excludedByInactiveDomainCount: Int
+
+    public init(text: String, includedNoteCount: Int, truncatedNoteCount: Int, activeDomainNames: [String] = [], excludedByInactiveDomainCount: Int = 0) {
+        self.text = text
+        self.includedNoteCount = includedNoteCount
+        self.truncatedNoteCount = truncatedNoteCount
+        self.activeDomainNames = activeDomainNames
+        self.excludedByInactiveDomainCount = excludedByInactiveDomainCount
+    }
 
     public static let empty = KnowledgeContext(text: "", includedNoteCount: 0, truncatedNoteCount: 0)
 }
@@ -36,14 +64,39 @@ public enum KnowledgeContextBuilder {
     public static let defaultBudgetCharacters = 40_000
 
     public static func build(_ notes: [KnowledgeNote], budgetCharacters: Int = defaultBudgetCharacters) -> KnowledgeContext {
+        let entries = notes.filter(\.isEnabled).map { (header: "## \($0.title)", body: $0.content) }
+        return assemble(entries, budgetCharacters: budgetCharacters, activeDomainNames: [], excluded: 0)
+    }
+
+    public static func build(_ notes: [KnowledgeNote], domains: [ExpertDomain], budgetCharacters: Int = defaultBudgetCharacters) -> KnowledgeContext {
+        let knownIDs = Set(domains.map(\.id))
+        let active = domains.filter(\.isActive).sorted { ($0.sortOrder, $0.name) < ($1.sortOrder, $1.name) }
+        let enabled = notes.filter(\.isEnabled)
+        var entries: [(header: String, body: String)] = []
+        for note in enabled where note.domainID == nil || !knownIDs.contains(note.domainID!) {
+            entries.append((header: "## \(note.title)", body: note.content))
+        }
+        for domain in active {
+            for note in enabled where note.domainID == domain.id {
+                entries.append((header: "## [\(domain.trimmedName)] \(note.title)", body: note.content))
+            }
+        }
+        let excluded = enabled.filter { note in
+            guard let id = note.domainID, knownIDs.contains(id) else { return false }
+            return !active.contains { $0.id == id }
+        }.count
+        return assemble(entries, budgetCharacters: budgetCharacters, activeDomainNames: active.map(\.trimmedName), excluded: excluded)
+    }
+
+    private static func assemble(_ entries: [(header: String, body: String)], budgetCharacters: Int, activeDomainNames: [String], excluded: Int) -> KnowledgeContext {
         var parts: [String] = []
         var used = 0
         var included = 0
         var truncated = 0
-        for note in notes where note.isEnabled {
-            let body = note.content.trimmingCharacters(in: .whitespacesAndNewlines)
+        for entry in entries {
+            let body = entry.body.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !body.isEmpty else { continue }
-            let header = "## \(note.title)\n"
+            let header = entry.header + "\n"
             let remaining = budgetCharacters - used - header.count
             guard remaining > 200 else {
                 truncated += 1
@@ -59,7 +112,13 @@ public enum KnowledgeContextBuilder {
             }
             included += 1
         }
-        return KnowledgeContext(text: parts.joined(separator: "\n\n"), includedNoteCount: included, truncatedNoteCount: truncated)
+        return KnowledgeContext(
+            text: parts.joined(separator: "\n\n"),
+            includedNoteCount: included,
+            truncatedNoteCount: truncated,
+            activeDomainNames: activeDomainNames,
+            excludedByInactiveDomainCount: excluded
+        )
     }
 }
 
@@ -83,6 +142,7 @@ public final class LiveAnswerContext: @unchecked Sendable {
     private let lock = NSLock()
     private var knowledge = KnowledgeContext.empty
     private var exchanges: [PriorExchange] = []
+    private var domains: [ExpertDomain] = []
 
     public init() {}
 
@@ -94,6 +154,18 @@ public final class LiveAnswerContext: @unchecked Sendable {
         lock.withLock { exchanges }
     }
 
+    public var allDomains: [ExpertDomain] {
+        lock.withLock { domains }
+    }
+
+    public var activeDomains: [ExpertDomain] {
+        lock.withLock { domains.filter(\.isActive).sorted { ($0.sortOrder, $0.name) < ($1.sortOrder, $1.name) } }
+    }
+
+    public var activeDomainNames: [String] {
+        activeDomains.map(\.trimmedName)
+    }
+
     public func update(knowledge: KnowledgeContext) {
         lock.withLock { self.knowledge = knowledge }
     }
@@ -102,8 +174,15 @@ public final class LiveAnswerContext: @unchecked Sendable {
         lock.withLock { exchanges = recentExchanges }
     }
 
+    public func update(domains: [ExpertDomain]) {
+        lock.withLock { self.domains = domains }
+    }
+
     public var fingerprint: String {
-        let joined = lock.withLock { knowledge.text + "\u{1E}" + exchanges.map { $0.question + "\u{1F}" + $0.answer }.joined(separator: "\u{1E}") }
+        let joined = lock.withLock {
+            let domainPart = domains.map { "\($0.id.uuidString)|\($0.isActive)|\($0.name)|\($0.role)|\($0.guidance)" }.joined(separator: "\u{1E}")
+            return knowledge.text + "\u{1E}" + exchanges.map { $0.question + "\u{1F}" + $0.answer }.joined(separator: "\u{1E}") + "\u{1D}" + domainPart
+        }
         return ContentFingerprint.of(joined)
     }
 }

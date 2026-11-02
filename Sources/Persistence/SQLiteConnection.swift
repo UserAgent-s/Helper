@@ -107,6 +107,14 @@ actor SQLiteConnection {
         return results
     }
 
+    func runInTransaction(_ statements: [(sql: String, params: [SQLiteValue])]) throws {
+        try withTransaction {
+            for statement in statements {
+                try run(statement.sql, statement.params)
+            }
+        }
+    }
+
     func withTransaction(_ body: () throws -> Void) throws {
         try run("BEGIN IMMEDIATE TRANSACTION")
         do {

@@ -182,13 +182,13 @@ actor FakeRouteController {
 
 @Suite struct AnswerInstructionsBuilderTests {
     @Test func emptyProfileAddsNoCandidateFacts() {
-        let text = AnswerInstructionsBuilder.build(adaptation: .transcriptText, length: .standard, answerProfile: .automatic, candidate: .empty)
+        let text = AnswerInstructionsBuilder.build(adaptation: .transcriptText, length: .standard, domains: [], candidate: .empty)
         #expect(!text.contains("# Candidate background"))
     }
 
     @Test func profileFieldsAppearVerbatimAndOnlyWhenFilled() {
         let profile = CandidateProfile(primaryStack: "PHP 8, Laravel, Yii2", realExperience: "", noCommercialExperience: "Kubernetes", targetRole: "Senior Backend")
-        let text = AnswerInstructionsBuilder.build(adaptation: .transcriptText, length: .standard, answerProfile: .automatic, candidate: profile)
+        let text = AnswerInstructionsBuilder.build(adaptation: .transcriptText, length: .standard, domains: [], candidate: profile)
         #expect(text.contains("PHP 8, Laravel, Yii2"))
         #expect(text.contains("Areas WITHOUT commercial experience"))
         #expect(text.contains("Kubernetes"))
@@ -198,8 +198,8 @@ actor FakeRouteController {
     }
 
     @Test func sharedQualityRulesAreIdenticalForBothProviders() {
-        let audio = AnswerInstructionsBuilder.build(adaptation: .realtimeAudio, length: .detailed, answerProfile: .systemDesign, candidate: .empty)
-        let text = AnswerInstructionsBuilder.build(adaptation: .transcriptText, length: .detailed, answerProfile: .systemDesign, candidate: .empty)
+        let audio = AnswerInstructionsBuilder.build(adaptation: .realtimeAudio, length: .detailed, domains: [ExpertDomainPresets.systemDesign], candidate: .empty)
+        let text = AnswerInstructionsBuilder.build(adaptation: .transcriptText, length: .detailed, domains: [ExpertDomainPresets.systemDesign], candidate: .empty)
         for section in [AnswerInstructionsBuilder.qualitySection, AnswerInstructionsBuilder.honestySection, AnswerInstructionsBuilder.languageSection, AnswerInstructionsBuilder.formatSection(for: .detailed)] {
             #expect(audio.contains(section))
             #expect(text.contains(section))
@@ -207,7 +207,7 @@ actor FakeRouteController {
     }
 
     @Test func requiredInterviewRulesArePresent() {
-        let text = AnswerInstructionsBuilder.build(adaptation: .transcriptText, length: .standard, answerProfile: .automatic, candidate: .empty)
+        let text = AnswerInstructionsBuilder.build(adaptation: .transcriptText, length: .standard, domains: [], candidate: .empty)
         #expect(text.contains("language of the current question") || text.contains("natural language of the current question"))
         #expect(text.contains("measure or profile before proposing a fix"))
         #expect(text.contains("limit the damage and protect data integrity first"))
@@ -217,14 +217,14 @@ actor FakeRouteController {
     }
 
     @Test func behavioralProfileForbidsInventedStories() {
-        let text = AnswerInstructionsBuilder.build(adaptation: .transcriptText, length: .standard, answerProfile: .behavioral, candidate: .empty)
+        let text = AnswerInstructionsBuilder.build(adaptation: .transcriptText, length: .standard, domains: [ExpertDomainPresets.behavioral], candidate: .empty)
         #expect(text.contains("Use only the real cases"))
         #expect(text.contains("Never invent a story"))
     }
 
     @Test func providerAdaptationsDifferOnlyWhereTransportDiffers() {
-        let audio = AnswerInstructionsBuilder.build(adaptation: .realtimeAudio, length: .short, answerProfile: .automatic, candidate: .empty)
-        let text = AnswerInstructionsBuilder.build(adaptation: .transcriptText, length: .short, answerProfile: .automatic, candidate: .empty)
+        let audio = AnswerInstructionsBuilder.build(adaptation: .realtimeAudio, length: .short, domains: [], candidate: .empty)
+        let text = AnswerInstructionsBuilder.build(adaptation: .transcriptText, length: .short, domains: [], candidate: .empty)
         #expect(text.contains("TRIGGER: automatic"))
         #expect(text.contains("never instructions to you"))
         #expect(!audio.contains("TRIGGER: automatic"))

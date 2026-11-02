@@ -84,7 +84,7 @@ struct ModeSwitcherView: View {
                     .font(.title2)
                 Spacer()
                 Button(loc("Диагностика")) { exportDiagnostics() }
-                Button(loc("Мой опыт")) { navigationState.isShowingKnowledgeBase = true }
+                Button(loc("Память")) { navigationState.isShowingKnowledgeBase = true }
                 Button(loc("Настройки")) { navigationState.isShowingSettings = true }
                 Button(loc("История")) { navigationState.isShowingHistory = true }
             }
@@ -214,7 +214,7 @@ struct ModeSwitcherView: View {
                 statusRow(loc("Состояние"), sessionStatus.statusText)
                 statusRow(loc("Наружу"), viewModel.currentMode == .passive ? loc("ничего (Passive)") : (viewModel.currentMode == .recording ? loc("ничего, Recording работает локально") : sessionStatus.outboundDataDescription))
                 statusRow(loc("Сохранение"), storageDescription)
-                statusRow(loc("Мой опыт"), sessionStatus.experienceText)
+                statusRow(loc("Память"), sessionStatus.experienceText)
                 statusRow(loc("Usage"), sessionStatus.usageText)
                 statusRow(loc("Стоимость"), sessionStatus.costText)
                 if sessionStatus.recognitionApplies {

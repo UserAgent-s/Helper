@@ -1,12 +1,5 @@
 import Foundation
 
-public enum InterviewAnswerProfile: String, Codable, Sendable, CaseIterable {
-    case automatic
-    case phpBackend
-    case systemDesign
-    case behavioral
-}
-
 public struct CandidateProfile: Codable, Sendable, Equatable {
     public var primaryStack: String
     public var realExperience: String

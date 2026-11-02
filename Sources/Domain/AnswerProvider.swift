@@ -26,20 +26,20 @@ public struct AnswerSessionConfiguration: Sendable, Equatable {
     public let selection: AnswerModelSelection
     public let triggerMode: AnswerTriggerMode
     public let answerLength: AnswerLength
-    public let answerProfile: InterviewAnswerProfile
+    public let expertAreas: [String]
     public let profileFingerprint: String
 
     public init(
         selection: AnswerModelSelection,
         triggerMode: AnswerTriggerMode,
         answerLength: AnswerLength,
-        answerProfile: InterviewAnswerProfile,
+        expertAreas: [String] = [],
         profileFingerprint: String
     ) {
         self.selection = selection
         self.triggerMode = triggerMode
         self.answerLength = answerLength
-        self.answerProfile = answerProfile
+        self.expertAreas = expertAreas
         self.profileFingerprint = profileFingerprint
     }
 }

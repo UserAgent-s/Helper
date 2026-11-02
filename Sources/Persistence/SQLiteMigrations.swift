@@ -124,5 +124,23 @@ enum SQLiteMigrations {
             )
             """,
         ]),
+        SQLiteMigration(version: 3, statements: [
+            """
+            CREATE TABLE IF NOT EXISTS expert_domains (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                role TEXT NOT NULL,
+                guidance TEXT NOT NULL,
+                is_active INTEGER NOT NULL,
+                sort_order INTEGER NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            """,
+            "ALTER TABLE knowledge_notes ADD COLUMN domain_id TEXT",
+            "ALTER TABLE knowledge_notes ADD COLUMN origin TEXT NOT NULL DEFAULT 'manual'",
+        ]),
+        SQLiteMigration(version: 4, statements: [
+            "ALTER TABLE qa_entries ADD COLUMN expansion_text TEXT",
+        ]),
     ]
 }

@@ -209,11 +209,6 @@ final class SettingsViewModel {
         set { settingsStore.answerLength = newValue; settingsChanged() }
     }
 
-    var answerProfile: InterviewAnswerProfile {
-        get { _ = revision; return settingsStore.answerProfile }
-        set { settingsStore.answerProfile = newValue; settingsChanged() }
-    }
-
     func updateProfile(_ keyPath: WritableKeyPath<CandidateProfile, String>, _ value: String) {
         candidateProfile[keyPath: keyPath] = value
         settingsStore.candidateProfile = candidateProfile

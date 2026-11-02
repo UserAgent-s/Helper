@@ -98,3 +98,21 @@ import Domain
         #expect(b?.answerText == "Ответ B")
     }
 }
+
+@Suite struct SQLiteQuestionAnswerExpansionTests {
+    @Test func expansionPersistsAndSurvivesLaterSavesWithoutIt() async throws {
+        let path = FileManager.default.temporaryDirectory.appendingPathComponent("ma-expansion-\(UUID().uuidString).sqlite3").path
+        let repository = SQLiteQuestionAnswerRepository(path: path)
+        var pair = QuestionAnswerPair(askedAt: Date(), sourceAppBundleID: nil, questionText: "q", contextWindowStartedAt: Date(), contextWindowDurationMs: 0, triggerKind: .manual, answerText: "a", modelID: "m", responseID: "r", status: .completed)
+        try await repository.save(pair)
+        pair.expansionText = "deep"
+        try await repository.save(pair)
+        #expect(try await repository.history(limit: 1).first?.expansionText == "deep")
+        pair.expansionText = nil
+        pair.usageTokens = 42
+        try await repository.save(pair)
+        let stored = try await repository.history(limit: 1).first
+        #expect(stored?.expansionText == "deep")
+        #expect(stored?.usageTokens == 42)
+    }
+}
