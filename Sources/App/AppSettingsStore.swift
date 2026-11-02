@@ -38,6 +38,7 @@ final class AppSettingsStore: @unchecked Sendable {
         static let remoteDisplayEnabled = "com.local.MeetingAssistant.settings.remoteDisplayEnabled"
         static let remoteDisplayPort = "com.local.MeetingAssistant.settings.remoteDisplayPort"
         static let remoteDisplayToken = "com.local.MeetingAssistant.settings.remoteDisplayToken"
+        static let showMenuBarIcon = "com.local.MeetingAssistant.settings.showMenuBarIcon"
     }
 
     static let defaultRemoteDisplayPort = 8765
@@ -240,6 +241,11 @@ final class AppSettingsStore: @unchecked Sendable {
     var remoteDisplayEnabled: Bool {
         get { defaults.bool(forKey: Keys.remoteDisplayEnabled) }
         set { defaults.set(newValue, forKey: Keys.remoteDisplayEnabled) }
+    }
+
+    var showMenuBarIcon: Bool {
+        get { defaults.object(forKey: Keys.showMenuBarIcon) as? Bool ?? true }
+        set { defaults.set(newValue, forKey: Keys.showMenuBarIcon) }
     }
 
     var remoteDisplayPort: Int {

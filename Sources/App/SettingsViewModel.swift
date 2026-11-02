@@ -252,6 +252,11 @@ final class SettingsViewModel {
         set { settingsStore.diagnosticsIncludeContentOptIn = newValue; revision += 1 }
     }
 
+    var showMenuBarIcon: Bool {
+        get { _ = revision; return settingsStore.showMenuBarIcon }
+        set { settingsStore.showMenuBarIcon = newValue; revision += 1 }
+    }
+
     var keyMigrationNote: String? {
         guard let outcome = settingsStore.lastKeyMigrationOutcome else { return nil }
         if outcome.hasPrefix("failedKeptLegacy") {

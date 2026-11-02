@@ -66,7 +66,8 @@ final class OverlayCoordinator {
         menuBarController = MenuBarController(
             overlayViewModel: root.answerOverlayViewModel,
             modeViewModel: root.modeViewModel,
-            navigationState: root.navigationState
+            navigationState: root.navigationState,
+            settingsStore: root.settingsStore
         )
     }
 }

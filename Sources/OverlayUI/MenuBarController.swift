@@ -9,6 +9,8 @@ final class MenuBarController: NSObject {
     private let overlayViewModel: AnswerOverlayViewModel
     private let modeViewModel: ModeSwitcherViewModel
     private let navigationState: AppNavigationState
+    private let settingsStore: AppSettingsStore
+    private var defaultsObserver: (any NSObjectProtocol)?
 
     private let statusLabelItem: NSMenuItem
     private let passiveItem: NSMenuItem
@@ -21,10 +23,11 @@ final class MenuBarController: NSObject {
     private let quitItem: NSMenuItem
     private var languageOptionItems: [AppLanguage: NSMenuItem] = [:]
 
-    init(overlayViewModel: AnswerOverlayViewModel, modeViewModel: ModeSwitcherViewModel, navigationState: AppNavigationState) {
+    init(overlayViewModel: AnswerOverlayViewModel, modeViewModel: ModeSwitcherViewModel, navigationState: AppNavigationState, settingsStore: AppSettingsStore) {
         self.overlayViewModel = overlayViewModel
         self.modeViewModel = modeViewModel
         self.navigationState = navigationState
+        self.settingsStore = settingsStore
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusLabelItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
@@ -70,7 +73,10 @@ final class MenuBarController: NSObject {
         observeOverlayState()
         observeModeState()
         observeLanguage()
+        observeMenuBarVisibility()
     }
+
+    var isStatusItemVisible: Bool { statusItem.isVisible }
 
     @objc private func selectPassiveTapped() { modeViewModel.select(.passive) }
     @objc private func selectAnswersTapped() { modeViewModel.select(.answers) }
@@ -204,5 +210,20 @@ final class MenuBarController: NSObject {
     private func syncEnabledState() {
         let visibility = overlayViewModel.state.visibility
         forceAnswerItem.isEnabled = visibility != .manualResponsePending && visibility != .streaming && visibility != .hidden
+    }
+
+    private func observeMenuBarVisibility() {
+        defaultsObserver = NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: nil) { [weak self] _ in
+            Task { @MainActor in
+                self?.syncVisibility()
+            }
+        }
+        syncVisibility()
+    }
+
+    private func syncVisibility() {
+        let shouldShow = settingsStore.showMenuBarIcon
+        guard statusItem.isVisible != shouldShow else { return }
+        statusItem.isVisible = shouldShow
     }
 }

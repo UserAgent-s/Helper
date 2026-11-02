@@ -7959,6 +7959,75 @@
           }
         }
       }
+    },
+    "Строка меню": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Строка меню"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menu bar"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Рядок меню"
+          }
+        }
+      }
+    },
+    "Показывать значок в строке меню": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показывать значок в строке меню"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show icon in the menu bar"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показувати значок у рядку меню"
+          }
+        }
+      }
+    },
+    "Если значок скрыт, режимы переключаются в главном окне приложения и с удалённого экрана, «Ответить сейчас» — по горячей клавише. Окно приложения можно вернуть кликом по иконке в Dock.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Если значок скрыт, режимы переключаются в главном окне приложения и с удалённого экрана, «Ответить сейчас» — по горячей клавише. Окно приложения можно вернуть кликом по иконке в Dock."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When the icon is hidden, modes are switched in the main app window and from the remote display, and “Answer now” works via its hotkey. Click the app icon in the Dock to bring the window back."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Якщо значок приховано, режими перемикаються в головному вікні застосунку та з віддаленого екрана, «Відповісти зараз» — гарячою клавішею. Вікно застосунку можна повернути кліком по іконці в Dock."
+          }
+        }
+      }
     }
   }
 }

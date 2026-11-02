@@ -100,6 +100,13 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
+            Section(loc("Строка меню")) {
+                Toggle(loc("Показывать значок в строке меню"), isOn: $viewModel.showMenuBarIcon)
+                Text(loc("Если значок скрыт, режимы переключаются в главном окне приложения и с удалённого экрана, «Ответить сейчас» — по горячей клавише. Окно приложения можно вернуть кликом по иконке в Dock."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             if let remote = viewModel.remoteDisplay {
                 RemoteDisplaySettingsSection(coordinator: remote)
             }
