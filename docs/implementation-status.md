@@ -649,3 +649,12 @@ Task { [answersController] in await answersController.stop(); try? await answers
 Создан отдельный репозиторий из предоставленной папки без Git-истории. Исходный снимок сохранён в main. В codex/useragent057 переименованы приложение, Xcode target/schemes, Swift package, bundle ID, настройки, Keychain service, папка данных и экспорта. Перевод всех звуковых устройств и локальная LLM ещё не реализованы.
 
 Проверка: XcodeGen сгенерировал UserAgent057.xcodeproj; xcodebuild build и test завершились успешно (7 тестов приложения). Проверены plist, JSON локализации и git diff --check. Сборка Debug без подписи: build/DerivedData/Build/Products/Debug/UserAgent057.app. Захват звука и перевод в реальном сеансе не проверялись.
+
+## 2026-11-08 — План v3, этап M0: S0.1 документы и ADR
+
+Владелец принял план v3 с вариантами по умолчанию (артефакт «UserAgent057 План v3»). Работа идёт в ветке `codex/useragent057-m0`, по коммиту на шаг.
+
+**S0.1.** Добавлены ADR 0004–0008. ADR 0002 помечен как частично заменённый ADR 0004: асинхронный Whisper в `answers` отменяется в S1.7, после этого правило CLAUDE.md «answers mode never starts Whisper» выполняется. В `product-contract.md` добавлен раздел утверждённых изменений, вступающих по этапам, и уже действующие правки S0.4 про Answer now и отмену ответа. В `privacy.md` исправлено устаревшее утверждение про WAV и добавлена таблица исходящих потоков. В README исправлены утверждения про Keychain и про экспорт диагностики, которые расходились с кодом.
+
+Исходное состояние ветки: `swift test` — 247 тестов, все зелёные (Swift 6.4.2, macOS 27.2).
+

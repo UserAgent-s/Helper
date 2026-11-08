@@ -197,3 +197,12 @@ Error anywhere in answers/recording adapters
 ```
 
 Прямой переход `answers -> recording` не допускается доменной машиной состояний: `ModeCoordinator` всегда прогоняет `stop()` текущей сессии и переустанавливает `currentMode = .passive` перед стартом новой, даже если конечный запрошенный режим не `passive`. Это гарантирует отсутствие одновременно двух активных сессий.
+
+## Решения плана v3 (2026-11-08)
+
+- `docs/adr/0004-capture-hub-and-system-audio.md` — один захват на устройство, `CaptureHub` и `AsyncBroadcaster`, весь системный звук по умолчанию, выбор микрофона и маршрут вывода.
+- `docs/adr/0005-lan-companion-and-client-role.md` — второй экран в LAN, роли «Основной» и «Подключаемый», общий `CompanionProtocol`.
+- `docs/adr/0006-assistant-sessions.md` — сессия как контейнер над режимами.
+- `docs/adr/0007-claude-profile-and-expansion.md` — Claude, профиль из MD-папки, шов `ProfileKnowledgeProviding`.
+- `docs/adr/0008-assistant-memory.md` — четыре уровня памяти, правила записи и поиска, метрики.
+
