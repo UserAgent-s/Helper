@@ -29,9 +29,6 @@ public struct SummaryCostEstimate: Sendable, Equatable {
 }
 
 public enum CostEstimator {
-    /// Грубая эвристика без токенайзера конкретной модели: ~4 символа на токен
-    /// для латиницы, но кириллица кодируется BPE плотнее — берём консервативно
-    /// 2.5 символа/токен, чтобы оценка скорее завышала, чем занижала стоимость.
     private static let charactersPerToken = 2.5
 
     public static func estimateTokens(forCharacterCount characterCount: Int) -> Int {

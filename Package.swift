@@ -16,8 +16,6 @@ let package = Package(
         .library(name: "OverlayReducer", targets: ["OverlayReducer"]),
     ],
     dependencies: [
-        // Точная версия закреплена (v1.1.0, последний стабильный релиз на 2026-08-22).
-        // Продукт "WhisperKit" используется только модулем Transcription.
         .package(url: "https://github.com/argmaxinc/argmax-oss-swift.git", exact: "1.1.0"),
     ],
     targets: [
@@ -112,6 +110,11 @@ let package = Package(
         .testTarget(
             name: "DiagnosticsTests",
             dependencies: ["Diagnostics"],
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .testTarget(
+            name: "RealAPITests",
+            dependencies: ["RealtimeClient", "Domain", "Diagnostics"],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
     ]

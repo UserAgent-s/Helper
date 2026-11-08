@@ -658,3 +658,11 @@ Task { [answersController] in await answersController.stop(); try? await answers
 
 Исходное состояние ветки: `swift test` — 247 тестов, все зелёные (Swift 6.4.2, macOS 27.2).
 
+
+**S0.2.** Добавлены `Makefile` (`verify-fast`: проверка версии XcodeGen 2.45.4, линтер комментариев, `swift build`, `swift test --skip RealAPITests`, `xcodebuild test` с `CODE_SIGNING_ALLOWED=NO`; `verify-real`: без `OPENAI_API_KEY` завершается с кодом 2, иначе `RUN_REAL_API_TESTS=1 swift test --filter RealAPITests`) и `scripts/check-no-comments.sh`. Линтер пропускает строковые литералы, многострочные строки и обязательную строку `// swift-tools-version` в `Package.swift`. Новый тест-таргет `RealAPITests` озвучивает фразу через `/usr/bin/say` прямо в PCM16 24 кГц и проверяет первую text delta по аудио и по «Ответить сейчас». Без переменной окружения он пропускается.
+
+Удалены 12 строк комментариев. Их смысл переносится сюда:
+- `MeetingRepository.reconcileInterruptedMeetings()` (`Protocols.swift`) вызывается один раз при старте: встреча, оставшаяся в статусе `.recording` после аварийного завершения, помечается `.interrupted`.
+- `TranscriptChunker` режет стенограмму только по границам реплик, каждый чанк не длиннее `maxCharactersPerChunk`, а короткая стенограмма возвращается одним чанком.
+- `CostEstimator` оценивает токены без токенайзера: 2.5 символа на токен, консервативно для кириллицы, чтобы оценка скорее завышала стоимость.
+- WhisperKit закреплён на `argmax-oss-swift` 1.1.0 (`exact:`), продукт используется только модулем `Transcription`.

@@ -40,9 +40,6 @@ public protocol MeetingRepository: Sendable {
     func createMeeting(startedAt: Date, sourceAppBundleID: String?) async throws -> MeetingID
     func appendSegment(_ segment: TranscribedSegment, meetingID: MeetingID) async throws
     func finish(meetingID: MeetingID, endedAt: Date) async throws
-    /// Вызывается один раз при старте приложения: любая встреча, оставшаяся в
-    /// статусе `.recording` от предыдущего (аварийно завершённого) запуска,
-    /// помечается `.interrupted`, чтобы не выглядеть как ещё идущая запись.
     func reconcileInterruptedMeetings() async throws -> [MeetingID]
     func fetch(meetingID: MeetingID) async throws -> Meeting
     func history(limit: Int, offset: Int) async throws -> [Meeting]

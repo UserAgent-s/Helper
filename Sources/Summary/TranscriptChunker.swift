@@ -1,10 +1,6 @@
 import Domain
 
 public enum TranscriptChunker {
-    /// Разбивает transcript на чанки по границам реплик (реплика никогда не
-    /// режется пополам), каждый — не длиннее `maxCharactersPerChunk` символов
-    /// в текстовом представлении. Возвращает один чанк целиком, если
-    /// transcript уже укладывается в лимит.
     public static func chunk(_ segments: [TranscribedSegment], maxCharactersPerChunk: Int) -> [[TranscribedSegment]] {
         guard !segments.isEmpty else { return [] }
 
