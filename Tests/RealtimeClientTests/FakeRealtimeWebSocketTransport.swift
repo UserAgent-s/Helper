@@ -20,10 +20,10 @@ final class FakeRealtimeWebSocketTransport: RealtimeWebSocketTransport, @uncheck
         return body()
     }
 
-    func connect(url: URL, bearerToken: String) async throws {
+    func connect(url: URL, auth: AuthStrategy) async throws {
         withLockedState {
             _connectCallCount += 1
-            _lastBearerToken = bearerToken
+            if case .bearer(let token) = auth { _lastBearerToken = token }
         }
         if let connectError { throw connectError }
     }

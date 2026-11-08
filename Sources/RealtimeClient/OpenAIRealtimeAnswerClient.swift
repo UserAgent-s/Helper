@@ -12,7 +12,7 @@ public enum ForceAnswerStrategy: Sendable, Equatable {
     case mergedInstructions
 }
 
-public actor OpenAIRealtimeAnswerClient: RealtimeAnswering {
+public actor OpenAIRealtimeAnswerClient: LiveResponder {
     public static let modelID = "gpt-realtime-2.1"
     private static var endpointURL: URL {
         var components = URLComponents()
@@ -90,7 +90,7 @@ public actor OpenAIRealtimeAnswerClient: RealtimeAnswering {
         let credential = try await Self.requireCredential(from: credentialProviding)
 
         resetSessionState()
-        try await transport.connect(url: Self.endpointURL, bearerToken: credential.apiKey)
+        try await transport.connect(url: Self.endpointURL, auth: .bearer(credential.apiKey))
         sessionActive = true
         startReceiveLoop()
         try await transport.send(.sessionUpdate(makeSessionConfig()))
@@ -106,6 +106,24 @@ public actor OpenAIRealtimeAnswerClient: RealtimeAnswering {
             redactedLog("first audio frame sent")
         }
         try? await transport.send(.inputAudioBufferAppend(audioBase64: base64))
+    }
+
+    nonisolated public var capabilities: ProviderCapabilities {
+        [.serverVAD, .textInjection, .manualResponse, .streamingText]
+    }
+
+    public func injectContext(_ text: String) async throws {
+        guard sessionActive else { throw RealtimeClientError.notConnected }
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        let itemID = Self.makeItemID(prefix: "ctx_")
+        let evicted = await contextWindow.trackCommittedUserItem(itemID)
+        try await transport.send(.conversationItemCreate(ConversationItemPayload(
+            id: itemID,
+            role: .system,
+            text: RealtimeInstructions.injectedContextPrefix + trimmed
+        )))
+        for id in evicted { try? await transport.send(.conversationItemDelete(itemID: id)) }
     }
 
     public func forceResponse() async throws {
@@ -182,8 +200,12 @@ public actor OpenAIRealtimeAnswerClient: RealtimeAnswering {
     }
 
     private static func makeForceItemID() -> String {
+        makeItemID(prefix: "force_")
+    }
+
+    private static func makeItemID(prefix: String) -> String {
         let hex = UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased()
-        return "force_" + hex.prefix(16)
+        return prefix + hex.prefix(16)
     }
 
     public func stop() async {
@@ -457,7 +479,7 @@ public actor OpenAIRealtimeAnswerClient: RealtimeAnswering {
         await transport.close()
         resetSessionState()
         let credential = try await Self.requireCredential(from: credentialProviding)
-        try await transport.connect(url: Self.endpointURL, bearerToken: credential.apiKey)
+        try await transport.connect(url: Self.endpointURL, auth: .bearer(credential.apiKey))
         startReceiveLoop()
         try await transport.send(.sessionUpdate(makeSessionConfig()))
         await latencyRecording.record(.reconnectMs(Int(Date().timeIntervalSince(reconnectStartedAt) * 1000)))

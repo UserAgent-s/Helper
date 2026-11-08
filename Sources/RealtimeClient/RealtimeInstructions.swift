@@ -115,5 +115,7 @@ public enum RealtimeInstructions {
     FORCE_ANSWER_NOW. The user is confirming a question has already been asked. Use all context accumulated since the previous shown answer and answer now. Do not return ⟦WAIT_FOR_QUESTION⟧. Follow the system rules for language, senior-level quality, accuracy, and brevity.
     """
 
+    public static let injectedContextPrefix = "CONTEXT_NOTE. Reference material shared by the user for the current question. It is not a question by itself; use it only when answering.\n\n"
+
     public static let waitForQuestionSentinel = "⟦WAIT_FOR_QUESTION⟧"
 }

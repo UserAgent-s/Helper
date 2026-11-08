@@ -22,7 +22,7 @@ private actor FakeSystemAudioCapturing: SystemAudioCapturing {
     }
 }
 
-private actor FakeRealtimeAnswering: RealtimeAnswering {
+private actor FakeLiveResponder: LiveResponder {
     private let stream: AsyncStream<RealtimeAnswerEvent>
     private let continuation: AsyncStream<RealtimeAnswerEvent>.Continuation
     private(set) var startCallCount = 0
@@ -32,6 +32,10 @@ private actor FakeRealtimeAnswering: RealtimeAnswering {
     init() {
         (stream, continuation) = AsyncStream<RealtimeAnswerEvent>.makeStream()
     }
+
+    nonisolated var capabilities: ProviderCapabilities { [.serverVAD, .textInjection, .manualResponse, .streamingText] }
+
+    func injectContext(_ text: String) async throws {}
 
     func start(instructions: String) async throws {
         startCallCount += 1
@@ -63,7 +67,7 @@ private actor FakeRealtimeAnswering: RealtimeAnswering {
 
     @Test func resettingAfterCompletedAnswerDoesNotRestartTheRealtimeSession() async throws {
         let systemAudio = FakeSystemAudioCapturing()
-        let realtime = FakeRealtimeAnswering()
+        let realtime = FakeLiveResponder()
         let answersController = AnswersModeController(systemAudio: systemAudio, realtime: realtime, answerTrigger: ManualAnswerTrigger(), instructionsProvider: { "test" })
         let modeCoordinator = ModeCoordinator(controllers: [.answers: answersController])
         _ = await modeCoordinator.requestTransition(to: .answers)
@@ -88,7 +92,7 @@ private actor FakeRealtimeAnswering: RealtimeAnswering {
 
     @Test func resettingWhileCollectingContextResetsWithoutRestartingTheSession() async throws {
         let systemAudio = FakeSystemAudioCapturing()
-        let realtime = FakeRealtimeAnswering()
+        let realtime = FakeLiveResponder()
         let answersController = AnswersModeController(systemAudio: systemAudio, realtime: realtime, answerTrigger: ManualAnswerTrigger(), instructionsProvider: { "test" })
         let modeCoordinator = ModeCoordinator(controllers: [.answers: answersController])
         _ = await modeCoordinator.requestTransition(to: .answers)

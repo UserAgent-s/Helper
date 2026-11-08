@@ -146,7 +146,7 @@ actor FakeMicrophoneCapturing: MicrophoneCapturing {
     }
 }
 
-actor FakeRealtimeAnswering: RealtimeAnswering {
+actor FakeLiveResponder: LiveResponder {
     private let stream: AsyncStream<RealtimeAnswerEvent>
     private let continuation: AsyncStream<RealtimeAnswerEvent>.Continuation
     private(set) var startCalled = false
@@ -159,6 +159,10 @@ actor FakeRealtimeAnswering: RealtimeAnswering {
     init() {
         (stream, continuation) = AsyncStream<RealtimeAnswerEvent>.makeStream()
     }
+
+    nonisolated var capabilities: ProviderCapabilities { [.serverVAD, .textInjection, .manualResponse, .streamingText] }
+
+    func injectContext(_ text: String) async throws {}
 
     func setForceResponseError(_ error: TestError?) {
         forceResponseError = error

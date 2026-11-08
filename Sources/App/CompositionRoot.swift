@@ -19,7 +19,7 @@ final class CompositionRoot {
     let answersSystemAudioCapturing: any SystemAudioCapturing
     let recordingSystemAudioCapturing: any SystemAudioCapturing
     let microphoneCapturing: any MicrophoneCapturing
-    let realtimeAnswering: any RealtimeAnswering
+    let realtimeAnswering: any LiveResponder
     let localTranscribing: any LocalTranscribing
     let whisperKitTranscribing: WhisperKitTranscribing
     let meetingRepository: any MeetingRepository

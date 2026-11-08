@@ -6,7 +6,7 @@ import Testing
 
     private func makeController(
         systemAudio: FakeSystemAudioCapturing,
-        realtime: FakeRealtimeAnswering,
+        realtime: FakeLiveResponder,
         trigger: FakeAnswerTriggering
     ) -> AnswersModeController {
         AnswersModeController(systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
@@ -14,7 +14,7 @@ import Testing
 
     @Test func shortQuestionProducesOneVisibleAnswer() async throws {
         let systemAudio = FakeSystemAudioCapturing()
-        let realtime = FakeRealtimeAnswering()
+        let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
         let controller = makeController(systemAudio: systemAudio, realtime: realtime, trigger: trigger)
 
@@ -33,7 +33,7 @@ import Testing
 
     @Test func statementWithoutQuestionWaitsWithoutStartingResponse() async throws {
         let systemAudio = FakeSystemAudioCapturing()
-        let realtime = FakeRealtimeAnswering()
+        let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
         let controller = makeController(systemAudio: systemAudio, realtime: realtime, trigger: trigger)
 
@@ -51,7 +51,7 @@ import Testing
 
     @Test func threeTurnExplanationThenQuestionAccumulatesFullContextSnapshot() async throws {
         let systemAudio = FakeSystemAudioCapturing()
-        let realtime = FakeRealtimeAnswering()
+        let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
         let transcribing = FakeLocalTranscribing()
         let repository = FakeQuestionAnswerRepository()
@@ -79,7 +79,7 @@ import Testing
 
     @Test func rhetoricalQuestionThenContinuedExplanationThenRealQuestionYieldsOneAnswer() async throws {
         let systemAudio = FakeSystemAudioCapturing()
-        let realtime = FakeRealtimeAnswering()
+        let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
         let controller = makeController(systemAudio: systemAudio, realtime: realtime, trigger: trigger)
 
@@ -97,7 +97,7 @@ import Testing
 
     @Test func sentinelMisclassifiedThenManualTriggerForcesResponse() async throws {
         let systemAudio = FakeSystemAudioCapturing()
-        let realtime = FakeRealtimeAnswering()
+        let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
         let controller = makeController(systemAudio: systemAudio, realtime: realtime, trigger: trigger)
 
@@ -113,7 +113,7 @@ import Testing
 
     @Test func pauseInsideQuestionDoesNotSplitContextWindow() async throws {
         let systemAudio = FakeSystemAudioCapturing()
-        let realtime = FakeRealtimeAnswering()
+        let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
         let transcribing = FakeLocalTranscribing()
         let repository = FakeQuestionAnswerRepository()
@@ -137,7 +137,7 @@ import Testing
 
     @Test func twoQuestionsInARowEachGetOwnAnswerAndFreshWindow() async throws {
         let systemAudio = FakeSystemAudioCapturing()
-        let realtime = FakeRealtimeAnswering()
+        let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
         let controller = makeController(systemAudio: systemAudio, realtime: realtime, trigger: trigger)
 
@@ -159,7 +159,7 @@ import Testing
 
     @Test func russianAndEnglishTextBothFlowThroughStreamingUnmodified() async throws {
         let systemAudio = FakeSystemAudioCapturing()
-        let realtime = FakeRealtimeAnswering()
+        let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
         let controller = makeController(systemAudio: systemAudio, realtime: realtime, trigger: trigger)
         let collector = StreamEventCollector()
@@ -184,7 +184,7 @@ import Testing
 
     @Test func backgroundNoiseFramesAreForwardedWithoutSpecialHandling() async throws {
         let systemAudio = FakeSystemAudioCapturing()
-        let realtime = FakeRealtimeAnswering()
+        let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
         let controller = makeController(systemAudio: systemAudio, realtime: realtime, trigger: trigger)
 
@@ -200,7 +200,7 @@ import Testing
 
     @Test func sourceStreamDropMidSessionLeavesControllerStoppable() async throws {
         let systemAudio = FakeSystemAudioCapturing()
-        let realtime = FakeRealtimeAnswering()
+        let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
         let controller = makeController(systemAudio: systemAudio, realtime: realtime, trigger: trigger)
 

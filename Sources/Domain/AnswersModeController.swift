@@ -2,7 +2,7 @@ import Foundation
 
 public actor AnswersModeController: ModeController {
     private let systemAudio: any SystemAudioCapturing
-    private let realtime: any RealtimeAnswering
+    private let realtime: any LiveResponder
     private let answerTrigger: any AnswerTriggering
     private let preferredAudioSource: (any PreferredAudioSourceStoring)?
     private let instructionsProvider: @Sendable () async -> String
@@ -32,7 +32,7 @@ public actor AnswersModeController: ModeController {
 
     public init(
         systemAudio: any SystemAudioCapturing,
-        realtime: any RealtimeAnswering,
+        realtime: any LiveResponder,
         answerTrigger: any AnswerTriggering,
         preferredAudioSource: (any PreferredAudioSourceStoring)? = nil,
         instructionsProvider: @escaping @Sendable () async -> String,

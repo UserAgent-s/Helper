@@ -30,6 +30,6 @@ import Testing
 
     @Test(.enabled(if: ProcessInfo.processInfo.environment["MEETING_ASSISTANT_RUN_LIVE_EVALS"] == "1"))
     func liveModelRubricEval() async throws {
-        Issue.record("Live model evals require OPENAI_API_KEY and a real RealtimeAnswering pipeline; not implemented in this offline environment. Run manually with MEETING_ASSISTANT_RUN_LIVE_EVALS=1 once a live harness exists.")
+        Issue.record("Live model evals require OPENAI_API_KEY and a real LiveResponder pipeline; not implemented in this offline environment. Run manually with MEETING_ASSISTANT_RUN_LIVE_EVALS=1 once a live harness exists.")
     }
 }

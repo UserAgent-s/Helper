@@ -1,10 +1,16 @@
 import Domain
 
-public struct InactiveRealtimeAnswering: RealtimeAnswering {
+public struct InactiveLiveResponder: LiveResponder {
     public init() {}
 
+    public var capabilities: ProviderCapabilities { [] }
+
+    public func injectContext(_ text: String) async throws {
+        throw ProviderSeamError.unsupported("textInjection")
+    }
+
     public func start(instructions: String) async throws {
-        throw BootstrapUnavailableError.notYetImplemented("RealtimeAnswering подключается на этапе 04")
+        throw BootstrapUnavailableError.notYetImplemented("LiveResponder подключается на этапе 04")
     }
 
     public func appendAudio(_ frame: PCMAudioFrame) async {}
@@ -14,7 +20,7 @@ public struct InactiveRealtimeAnswering: RealtimeAnswering {
     }
 
     public func forceResponse() async throws {
-        throw BootstrapUnavailableError.notYetImplemented("RealtimeAnswering подключается на этапе 04")
+        throw BootstrapUnavailableError.notYetImplemented("LiveResponder подключается на этапе 04")
     }
 
     public func resetContext() async {}

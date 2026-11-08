@@ -6,8 +6,22 @@ public enum RealtimeTransportEvent: Sendable {
     case failed(String)
 }
 
+public enum AuthStrategy: Sendable, Equatable {
+    case bearer(String)
+    case header(name: String, value: String)
+
+    func apply(to request: inout URLRequest) {
+        switch self {
+        case .bearer(let token):
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        case .header(let name, let value):
+            request.setValue(value, forHTTPHeaderField: name)
+        }
+    }
+}
+
 public protocol RealtimeWebSocketTransport: Sendable {
-    func connect(url: URL, bearerToken: String) async throws
+    func connect(url: URL, auth: AuthStrategy) async throws
     func send(_ event: RealtimeClientEvent) async throws
     func events() -> AsyncStream<RealtimeTransportEvent>
     func close() async
@@ -31,9 +45,9 @@ public final class URLSessionRealtimeWebSocketTransport: NSObject, RealtimeWebSo
         return body()
     }
 
-    public func connect(url: URL, bearerToken: String) async throws {
+    public func connect(url: URL, auth: AuthStrategy) async throws {
         var request = URLRequest(url: url)
-        request.setValue("Bearer \(bearerToken)", forHTTPHeaderField: "Authorization")
+        auth.apply(to: &request)
 
         let urlSession = URLSession(configuration: .ephemeral, delegate: nil, delegateQueue: nil)
         let webSocketTask = urlSession.webSocketTask(with: request)

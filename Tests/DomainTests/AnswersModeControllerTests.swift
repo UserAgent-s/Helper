@@ -6,7 +6,7 @@ import Testing
 
     @Test func exactlyOneVisibleAnswerWhenManualRacesAutomatic() async throws {
         let systemAudio = FakeSystemAudioCapturing()
-        let realtime = FakeRealtimeAnswering()
+        let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
         let controller = AnswersModeController(systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
 
@@ -34,7 +34,7 @@ import Testing
 
     @Test func manualTriggerIgnoredWhileAlreadyStreaming() async throws {
         let systemAudio = FakeSystemAudioCapturing()
-        let realtime = FakeRealtimeAnswering()
+        let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
         let controller = AnswersModeController(systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
 
@@ -54,7 +54,7 @@ import Testing
 
     @Test func manualTriggerCancelledOnModeExit() async throws {
         let systemAudio = FakeSystemAudioCapturing()
-        let realtime = FakeRealtimeAnswering()
+        let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
         let controller = AnswersModeController(systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
 
@@ -73,7 +73,7 @@ import Testing
 
     @Test func manualTriggerWorksAfterCompletedAnswerWithoutWaitingForQuestionEvent() async throws {
         let systemAudio = FakeSystemAudioCapturing()
-        let realtime = FakeRealtimeAnswering()
+        let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
         let controller = AnswersModeController(systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
 
@@ -96,7 +96,7 @@ import Testing
 
     @Test func waitingForQuestionDoesNotStartAResponse() async throws {
         let systemAudio = FakeSystemAudioCapturing()
-        let realtime = FakeRealtimeAnswering()
+        let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
         let controller = AnswersModeController(systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
 
@@ -113,7 +113,7 @@ import Testing
 
     @Test func streamEventsCarryAccumulatedTextAndCompletion() async throws {
         let systemAudio = FakeSystemAudioCapturing()
-        let realtime = FakeRealtimeAnswering()
+        let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
         let controller = AnswersModeController(systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
 
@@ -137,7 +137,7 @@ import Testing
 
     @Test func noContextEmittedWhenManualTriggerRejected() async throws {
         let systemAudio = FakeSystemAudioCapturing()
-        let realtime = FakeRealtimeAnswering()
+        let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
         await realtime.setForceResponseError(TestError(message: "no_context"))
         let controller = AnswersModeController(systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
@@ -159,7 +159,7 @@ import Testing
 
     @Test func cancelledStreamEventClearsAccumulatedText() async throws {
         let systemAudio = FakeSystemAudioCapturing()
-        let realtime = FakeRealtimeAnswering()
+        let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
         let controller = AnswersModeController(systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
 
@@ -181,7 +181,7 @@ import Testing
 
     @Test func stopReleasesCaptureAndRealtimeResources() async throws {
         let systemAudio = FakeSystemAudioCapturing()
-        let realtime = FakeRealtimeAnswering()
+        let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
         let controller = AnswersModeController(systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
 
@@ -194,7 +194,7 @@ import Testing
 
     @Test func sentinelDoesNotCreateQuestionAnswerRecord() async throws {
         let systemAudio = FakeSystemAudioCapturing()
-        let realtime = FakeRealtimeAnswering()
+        let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
         let transcribing = FakeLocalTranscribing()
         let repository = FakeQuestionAnswerRepository()
@@ -216,7 +216,7 @@ import Testing
 
     @Test func firstDeltaLogsAutomaticAnswerWithContextSnapshot() async throws {
         let systemAudio = FakeSystemAudioCapturing()
-        let realtime = FakeRealtimeAnswering()
+        let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
         let transcribing = FakeLocalTranscribing()
         let repository = FakeQuestionAnswerRepository()
@@ -248,7 +248,7 @@ import Testing
 
     @Test func capturedFramesRecordCallbackToSendLatency() async throws {
         let systemAudio = FakeSystemAudioCapturing()
-        let realtime = FakeRealtimeAnswering()
+        let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
         let latency = FakeLatencyRecording()
         let controller = AnswersModeController(
@@ -268,7 +268,7 @@ import Testing
 
     @Test func firstDeltaRecordsFirstPaintLatencyWithoutArtificialDebounce() async throws {
         let systemAudio = FakeSystemAudioCapturing()
-        let realtime = FakeRealtimeAnswering()
+        let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
         let latency = FakeLatencyRecording()
         let controller = AnswersModeController(
@@ -294,7 +294,7 @@ import Testing
 
     @Test func manualTriggerLogsManualAnswer() async throws {
         let systemAudio = FakeSystemAudioCapturing()
-        let realtime = FakeRealtimeAnswering()
+        let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
         let transcribing = FakeLocalTranscribing()
         let repository = FakeQuestionAnswerRepository()
@@ -319,7 +319,7 @@ import Testing
 
     @Test func unexpectedCaptureStreamEndReportsFailureRatherThanGoingSilent() async throws {
         let systemAudio = FakeSystemAudioCapturing()
-        let realtime = FakeRealtimeAnswering()
+        let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
         let controller = AnswersModeController(systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
 
@@ -337,7 +337,7 @@ import Testing
 
     @Test func intentionalStopDoesNotReportCaptureFailure() async throws {
         let systemAudio = FakeSystemAudioCapturing()
-        let realtime = FakeRealtimeAnswering()
+        let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
         let controller = AnswersModeController(systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
 
