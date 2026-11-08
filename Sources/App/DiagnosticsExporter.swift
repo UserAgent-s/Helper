@@ -32,6 +32,9 @@ struct DiagnosticsSnapshot: Codable {
     let screenRecordingPermission: String
     let microphonePermission: String
     let metricCounts: [String: Int]
+    let contentIncluded: Bool
+    let questionAnswerCount: Int
+    let meetingCount: Int
     let questionAnswerHistory: [DiagnosticsQuestionAnswerEntry]
     let meetingHistory: [DiagnosticsMeetingEntry]
 }
@@ -43,14 +46,18 @@ enum DiagnosticsExporter {
         permissionsChecking: any PermissionsChecking,
         latencyRecorder: InMemoryLatencyRecorder,
         questionAnswerRepository: any QuestionAnswerRepository,
-        meetingRepository: any MeetingRepository
+        meetingRepository: any MeetingRepository,
+        includeContent: Bool = false
     ) async -> DiagnosticsSnapshot {
         let bundle = Bundle.main
         let screenRecording = await permissionsChecking.status(for: .screenRecording)
         let microphone = await permissionsChecking.status(for: .microphone)
         let counts = await latencyRecorder.countsByKind()
 
-        let questionAnswerHistory = (try? await questionAnswerRepository.history(limit: 1000))?.map {
+        let questionAnswers = (try? await questionAnswerRepository.history(limit: 1000)) ?? []
+        let meetings = (try? await meetingRepository.history(limit: 1000, offset: 0)) ?? []
+
+        let questionAnswerHistory = !includeContent ? [] : questionAnswers.map {
             DiagnosticsQuestionAnswerEntry(
                 askedAt: $0.askedAt,
                 sourceAppBundleID: $0.sourceAppBundleID,
@@ -58,9 +65,9 @@ enum DiagnosticsExporter {
                 answerText: $0.answerText,
                 triggerKind: String(describing: $0.triggerKind)
             )
-        } ?? []
+        }
 
-        let meetingHistory = (try? await meetingRepository.history(limit: 1000, offset: 0))?.map { meeting in
+        let meetingHistory = !includeContent ? [] : meetings.map { meeting in
             DiagnosticsMeetingEntry(
                 startedAt: meeting.startedAt,
                 endedAt: meeting.endedAt,
@@ -69,7 +76,7 @@ enum DiagnosticsExporter {
                     DiagnosticsTranscriptSegment(text: $0.text, startMs: $0.startMs, endMs: $0.endMs, source: String(describing: $0.source))
                 }
             )
-        } ?? []
+        }
 
         return DiagnosticsSnapshot(
             appVersion: bundle.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown",
@@ -79,6 +86,9 @@ enum DiagnosticsExporter {
             screenRecordingPermission: String(describing: screenRecording),
             microphonePermission: String(describing: microphone),
             metricCounts: counts,
+            contentIncluded: includeContent,
+            questionAnswerCount: questionAnswers.count,
+            meetingCount: meetings.count,
             questionAnswerHistory: questionAnswerHistory,
             meetingHistory: meetingHistory
         )

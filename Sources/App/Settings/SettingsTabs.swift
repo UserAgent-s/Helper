@@ -232,6 +232,12 @@ struct AdvancedSettingsTab: View {
                 Stepper(loc("Prefix padding:") + " \(viewModel.vadPrefixPaddingMs) ms", value: $viewModel.vadPrefixPaddingMs, in: 0...1000, step: 50)
                 Stepper(loc("Silence duration:") + " \(viewModel.vadSilenceDurationMs) ms", value: $viewModel.vadSilenceDurationMs, in: 0...2000, step: 50)
             }
+            Section(loc("Диагностика")) {
+                Toggle(loc("Разрешить содержимое в экспорте диагностики"), isOn: $viewModel.diagnosticsIncludeContentOptIn)
+                Text(loc("По умолчанию экспорт содержит только версию, разрешения, режим и метрики задержки. С галочкой при экспорте появится запрос на включение стенограмм и Q&A."))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
         }
         .formStyle(.grouped)
     }

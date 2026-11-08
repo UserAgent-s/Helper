@@ -71,6 +71,11 @@ final class SettingsViewModel {
         set { settingsStore.historyRetentionDays = newValue > 0 ? newValue : nil }
     }
 
+    var diagnosticsIncludeContentOptIn: Bool {
+        get { settingsStore.diagnosticsIncludeContentOptIn }
+        set { settingsStore.diagnosticsIncludeContentOptIn = newValue }
+    }
+
     func selectChromeOnlyPreset() {
         preferredAudioSourceBundleID = SystemAudioScope.chromeOnlyPreset.targetApplicationBundleID ?? ""
         savePreferredAudioSource()

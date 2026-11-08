@@ -31,6 +31,8 @@ final class CompositionRoot {
     let settingsStore: AppSettingsStore
     let recordingsDirectory: URL
     private var desktopExportTask: Task<Void, Never>?
+    private var retentionSweepTask: Task<Void, Never>?
+    let database: SQLiteDatabase
 
     let answersRingBuffer: AnswersRingBuffer
     let questionAnswerLogger: QuestionAnswerLogger
@@ -64,6 +66,7 @@ final class CompositionRoot {
         localTranscribing = whisperKitTranscribing
         let databasePath = Self.databaseFilePath()
         let database = SQLiteDatabase(path: databasePath)
+        self.database = database
         meetingRepository = SQLiteMeetingRepository(database: database)
         questionAnswerRepository = SQLiteQuestionAnswerRepository(database: database)
         summaryRepository = SQLiteSummaryRepository(database: database)
@@ -149,8 +152,13 @@ final class CompositionRoot {
         )
 
         let meetingRepository = self.meetingRepository
-        Task {
+        let retentionSweeper = RetentionSweeper(database: database, recordingsDirectory: recordingsDirectory)
+        retentionSweepTask = Task { [settingsStore] in
             _ = try? await meetingRepository.reconcileInterruptedMeetings()
+            while !Task.isCancelled {
+                _ = try? await retentionSweeper.sweep(retentionDays: settingsStore.historyRetentionDays)
+                try? await Task.sleep(for: .seconds(86_400))
+            }
         }
 
         let desktopMeetingExporter = DesktopMeetingExporter(meetingRepository: meetingRepository, baseDirectory: Self.desktopDirectoryURL())

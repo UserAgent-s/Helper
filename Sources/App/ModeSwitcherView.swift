@@ -73,6 +73,7 @@ struct ModeSwitcherView: View {
     var questionAnswerRepository: any QuestionAnswerRepository
     var meetingRepository: any MeetingRepository
     @Environment(\.openWindow) private var openWindow
+    @State private var isConfirmingContentExport = false
 
     var body: some View {
         VStack(spacing: 16) {
@@ -80,7 +81,20 @@ struct ModeSwitcherView: View {
                 Text("UserAgent057")
                     .font(.title2)
                 Spacer()
-                Button(loc("Диагностика")) { exportDiagnostics() }
+                Button(loc("Диагностика")) {
+                    if settingsStore.diagnosticsIncludeContentOptIn {
+                        isConfirmingContentExport = true
+                    } else {
+                        exportDiagnostics(includeContent: false)
+                    }
+                }
+                .confirmationDialog(loc("Включить в экспорт стенограммы и Q&A?"), isPresented: $isConfirmingContentExport) {
+                    Button(loc("С содержимым")) { exportDiagnostics(includeContent: true) }
+                    Button(loc("Без содержимого")) { exportDiagnostics(includeContent: false) }
+                    Button(loc("Отмена"), role: .cancel) {}
+                } message: {
+                    Text(loc("Файл будет содержать тексты реплик и ответов. Не отправляйте его, если встречи конфиденциальны."))
+                }
                 Button(loc("Настройки")) { navigationState.isShowingSettings = true }
                 Button(loc("История")) { navigationState.isShowingHistory = true }
             }
@@ -167,7 +181,7 @@ struct ModeSwitcherView: View {
         }
     }
 
-    private func exportDiagnostics() {
+    private func exportDiagnostics(includeContent: Bool) {
         Task {
             let snapshot = await DiagnosticsExporter.makeSnapshot(
                 mode: viewModel.currentMode,
@@ -175,7 +189,8 @@ struct ModeSwitcherView: View {
                 permissionsChecking: permissionsChecking,
                 latencyRecorder: latencyRecording,
                 questionAnswerRepository: questionAnswerRepository,
-                meetingRepository: meetingRepository
+                meetingRepository: meetingRepository,
+                includeContent: includeContent
             )
             guard let data = try? DiagnosticsExporter.encodeJSON(snapshot) else { return }
             let panel = NSSavePanel()
