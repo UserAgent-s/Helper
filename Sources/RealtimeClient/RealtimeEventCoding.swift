@@ -1,0 +1,255 @@
+import Foundation
+
+public enum RealtimeClientEvent: Encodable, Sendable {
+    case sessionUpdate(SessionConfig)
+    case inputAudioBufferAppend(audioBase64: String)
+    case responseCreate(ResponseCreateOptions)
+    case responseCancel
+    case conversationItemDelete(itemID: String)
+
+    private enum CodingKeys: String, CodingKey {
+        case type, session, audio, response
+        case itemID = "item_id"
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .sessionUpdate(let session):
+            try container.encode("session.update", forKey: .type)
+            try container.encode(session, forKey: .session)
+        case .inputAudioBufferAppend(let audioBase64):
+            try container.encode("input_audio_buffer.append", forKey: .type)
+            try container.encode(audioBase64, forKey: .audio)
+        case .responseCreate(let options):
+            try container.encode("response.create", forKey: .type)
+            try container.encode(options, forKey: .response)
+        case .responseCancel:
+            try container.encode("response.cancel", forKey: .type)
+        case .conversationItemDelete(let itemID):
+            try container.encode("conversation.item.delete", forKey: .type)
+            try container.encode(itemID, forKey: .itemID)
+        }
+    }
+}
+
+public struct SessionConfig: Encodable, Sendable {
+    var type = "realtime"
+    let model: String
+    let instructions: String
+    let outputModalities: [String]
+    let audio: AudioConfig
+    let reasoning: ReasoningConfig
+
+    enum CodingKeys: String, CodingKey {
+        case type, model, instructions, audio, reasoning
+        case outputModalities = "output_modalities"
+    }
+}
+
+struct ReasoningConfig: Encodable, Sendable {
+    let effort: String
+}
+
+struct AudioConfig: Encodable, Sendable {
+    let input: AudioInputConfig
+}
+
+struct AudioInputConfig: Encodable, Sendable {
+    let format: AudioFormatConfig
+    let turnDetection: TurnDetectionConfig
+
+    enum CodingKeys: String, CodingKey {
+        case format
+        case turnDetection = "turn_detection"
+    }
+}
+
+struct AudioFormatConfig: Encodable, Sendable {
+    var type = "audio/pcm"
+    let rate: Int
+}
+
+struct TurnDetectionConfig: Encodable, Sendable {
+    var type = "server_vad"
+    let threshold: Double
+    let prefixPaddingMs: Int
+    let silenceDurationMs: Int
+    let createResponse: Bool
+    let interruptResponse: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case type, threshold
+        case prefixPaddingMs = "prefix_padding_ms"
+        case silenceDurationMs = "silence_duration_ms"
+        case createResponse = "create_response"
+        case interruptResponse = "interrupt_response"
+    }
+
+    static let `default` = TurnDetectionConfig(
+        threshold: 0.5,
+        prefixPaddingMs: 300,
+        silenceDurationMs: 300,
+        createResponse: true,
+        interruptResponse: true
+    )
+}
+
+public struct RealtimeVADSettings: Sendable, Equatable {
+    public var threshold: Double
+    public var prefixPaddingMs: Int
+    public var silenceDurationMs: Int
+
+    public init(threshold: Double = 0.5, prefixPaddingMs: Int = 300, silenceDurationMs: Int = 300) {
+        self.threshold = threshold
+        self.prefixPaddingMs = prefixPaddingMs
+        self.silenceDurationMs = silenceDurationMs
+    }
+
+    public static let safeDefault = RealtimeVADSettings()
+
+    var config: TurnDetectionConfig {
+        TurnDetectionConfig(
+            threshold: threshold,
+            prefixPaddingMs: prefixPaddingMs,
+            silenceDurationMs: silenceDurationMs,
+            createResponse: true,
+            interruptResponse: true
+        )
+    }
+}
+
+public struct ResponseCreateOptions: Encodable, Sendable {
+    let instructions: String?
+    let outputModalities: [String]
+    let metadata: [String: String]?
+
+    enum CodingKeys: String, CodingKey {
+        case instructions, metadata
+        case outputModalities = "output_modalities"
+    }
+}
+
+public enum RealtimeServerEvent: Sendable, Equatable {
+    case sessionCreated
+    case sessionUpdated
+    case speechStarted(itemID: String, audioStartMs: Int)
+    case speechStopped(itemID: String, audioEndMs: Int)
+    case inputAudioBufferCommitted(itemID: String, previousItemID: String?)
+    case conversationItemCreated(itemID: String, previousItemID: String?)
+    case responseCreated(responseID: String)
+    case outputTextDelta(responseID: String, itemID: String, delta: String)
+    case outputTextDone(responseID: String, itemID: String, text: String)
+    case responseDone(responseID: String, status: String, outputItemIDs: [String])
+    case rateLimitsUpdated
+    case error(message: String, code: String?)
+    case unknown(type: String)
+}
+
+enum RealtimeServerEventDecoder {
+    static func decode(_ data: Data) -> RealtimeServerEvent {
+        let decoder = JSONDecoder()
+        guard let envelope = try? decoder.decode(Envelope.self, from: data) else {
+            return .unknown(type: "undecodable")
+        }
+
+        switch envelope.type {
+        case "session.created":
+            return .sessionCreated
+        case "session.updated":
+            return .sessionUpdated
+        case "input_audio_buffer.speech_started":
+            guard let p = try? decoder.decode(SpeechStartedPayload.self, from: data) else { return .unknown(type: envelope.type) }
+            return .speechStarted(itemID: p.itemID, audioStartMs: p.audioStartMs)
+        case "input_audio_buffer.speech_stopped":
+            guard let p = try? decoder.decode(SpeechStoppedPayload.self, from: data) else { return .unknown(type: envelope.type) }
+            return .speechStopped(itemID: p.itemID, audioEndMs: p.audioEndMs)
+        case "input_audio_buffer.committed":
+            guard let p = try? decoder.decode(CommittedPayload.self, from: data) else { return .unknown(type: envelope.type) }
+            return .inputAudioBufferCommitted(itemID: p.itemID, previousItemID: p.previousItemID)
+        case "conversation.item.created":
+            guard let p = try? decoder.decode(ConversationItemCreatedPayload.self, from: data) else { return .unknown(type: envelope.type) }
+            return .conversationItemCreated(itemID: p.item.id, previousItemID: p.previousItemID)
+        case "response.created":
+            guard let p = try? decoder.decode(ResponseCreatedPayload.self, from: data) else { return .unknown(type: envelope.type) }
+            return .responseCreated(responseID: p.response.id)
+        case "response.output_text.delta":
+            guard let p = try? decoder.decode(OutputTextDeltaPayload.self, from: data) else { return .unknown(type: envelope.type) }
+            return .outputTextDelta(responseID: p.responseID, itemID: p.itemID, delta: p.delta)
+        case "response.output_text.done":
+            guard let p = try? decoder.decode(OutputTextDonePayload.self, from: data) else { return .unknown(type: envelope.type) }
+            return .outputTextDone(responseID: p.responseID, itemID: p.itemID, text: p.text)
+        case "response.done":
+            guard let p = try? decoder.decode(ResponseDonePayload.self, from: data) else { return .unknown(type: envelope.type) }
+            return .responseDone(responseID: p.response.id, status: p.response.status, outputItemIDs: (p.response.output ?? []).map(\.id))
+        case "rate_limits.updated":
+            return .rateLimitsUpdated
+        case "error":
+            guard let p = try? decoder.decode(ErrorPayload.self, from: data) else { return .unknown(type: envelope.type) }
+            return .error(message: p.error.message, code: p.error.code)
+        default:
+            return .unknown(type: envelope.type)
+        }
+    }
+
+    private struct Envelope: Decodable { let type: String }
+
+    private struct SpeechStartedPayload: Decodable {
+        let itemID: String
+        let audioStartMs: Int
+        enum CodingKeys: String, CodingKey { case itemID = "item_id", audioStartMs = "audio_start_ms" }
+    }
+
+    private struct SpeechStoppedPayload: Decodable {
+        let itemID: String
+        let audioEndMs: Int
+        enum CodingKeys: String, CodingKey { case itemID = "item_id", audioEndMs = "audio_end_ms" }
+    }
+
+    private struct CommittedPayload: Decodable {
+        let itemID: String
+        let previousItemID: String?
+        enum CodingKeys: String, CodingKey { case itemID = "item_id", previousItemID = "previous_item_id" }
+    }
+
+    private struct ConversationItemCreatedPayload: Decodable {
+        struct Item: Decodable { let id: String }
+        let item: Item
+        let previousItemID: String?
+        enum CodingKeys: String, CodingKey { case item, previousItemID = "previous_item_id" }
+    }
+
+    private struct ResponseCreatedPayload: Decodable {
+        struct ResponseObject: Decodable { let id: String }
+        let response: ResponseObject
+    }
+
+    private struct OutputTextDeltaPayload: Decodable {
+        let responseID: String
+        let itemID: String
+        let delta: String
+        enum CodingKeys: String, CodingKey { case responseID = "response_id", itemID = "item_id", delta }
+    }
+
+    private struct OutputTextDonePayload: Decodable {
+        let responseID: String
+        let itemID: String
+        let text: String
+        enum CodingKeys: String, CodingKey { case responseID = "response_id", itemID = "item_id", text }
+    }
+
+    private struct ResponseDonePayload: Decodable {
+        struct OutputItem: Decodable { let id: String }
+        struct ResponseObject: Decodable {
+            let id: String
+            let status: String
+            let output: [OutputItem]?
+        }
+        let response: ResponseObject
+    }
+
+    private struct ErrorPayload: Decodable {
+        struct ErrorDetail: Decodable { let message: String; let code: String? }
+        let error: ErrorDetail
+    }
+}

@@ -1,0 +1,28 @@
+{
+  "mcpServers": {
+    "openaiDeveloperDocs": {
+      "type": "http",
+      "url": "https://developers.openai.com/mcp"
+    },
+    "context7": {
+      "type": "http",
+      "url": "https://mcp.context7.com/mcp/oauth"
+    },
+    "peekaboo": {
+      "type": "stdio",
+      "command": "peekaboo",
+      "args": [
+        "mcp"
+      ],
+      "env": {}
+    },
+    "xcode": {
+      "type": "stdio",
+      "command": "xcrun",
+      "args": [
+        "mcpbridge"
+      ],
+      "env": {}
+    }
+  }
+}
