@@ -27,6 +27,7 @@ private actor FakeRealtimeAnswering: RealtimeAnswering {
     private let continuation: AsyncStream<RealtimeAnswerEvent>.Continuation
     private(set) var startCallCount = 0
     private(set) var stopCallCount = 0
+    private(set) var resetContextCallCount = 0
 
     init() {
         (stream, continuation) = AsyncStream<RealtimeAnswerEvent>.makeStream()
@@ -43,6 +44,10 @@ private actor FakeRealtimeAnswering: RealtimeAnswering {
     }
 
     func forceResponse() async throws {}
+
+    func resetContext() async {
+        resetContextCallCount += 1
+    }
 
     func stop() async {
         stopCallCount += 1
@@ -81,7 +86,7 @@ private actor FakeRealtimeAnswering: RealtimeAnswering {
         #expect(await systemAudio.stopCallCount == 0)
     }
 
-    @Test func resettingWhileCollectingContextRestartsTheRealtimeSession() async throws {
+    @Test func resettingWhileCollectingContextResetsWithoutRestartingTheSession() async throws {
         let systemAudio = FakeSystemAudioCapturing()
         let realtime = FakeRealtimeAnswering()
         let answersController = AnswersModeController(systemAudio: systemAudio, realtime: realtime, answerTrigger: ManualAnswerTrigger(), instructionsProvider: { "test" })
@@ -95,7 +100,10 @@ private actor FakeRealtimeAnswering: RealtimeAnswering {
         viewModel.resetContext()
         try await Task.sleep(for: .milliseconds(50))
 
-        #expect(await realtime.stopCallCount == 1)
-        #expect(await systemAudio.stopCallCount == 1)
+        #expect(await realtime.stopCallCount == 0)
+        #expect(await systemAudio.stopCallCount == 0)
+        #expect(await realtime.resetContextCallCount == 1)
+        #expect(await realtime.startCallCount == 1)
+        #expect(await modeCoordinator.currentMode == .answers)
     }
 }

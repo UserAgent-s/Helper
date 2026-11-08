@@ -17,5 +17,7 @@ public struct InactiveRealtimeAnswering: RealtimeAnswering {
         throw BootstrapUnavailableError.notYetImplemented("RealtimeAnswering подключается на этапе 04")
     }
 
+    public func resetContext() async {}
+
     public func stop() async {}
 }

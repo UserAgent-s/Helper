@@ -65,6 +65,8 @@ extension RealtimeClientEvent {
         case .responseCreate: "response.create"
         case .responseCancel: "response.cancel"
         case .conversationItemDelete: "conversation.item.delete"
+        case .conversationItemCreate: "conversation.item.create"
+        case .inputAudioBufferClear: "input_audio_buffer.clear"
         }
     }
 }

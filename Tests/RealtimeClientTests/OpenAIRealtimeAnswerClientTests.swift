@@ -144,7 +144,7 @@ actor AnswerEventCollector {
         await client.stop()
     }
 
-    @Test func forceAnswerNowSendsExactlyOneResponseCreateWithScopedInstructions() async throws {
+    @Test func forceAnswerNowInheritsSessionInstructions() async throws {
         let (client, transport) = makeClient()
         try await client.start(instructions: "test")
         transport.emit(.inputAudioBufferCommitted(itemID: "user-1", previousItemID: nil))
@@ -156,9 +156,133 @@ actor AnswerEventCollector {
         let createEvents = transport.sentEvents.compactMap { event -> ResponseCreateOptions? in
             if case .responseCreate(let options) = event { options } else { nil }
         }
+        let itemEvents = transport.sentEvents.compactMap { event -> ConversationItemPayload? in
+            if case .conversationItemCreate(let payload) = event { payload } else { nil }
+        }
         #expect(createEvents.count == 1)
-        #expect(createEvents.first?.instructions == RealtimeInstructions.forceAnswerNow)
+        #expect(createEvents.first?.instructions == nil)
         #expect(createEvents.first?.metadata?["trigger"] == "manual")
+        #expect(itemEvents.count == 1)
+        #expect(itemEvents.first?.role == .system)
+        #expect(itemEvents.first?.text.contains("FORCE_ANSWER_NOW") == true)
+        #expect((itemEvents.first?.id.count ?? 99) <= 32)
+        let types = transport.sentEventTypes
+        #expect(types.filter { $0 == "session.update" }.count == 1)
+        let itemIndex = types.firstIndex(of: "conversation.item.create")
+        let createIndex = types.firstIndex(of: "response.create")
+        #expect(itemIndex != nil && createIndex != nil && itemIndex! < createIndex!)
+
+        await client.stop()
+    }
+
+    @Test func forceItemDeletedOnlyAfterVisibleAnswerDone() async throws {
+        let (client, transport) = makeClient()
+        try await client.start(instructions: "test")
+        transport.emit(.inputAudioBufferCommitted(itemID: "user-1", previousItemID: nil))
+        try await Task.sleep(for: .milliseconds(10))
+        try await client.forceResponse()
+        try await Task.sleep(for: .milliseconds(10))
+        let forceID = try #require(transport.sentEvents.compactMap { event -> String? in
+            if case .conversationItemCreate(let payload) = event { payload.id } else { nil }
+        }.first)
+
+        transport.emit(.responseCreated(responseID: "manual-1", metadata: ["trigger": "manual"]))
+        transport.emit(.outputTextDelta(responseID: "manual-1", itemID: "out-1", delta: "Ответ"))
+        try await Task.sleep(for: .milliseconds(10))
+        let deletedBefore: [String] = transport.sentEvents.compactMap { if case .conversationItemDelete(let id) = $0 { id } else { nil } }
+        #expect(!deletedBefore.contains(forceID))
+
+        transport.emit(.outputTextDone(responseID: "manual-1", itemID: "out-1", text: "Ответ"))
+        transport.emit(.responseDone(responseID: "manual-1", status: "completed", outputItemIDs: ["out-1"]))
+        try await Task.sleep(for: .milliseconds(20))
+        let deletedAfter: [String] = transport.sentEvents.compactMap { if case .conversationItemDelete(let id) = $0 { id } else { nil } }
+        #expect(deletedAfter.contains(forceID))
+        #expect(deletedAfter.contains("user-1"))
+
+        await client.stop()
+    }
+
+    @Test func forceItemDeletedWhenManualAnswerCancelled() async throws {
+        let (client, transport) = makeClient()
+        try await client.start(instructions: "test")
+        transport.emit(.inputAudioBufferCommitted(itemID: "user-1", previousItemID: nil))
+        try await Task.sleep(for: .milliseconds(10))
+        try await client.forceResponse()
+        try await Task.sleep(for: .milliseconds(10))
+        let forceID = try #require(transport.sentEvents.compactMap { event -> String? in
+            if case .conversationItemCreate(let payload) = event { payload.id } else { nil }
+        }.first)
+
+        transport.emit(.responseCreated(responseID: "manual-1", metadata: ["trigger": "manual"]))
+        transport.emit(.responseDone(responseID: "manual-1", status: "cancelled", outputItemIDs: []))
+        try await Task.sleep(for: .milliseconds(20))
+        let deleted: [String] = transport.sentEvents.compactMap { if case .conversationItemDelete(let id) = $0 { id } else { nil } }
+        #expect(deleted.contains(forceID))
+        #expect(!deleted.contains("user-1"))
+
+        await client.stop()
+    }
+
+    @Test func triggerAttributedByEchoedMetadata() async throws {
+        let (client, transport) = makeClient()
+        try await client.start(instructions: "test")
+        let collector = AnswerEventCollector()
+        await collector.start(consuming: client.events())
+        transport.emit(.inputAudioBufferCommitted(itemID: "user-1", previousItemID: nil))
+        try await Task.sleep(for: .milliseconds(10))
+        try await client.forceResponse()
+        try await Task.sleep(for: .milliseconds(10))
+
+        transport.emit(.responseCreated(responseID: "auto-1", metadata: ["trigger": "automatic"]))
+        transport.emit(.responseCreated(responseID: "manual-1", metadata: ["trigger": "manual"]))
+        transport.emit(.outputTextDelta(responseID: "manual-1", itemID: "out-m", delta: "Ручной ответ"))
+        try await Task.sleep(for: .milliseconds(20))
+
+        let events = await collector.events
+        #expect(events.contains(.responseStarted(responseID: "manual-1", trigger: .manual)))
+
+        await client.stop()
+    }
+
+    @Test func mergedInstructionsStrategyConcatenatesSessionAndForce() async throws {
+        let transport = FakeRealtimeWebSocketTransport()
+        let client = OpenAIRealtimeAnswerClient(
+            transport: transport,
+            credentialProviding: FakeCredentialProviding(),
+            latencyRecording: RecordingLatencyRecorder(),
+            forceAnswerStrategy: .mergedInstructions
+        )
+        try await client.start(instructions: "SESSION_RULES")
+        transport.emit(.inputAudioBufferCommitted(itemID: "user-1", previousItemID: nil))
+        try await Task.sleep(for: .milliseconds(10))
+        try await client.forceResponse()
+        try await Task.sleep(for: .milliseconds(10))
+
+        let createEvents = transport.sentEvents.compactMap { event -> ResponseCreateOptions? in
+            if case .responseCreate(let options) = event { options } else { nil }
+        }
+        #expect(createEvents.count == 1)
+        #expect(createEvents.first?.instructions?.hasPrefix("SESSION_RULES") == true)
+        #expect(createEvents.first?.instructions?.contains("FORCE_ANSWER_NOW") == true)
+        #expect(!transport.sentEventTypes.contains("conversation.item.create"))
+
+        await client.stop()
+    }
+
+    @Test func resetContextDeletesTrackedItemsWithoutReconnect() async throws {
+        let (client, transport) = makeClient()
+        try await client.start(instructions: "test")
+        transport.emit(.inputAudioBufferCommitted(itemID: "user-1", previousItemID: nil))
+        transport.emit(.inputAudioBufferCommitted(itemID: "user-2", previousItemID: "user-1"))
+        try await Task.sleep(for: .milliseconds(10))
+
+        await client.resetContext()
+
+        let deleted: [String] = transport.sentEvents.compactMap { if case .conversationItemDelete(let id) = $0 { id } else { nil } }
+        #expect(Set(deleted).isSuperset(of: ["user-1", "user-2"]))
+        #expect(transport.sentEventTypes.contains("input_audio_buffer.clear"))
+        #expect(transport.connectCallCount == 1)
+        await #expect(throws: RealtimeClientError.noContext) { try await client.forceResponse() }
 
         await client.stop()
     }
@@ -261,7 +385,7 @@ actor AnswerEventCollector {
         await client.stop()
     }
 
-    @Test func newSpeechCancelsVisibleAnswerAndClearsContext() async throws {
+    @Test func newSpeechCancelsVisibleAnswerAndKeepsContext() async throws {
         let (client, transport) = makeClient()
         try await client.start(instructions: "test")
         let collector = AnswerEventCollector()
@@ -282,7 +406,9 @@ actor AnswerEventCollector {
         let deletedIDs: [String] = transport.sentEvents.compactMap {
             if case .conversationItemDelete(let id) = $0 { id } else { nil }
         }
-        #expect(deletedIDs.contains("user-1"))
+        #expect(!deletedIDs.contains("user-1"))
+        #expect(deletedIDs.contains("out-1"))
+        try await client.forceResponse()
 
         await client.stop()
     }

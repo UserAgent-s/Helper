@@ -25,6 +25,7 @@ public protocol RealtimeAnswering: Sendable {
     func appendAudio(_ frame: PCMAudioFrame) async
     func events() -> AsyncStream<RealtimeAnswerEvent>
     func forceResponse() async throws
+    func resetContext() async
     func stop() async
 }
 

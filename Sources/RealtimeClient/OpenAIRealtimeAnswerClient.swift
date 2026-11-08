@@ -7,6 +7,11 @@ public enum RealtimeClientError: Error, Sendable, Equatable {
     case noContext
 }
 
+public enum ForceAnswerStrategy: Sendable, Equatable {
+    case systemItem
+    case mergedInstructions
+}
+
 public actor OpenAIRealtimeAnswerClient: RealtimeAnswering {
     private static let model = "gpt-realtime-2.1"
     private static var endpointURL: URL {
@@ -36,6 +41,7 @@ public actor OpenAIRealtimeAnswerClient: RealtimeAnswering {
     private let publicContinuation: AsyncStream<RealtimeAnswerEvent>.Continuation
 
     private var instructions = ""
+    private let forceAnswerStrategy: ForceAnswerStrategy
     private var sessionActive = false
     private var eventsTask: Task<Void, Never>?
     private var contextWindow = AnswerContextWindow()
@@ -61,8 +67,10 @@ public actor OpenAIRealtimeAnswerClient: RealtimeAnswering {
         latencyRecording: any LatencyRecording,
         reconnectBaseDelay: Duration = .milliseconds(500),
         maxReconnectAttempts: Int = 3,
+        forceAnswerStrategy: ForceAnswerStrategy = .systemItem,
         redactedLog: @escaping @Sendable (String) -> Void = { _ in }
     ) {
+        self.forceAnswerStrategy = forceAnswerStrategy
         self.transport = transport
         self.credentialProviding = credentialProviding
         self.vadSettingsProvider = vadSettingsProvider
@@ -134,11 +142,48 @@ public actor OpenAIRealtimeAnswerClient: RealtimeAnswering {
 
         awaitingManualResponseCreated = true
         let metadata = ["trigger": "manual", "correlation_id": UUID().uuidString]
-        try await transport.send(.responseCreate(ResponseCreateOptions(
-            instructions: RealtimeInstructions.forceAnswerNow,
-            outputModalities: ["text"],
-            metadata: metadata
-        )))
+        switch forceAnswerStrategy {
+        case .systemItem:
+            let itemID = Self.makeForceItemID()
+            await contextWindow.trackForceItem(itemID)
+            try await transport.send(.conversationItemCreate(ConversationItemPayload(
+                id: itemID,
+                role: .system,
+                text: RealtimeInstructions.forceAnswerNow
+            )))
+            try await transport.send(.responseCreate(ResponseCreateOptions(
+                instructions: nil,
+                outputModalities: ["text"],
+                metadata: metadata
+            )))
+        case .mergedInstructions:
+            try await transport.send(.responseCreate(ResponseCreateOptions(
+                instructions: instructions + "\n\n" + RealtimeInstructions.forceAnswerNow,
+                outputModalities: ["text"],
+                metadata: metadata
+            )))
+        }
+    }
+
+    public func resetContext() async {
+        guard sessionActive else { return }
+        for _ in inFlightResponseIDs {
+            try? await transport.send(.responseCancel)
+        }
+        let idsToDelete = await contextWindow.takeAllForReset()
+        for id in idsToDelete { try? await transport.send(.conversationItemDelete(itemID: id)) }
+        try? await transport.send(.inputAudioBufferClear)
+        trackers.removeAll()
+        responseTrigger.removeAll()
+        visibleResponseID = nil
+        awaitingManualResponseCreated = false
+        pendingManualSend = false
+        windowStartedAt = nil
+    }
+
+    private static func makeForceItemID() -> String {
+        let hex = UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased()
+        return "force_" + hex.prefix(16)
     }
 
     public func stop() async {
@@ -227,12 +272,20 @@ public actor OpenAIRealtimeAnswerClient: RealtimeAnswering {
         case .conversationItemCreated:
             break
 
-        case .responseCreated(let responseID):
+        case .responseCreated(let responseID, let metadata):
             inFlightResponseIDs.insert(responseID)
             responseCreatedAt[responseID] = Date()
-            let trigger: AnswerTriggerKind = awaitingManualResponseCreated ? .manual : .automatic
+            let trigger: AnswerTriggerKind
+            if let echoed = metadata?["trigger"] {
+                trigger = echoed == "manual" ? .manual : .automatic
+            } else {
+                trigger = awaitingManualResponseCreated ? .manual : .automatic
+            }
             responseTrigger[responseID] = trigger
-            if awaitingManualResponseCreated { awaitingManualResponseCreated = false }
+            if trigger == .manual {
+                awaitingManualResponseCreated = false
+                await contextWindow.bindForceItems(toResponse: responseID)
+            }
 
         case .outputTextDelta(let responseID, _, let delta):
             handleOutputTextDelta(responseID: responseID, delta: delta)
@@ -240,8 +293,8 @@ public actor OpenAIRealtimeAnswerClient: RealtimeAnswering {
         case .outputTextDone(let responseID, let itemID, let text):
             await handleOutputTextDone(responseID: responseID, itemID: itemID, text: text)
 
-        case .responseDone(let responseID, let status, _):
-            await handleResponseDone(responseID: responseID, status: status)
+        case .responseDone(let responseID, let status, let outputItemIDs):
+            await handleResponseDone(responseID: responseID, status: status, outputItemIDs: outputItemIDs)
 
         case .error(let message, let code):
             redactedLog("realtime error code=\(code ?? "-")")
@@ -335,15 +388,16 @@ public actor OpenAIRealtimeAnswerClient: RealtimeAnswering {
         }
     }
 
-    private func handleResponseDone(responseID: String, status: String) async {
+    private func handleResponseDone(responseID: String, status: String, outputItemIDs: [String]) async {
         inFlightResponseIDs.remove(responseID)
         defer { trackers[responseID] = nil; responseCreatedAt[responseID] = nil; responseTrigger[responseID] = nil }
 
         if status == "cancelled" {
-            let idsToDelete = await contextWindow.takeAllForCleanup(respondedResponseID: responseID)
+            let tracked = await contextWindow.takeCancelledResponseOutput(responseID: responseID)
+            var idsToDelete = tracked
+            for id in outputItemIDs where !idsToDelete.contains(id) { idsToDelete.append(id) }
             for id in idsToDelete { try? await transport.send(.conversationItemDelete(itemID: id)) }
             if visibleResponseID == responseID { visibleResponseID = nil }
-            windowStartedAt = nil
             emit(.cancelled(responseID: responseID, reason: "interrupted_by_speech"))
             return
         }

@@ -107,6 +107,22 @@ public actor AnswersModeController: ModeController {
         isRunning = true
     }
 
+    public func resetContext() async {
+        guard isRunning else { return }
+        if let questionAnswerLogger, let activeResponseID, turnPhase == .streaming {
+            await questionAnswerLogger.recordCancelled(responseID: activeResponseID)
+        }
+        await realtime.resetContext()
+        turnPhase = .collectingContext
+        activeResponseID = nil
+        activeResponseTrigger = nil
+        responseStartedAt = nil
+        streamingText = ""
+        contextWindowStartedAt = Date()
+        await answersRingBuffer.clear()
+        streamEventBroadcaster.yield(.collectingContext)
+    }
+
     public func stop() async {
         isRunning = false
         captureTask?.cancel(); captureTask = nil

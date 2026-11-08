@@ -57,8 +57,7 @@ public final class AnswerOverlayViewModel {
 
         guard shouldDiscardAccumulatingContext else { return }
         Task { [answersController] in
-            await answersController.stop()
-            try? await answersController.start()
+            await answersController.resetContext()
         }
     }
 

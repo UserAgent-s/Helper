@@ -152,6 +152,7 @@ actor FakeRealtimeAnswering: RealtimeAnswering {
     private(set) var startCalled = false
     private(set) var stopCalled = false
     private(set) var forceResponseCallCount = 0
+    private(set) var resetContextCallCount = 0
     private(set) var appendedFrameCount = 0
     var forceResponseError: TestError?
 
@@ -178,6 +179,10 @@ actor FakeRealtimeAnswering: RealtimeAnswering {
     func forceResponse() async throws {
         forceResponseCallCount += 1
         if let forceResponseError { throw forceResponseError }
+    }
+
+    func resetContext() async {
+        resetContextCallCount += 1
     }
 
     func stop() async {

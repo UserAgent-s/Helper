@@ -6,10 +6,13 @@ public enum RealtimeClientEvent: Encodable, Sendable {
     case responseCreate(ResponseCreateOptions)
     case responseCancel
     case conversationItemDelete(itemID: String)
+    case conversationItemCreate(ConversationItemPayload)
+    case inputAudioBufferClear
 
     private enum CodingKeys: String, CodingKey {
-        case type, session, audio, response
+        case type, session, audio, response, item
         case itemID = "item_id"
+        case previousItemID = "previous_item_id"
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -29,7 +32,48 @@ public enum RealtimeClientEvent: Encodable, Sendable {
         case .conversationItemDelete(let itemID):
             try container.encode("conversation.item.delete", forKey: .type)
             try container.encode(itemID, forKey: .itemID)
+        case .conversationItemCreate(let payload):
+            try container.encode("conversation.item.create", forKey: .type)
+            try container.encode(payload, forKey: .item)
+            try container.encodeIfPresent(payload.previousItemID, forKey: .previousItemID)
+        case .inputAudioBufferClear:
+            try container.encode("input_audio_buffer.clear", forKey: .type)
         }
+    }
+}
+
+public enum ConversationItemRole: String, Encodable, Sendable {
+    case system, user
+}
+
+public struct ConversationItemPayload: Encodable, Sendable, Equatable {
+    let id: String
+    let role: ConversationItemRole
+    let text: String
+    let previousItemID: String?
+
+    init(id: String, role: ConversationItemRole, text: String, previousItemID: String? = nil) {
+        self.id = id
+        self.role = role
+        self.text = text
+        self.previousItemID = previousItemID
+    }
+
+    private struct Content: Encodable {
+        let type = "input_text"
+        let text: String
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, type, role, content
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode("message", forKey: .type)
+        try container.encode(role, forKey: .role)
+        try container.encode([Content(text: text)], forKey: .content)
     }
 }
 
@@ -137,7 +181,7 @@ public enum RealtimeServerEvent: Sendable, Equatable {
     case speechStopped(itemID: String, audioEndMs: Int)
     case inputAudioBufferCommitted(itemID: String, previousItemID: String?)
     case conversationItemCreated(itemID: String, previousItemID: String?)
-    case responseCreated(responseID: String)
+    case responseCreated(responseID: String, metadata: [String: String]? = nil)
     case outputTextDelta(responseID: String, itemID: String, delta: String)
     case outputTextDone(responseID: String, itemID: String, text: String)
     case responseDone(responseID: String, status: String, outputItemIDs: [String])
@@ -167,12 +211,12 @@ enum RealtimeServerEventDecoder {
         case "input_audio_buffer.committed":
             guard let p = try? decoder.decode(CommittedPayload.self, from: data) else { return .unknown(type: envelope.type) }
             return .inputAudioBufferCommitted(itemID: p.itemID, previousItemID: p.previousItemID)
-        case "conversation.item.created":
+        case "conversation.item.created", "conversation.item.added", "conversation.item.done":
             guard let p = try? decoder.decode(ConversationItemCreatedPayload.self, from: data) else { return .unknown(type: envelope.type) }
             return .conversationItemCreated(itemID: p.item.id, previousItemID: p.previousItemID)
         case "response.created":
             guard let p = try? decoder.decode(ResponseCreatedPayload.self, from: data) else { return .unknown(type: envelope.type) }
-            return .responseCreated(responseID: p.response.id)
+            return .responseCreated(responseID: p.response.id, metadata: p.response.metadata)
         case "response.output_text.delta":
             guard let p = try? decoder.decode(OutputTextDeltaPayload.self, from: data) else { return .unknown(type: envelope.type) }
             return .outputTextDelta(responseID: p.responseID, itemID: p.itemID, delta: p.delta)
@@ -220,7 +264,7 @@ enum RealtimeServerEventDecoder {
     }
 
     private struct ResponseCreatedPayload: Decodable {
-        struct ResponseObject: Decodable { let id: String }
+        struct ResponseObject: Decodable { let id: String; let metadata: [String: String]? }
         let response: ResponseObject
     }
 

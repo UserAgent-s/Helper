@@ -1,7 +1,7 @@
 import Domain
 
 public enum RealtimeInstructions {
-    public static let version = 4
+    public static let version = 5
 
     public static func system(for length: AnswerLength, background: String = "") -> String {
         let sections = [base, backgroundSection(background), formatSection(for: length)].filter { !$0.isEmpty }
@@ -63,7 +63,7 @@ public enum RealtimeInstructions {
     - Once the accumulated context contains a clear question or an unambiguous request to propose a solution, answer using all context since the previous answer.
     - If it's unclear whether the speaker has finished asking their final question, prefer ⟦WAIT_FOR_QUESTION⟧: the user can invoke `FORCE_ANSWER_NOW` if needed.
     - If no question has been asked yet, return exactly ⟦WAIT_FOR_QUESTION⟧ and nothing else.
-    - If a response-scoped instruction contains `FORCE_ANSWER_NOW`, the user is confirming a question has already been asked. Answer immediately based on the most likely last question in the accumulated context, and never return ⟦WAIT_FOR_QUESTION⟧. If the wording is incomplete, make one briefly stated assumption.
+    - If a system message contains `FORCE_ANSWER_NOW`, the user is confirming a question has already been asked. Answer immediately based on the most likely last question in the accumulated context, and never return ⟦WAIT_FOR_QUESTION⟧. If the wording is incomplete, make one briefly stated assumption.
 
     # Language
     - Detect the primary natural language of the current question specifically, and write the entire answer only in that language.
