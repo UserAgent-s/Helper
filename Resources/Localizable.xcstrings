@@ -1083,25 +1083,25 @@
         }
       }
     },
-    "Что захватывает MeetingAssistant": {
+    "Что захватывает UserAgent057": {
       "extractionState": "manual",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Что захватывает MeetingAssistant"
+            "value": "Что захватывает UserAgent057"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "What MeetingAssistant captures"
+            "value": "What UserAgent057 captures"
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Що захоплює MeetingAssistant"
+            "value": "Що захоплює UserAgent057"
           }
         }
       }
@@ -1244,25 +1244,25 @@
         }
       }
     },
-    "Завершить MeetingAssistant": {
+    "Завершить UserAgent057": {
       "extractionState": "manual",
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Завершить MeetingAssistant"
+            "value": "Завершить UserAgent057"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quit MeetingAssistant"
+            "value": "Quit UserAgent057"
           }
         },
         "uk": {
           "stringUnit": {
             "state": "translated",
-            "value": "Завершити MeetingAssistant"
+            "value": "Завершити UserAgent057"
           }
         }
       }

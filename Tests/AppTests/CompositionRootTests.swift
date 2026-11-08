@@ -1,6 +1,6 @@
 import Testing
 import Domain
-@testable import MeetingAssistant
+@testable import UserAgent057
 
 @MainActor
 @Suite struct CompositionRootTests {

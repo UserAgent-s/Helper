@@ -2,7 +2,7 @@ import Domain
 import Foundation
 
 public actor UserDefaultsPreferredAudioSourceStore: PreferredAudioSourceStoring {
-    private static let key = "com.local.MeetingAssistant.preferredAudioSourceBundleID"
+    private static let key = "com.local.UserAgent057.preferredAudioSourceBundleID"
     public static let defaultBundleID = "com.google.Chrome"
     private let defaults: UserDefaults
 

@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleDisplayName</key>
-	<string>MeetingAssistant</string>
+	<string>UserAgent057</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
@@ -23,9 +23,9 @@
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.productivity</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>MeetingAssistant использует микрофон только в режиме записи митинга (Recording), чтобы локально расшифровать вашу реплику. Аудио с микрофона не покидает устройство и не сохраняется в исходном виде.</string>
+	<string>UserAgent057 использует микрофон только в режиме записи митинга (Recording), чтобы локально расшифровать вашу реплику. Аудио с микрофона не покидает устройство и не сохраняется в исходном виде.</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>MeetingAssistant</string>
+	<string>UserAgent057</string>
 	<key>LSApplicationIsAgent</key>
 	<false/>
 	<key>CFBundleDevelopmentRegion</key>

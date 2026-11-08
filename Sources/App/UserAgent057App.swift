@@ -3,8 +3,8 @@ import Domain
 import AppKit
 
 @main
-struct MeetingAssistantApp: App {
-    @NSApplicationDelegateAdaptor(MeetingAssistantAppDelegate.self) private var appDelegate
+struct UserAgent057App: App {
+    @NSApplicationDelegateAdaptor(UserAgent057AppDelegate.self) private var appDelegate
     @State private var root = CompositionRoot()
     @State private var overlayCoordinator: OverlayCoordinator?
 
@@ -36,7 +36,7 @@ struct MeetingAssistantApp: App {
 }
 
 @MainActor
-final class MeetingAssistantAppDelegate: NSObject, NSApplicationDelegate {
+final class UserAgent057AppDelegate: NSObject, NSApplicationDelegate {
     var modeCoordinator: ModeCoordinator?
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {

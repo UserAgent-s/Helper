@@ -2,7 +2,7 @@ import Domain
 import Foundation
 
 public struct UserDefaultsSecretStore: SecretStoring, @unchecked Sendable {
-    private static let key = "com.local.MeetingAssistant.settings.openaiAPIKey"
+    private static let key = "com.local.UserAgent057.settings.openaiAPIKey"
     private let defaults: UserDefaults
 
     public init(defaults: UserDefaults = .standard) {

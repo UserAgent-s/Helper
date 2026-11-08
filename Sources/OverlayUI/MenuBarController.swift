@@ -106,7 +106,7 @@ final class MenuBarController: NSObject {
         historyItem.title = loc("Открыть историю")
         settingsItem.title = loc("Настройки")
         languageMenuItem.title = loc("Язык")
-        quitItem.title = loc("Завершить MeetingAssistant")
+        quitItem.title = loc("Завершить UserAgent057")
         syncModeState()
     }
 

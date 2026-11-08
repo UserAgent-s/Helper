@@ -7,7 +7,7 @@ import Domain
 
     private func temporaryDatabasePath() -> String {
         FileManager.default.temporaryDirectory
-            .appendingPathComponent("meetingassistant-tests-\(UUID().uuidString).sqlite3")
+            .appendingPathComponent("useragent057-tests-\(UUID().uuidString).sqlite3")
             .path
     }
 

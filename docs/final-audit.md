@@ -1,4 +1,4 @@
-# Финальный аудит реализации MeetingAssistant
+# Финальный аудит реализации UserAgent057
 
 Дата: 2026-08-22. Аудит проведён в конце того же непрерывного прогона, что реализовал этапы 06–13 (00–05 — предыдущий запуск в этой же сессии инструмента). Аудитор — тот же исполнитель, что писал код; независимость обеспечена не сменой автора, а тем, что аудит явно перечитал весь репозиторий по каждому из 25 пунктов ниже, а не только дифф последнего этапа.
 
@@ -65,7 +65,7 @@ bash: xcodegen: command not found   # внешний blocker, см. §7 — ид
 - **`Tests/AppTests/CompositionRootTests.swift`** (1 тест, `startsInPassive` над реальным `CompositionRoot()`) — существует, но требует Xcode-таргет `App` (`@testable import App`); `swift test` его не запускает (не входит ни в один SwiftPM test target `Package.swift`). Не выполнялся ни разу за все 13 этапов — задокументировано, не скрыто.
 - **Latency fake harness** — `LatencyReportBuilder` (этап 11) прогонялся на синтетических данных в `LatencyReportBuilderTests` (count/p50/p95/max корректны на 100-элементной серии). Реальный прогон против живого `answers`-сеанса не выполнялся — нет способа собрать `.app` в этом окружении, и (см. `docs/implementation-status.md`, этап 11) нет ключа/бюджета на платный вызов.
 - **Статический поиск секретов** — `grep -rn "sk-[A-Za-z0-9]" Sources/` даёт совпадения только в `SecretRedactor.swift` (сам regex-паттерн для редактирования) и `APIKeyFormatValidator.swift` (проверка формата, тоже паттерн, не значение) — ни одного захардкоженного реального ключа. `grep -rn "OpenAI-Beta\|realtime=v1" Sources/` — 0 совпадений.
-- **Проверка release bundle** — не выполнялась буквально (нет собранного `.app`), но структурно доказана: единственный source-путь таргета `MeetingAssistant` в `project.yml` — `Sources/App`, `Sources/OverlayUI`, `Sources/HistoryUI`; ни один из них не содержит audio-fixture файлов (все `SyntheticAudioFixtures.swift`/WAV-подобные генераторы лежат в `Tests/DomainTests`, вне таргета приложения).
+- **Проверка release bundle** — не выполнялась буквально (нет собранного `.app`), но структурно доказана: единственный source-путь таргета `UserAgent057` в `project.yml` — `Sources/App`, `Sources/OverlayUI`, `Sources/HistoryUI`; ни один из них не содержит audio-fixture файлов (все `SyntheticAudioFixtures.swift`/WAV-подобные генераторы лежат в `Tests/DomainTests`, вне таргета приложения).
 - **Ручной smoke checklist для трёх режимов** — не выполнялся: в этом окружении нет macOS GUI с реальным дисплеем/разрешениями TCC (идентичное ограничение — этапы 03/05/07/09/12).
 
 ## 4. Latency summary
@@ -99,7 +99,7 @@ bash: xcodegen: command not found   # внешний blocker, см. §7 — ид
 
 ## 7. Оставшиеся внешние blockers (сквозные, не новые)
 
-1. **`xcodegen` не установлен** — блокирует `xcodegen generate`, любую сборку через `xcodebuild`, весь Xcode-таргет `MeetingAssistant`/`MeetingAssistantTests`, включая единственный тест (`CompositionRootTests`), который требует реального `App`-модуля. Команда: `brew install xcodegen && xcodegen generate`. Идентично с этапа 01.
+1. **`xcodegen` не установлен** — блокирует `xcodegen generate`, любую сборку через `xcodebuild`, весь Xcode-таргет `UserAgent057`/`UserAgent057Tests`, включая единственный тест (`CompositionRootTests`), который требует реального `App`-модуля. Команда: `brew install xcodegen && xcodegen generate`. Идентично с этапа 01.
 2. **Нет Apple Developer ID** — подпись/нотаризация не выполнялись, команды задокументированы в README без секретных значений.
 3. **Нет реального дисплея/TCC-согласия** — ScreenCaptureKit, AVAudioEngine, NSPanel/NSStatusItem, глобальные хоткеи, `NSSavePanel`, VoiceOver — весь этот код написан по документированным Apple API и типизирован, но не проверялся интерактивно ни на одном из 13 этапов.
 4. **Нет OpenAI API-ключа с бюджетом** — ни Realtime-, ни Responses-эндпоинт не вызывались вживую; вся протокольная корректность подтверждена типизированным кодеком + fake-транспортом (та же оговорка, что в `docs/implementation-status.md` на этапах 04 и 09).
@@ -130,8 +130,8 @@ cd /Users/r/Sites/mac_gpt_interview
 xcodegen generate
 
 # 3. Собрать и запустить (Debug, для разработки)
-xcodebuild -project MeetingAssistant.xcodeproj -scheme MeetingAssistant -destination 'platform=macOS' build
-open build/Debug/MeetingAssistant.app   # либо запустить прямо из Xcode: Cmd+R
+xcodebuild -project UserAgent057.xcodeproj -scheme UserAgent057 -destination 'platform=macOS' build
+open build/Debug/UserAgent057.app   # либо запустить прямо из Xcode: Cmd+R
 
 # 4. При первом запуске: onboarding-экран
 #    - прочитать, что захватывает каждый режим
@@ -151,7 +151,7 @@ open build/Debug/MeetingAssistant.app   # либо запустить прямо
 
 # 8. Диагностика — кнопка "Диагностика" в главном окне: сохраняет безопасный JSON-отчёт
 
-# 9. Выход — "Завершить MeetingAssistant" в строке меню (graceful shutdown: сначала
+# 9. Выход — "Завершить UserAgent057" в строке меню (graceful shutdown: сначала
 #    переход в passive и освобождение ресурсов, затем выход из процесса)
 ```
 

@@ -2,18 +2,18 @@
 
 ## Цель
 
-Создай воспроизводимый проект `MeetingAssistant`, который собирается для macOS 14+ на Apple Silicon и имеет модульную структуру для последующих этапов.
+Создай воспроизводимый проект `UserAgent057`, который собирается для macOS 14+ на Apple Silicon и имеет модульную структуру для последующих этапов.
 
 ## Требования
 
 1. Если в репозитории уже есть рабочий macOS-проект, аккуратно адаптируй его. Не пересоздавай и не удаляй пользовательскую работу.
 2. Если проекта нет, используй XcodeGen:
    - `project.yml` в корне;
-   - продукт `MeetingAssistant.app`;
-   - bundle identifier `com.local.MeetingAssistant`;
+   - продукт `UserAgent057.app`;
+   - bundle identifier `com.local.UserAgent057`;
    - deployment target macOS 14.0;
    - Swift 6;
-   - схемы `MeetingAssistant` и `MeetingAssistantTests`.
+   - схемы `UserAgent057` и `UserAgent057Tests`.
 3. Добавь каталоги или Swift targets с ясными границами:
    - `App`;
    - `Domain`;
@@ -41,8 +41,8 @@
 
 ```bash
 xcodegen generate
-xcodebuild -project MeetingAssistant.xcodeproj -scheme MeetingAssistant -destination 'platform=macOS' build
-xcodebuild -project MeetingAssistant.xcodeproj -scheme MeetingAssistant -destination 'platform=macOS' test
+xcodebuild -project UserAgent057.xcodeproj -scheme UserAgent057 -destination 'platform=macOS' build
+xcodebuild -project UserAgent057.xcodeproj -scheme UserAgent057 -destination 'platform=macOS' test
 ```
 
 Если `xcodegen` отсутствует, не устанавливай его автоматически: проверь `project.yml` статически, выполни все доступные Swift-проверки и укажи точную блокировку в статусе.

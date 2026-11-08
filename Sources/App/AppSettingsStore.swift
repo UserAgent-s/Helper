@@ -8,18 +8,18 @@ final class AppSettingsStore: @unchecked Sendable {
     private let defaults: UserDefaults
 
     private enum Keys {
-        static let whisperModelID = "com.local.MeetingAssistant.settings.whisperModelID"
-        static let summaryModelID = "com.local.MeetingAssistant.settings.summaryModelID"
-        static let audioStorageEnabled = "com.local.MeetingAssistant.settings.audioStorageEnabled"
-        static let historyRetentionDays = "com.local.MeetingAssistant.settings.historyRetentionDays"
-        static let vadThreshold = "com.local.MeetingAssistant.settings.vadThreshold"
-        static let vadPrefixPaddingMs = "com.local.MeetingAssistant.settings.vadPrefixPaddingMs"
-        static let vadSilenceDurationMs = "com.local.MeetingAssistant.settings.vadSilenceDurationMs"
-        static let onboardingCompleted = "com.local.MeetingAssistant.settings.onboardingCompleted"
-        static let diagnosticsIncludeAudioStorageState = "com.local.MeetingAssistant.settings.diagnosticsOptIn"
-        static let appLanguage = "com.local.MeetingAssistant.settings.appLanguage"
-        static let answerLength = "com.local.MeetingAssistant.settings.answerLength"
-        static let backgroundContext = "com.local.MeetingAssistant.settings.backgroundContext"
+        static let whisperModelID = "com.local.UserAgent057.settings.whisperModelID"
+        static let summaryModelID = "com.local.UserAgent057.settings.summaryModelID"
+        static let audioStorageEnabled = "com.local.UserAgent057.settings.audioStorageEnabled"
+        static let historyRetentionDays = "com.local.UserAgent057.settings.historyRetentionDays"
+        static let vadThreshold = "com.local.UserAgent057.settings.vadThreshold"
+        static let vadPrefixPaddingMs = "com.local.UserAgent057.settings.vadPrefixPaddingMs"
+        static let vadSilenceDurationMs = "com.local.UserAgent057.settings.vadSilenceDurationMs"
+        static let onboardingCompleted = "com.local.UserAgent057.settings.onboardingCompleted"
+        static let diagnosticsIncludeAudioStorageState = "com.local.UserAgent057.settings.diagnosticsOptIn"
+        static let appLanguage = "com.local.UserAgent057.settings.appLanguage"
+        static let answerLength = "com.local.UserAgent057.settings.answerLength"
+        static let backgroundContext = "com.local.UserAgent057.settings.backgroundContext"
     }
 
     init(defaults: UserDefaults = .standard) {

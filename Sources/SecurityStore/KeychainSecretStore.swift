@@ -11,7 +11,7 @@ public struct KeychainSecretStore: SecretStoring, Sendable {
     private let service: String
     private let account: String
 
-    public init(service: String = "com.local.MeetingAssistant.openai", account: String = "default") {
+    public init(service: String = "com.local.UserAgent057.openai", account: String = "default") {
         self.service = service
         self.account = account
     }

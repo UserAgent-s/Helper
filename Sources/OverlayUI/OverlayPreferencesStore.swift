@@ -9,15 +9,15 @@ final class OverlayPreferencesStore {
     private let defaults: UserDefaults
 
     private enum Keys {
-        static let position = "com.local.MeetingAssistant.overlay.position"
-        static let opacity = "com.local.MeetingAssistant.overlay.opacity"
-        static let fontScale = "com.local.MeetingAssistant.overlay.fontScale"
-        static let customOriginX = "com.local.MeetingAssistant.overlay.customOriginX"
-        static let customOriginY = "com.local.MeetingAssistant.overlay.customOriginY"
-        static let forceAnswerHotKey = "com.local.MeetingAssistant.overlay.forceAnswerHotKey"
-        static let toggleHotKey = "com.local.MeetingAssistant.overlay.toggleHotKey"
-        static let style = "com.local.MeetingAssistant.overlay.style"
-        static let fontFamily = "com.local.MeetingAssistant.overlay.fontFamily"
+        static let position = "com.local.UserAgent057.overlay.position"
+        static let opacity = "com.local.UserAgent057.overlay.opacity"
+        static let fontScale = "com.local.UserAgent057.overlay.fontScale"
+        static let customOriginX = "com.local.UserAgent057.overlay.customOriginX"
+        static let customOriginY = "com.local.UserAgent057.overlay.customOriginY"
+        static let forceAnswerHotKey = "com.local.UserAgent057.overlay.forceAnswerHotKey"
+        static let toggleHotKey = "com.local.UserAgent057.overlay.toggleHotKey"
+        static let style = "com.local.UserAgent057.overlay.style"
+        static let fontFamily = "com.local.UserAgent057.overlay.fontFamily"
     }
 
     init(defaults: UserDefaults = .standard) {

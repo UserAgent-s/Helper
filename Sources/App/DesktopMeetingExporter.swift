@@ -40,6 +40,6 @@ final class DesktopMeetingExporter: @unchecked Sendable {
     static func folderName(for date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH-mm"
-        return "\(formatter.string(from: date)) Meeting Assistant"
+        return "\(formatter.string(from: date)) UserAgent057"
     }
 }

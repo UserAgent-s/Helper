@@ -76,7 +76,7 @@ struct ModeSwitcherView: View {
     var body: some View {
         VStack(spacing: 16) {
             HStack {
-                Text("MeetingAssistant")
+                Text("UserAgent057")
                     .font(.title2)
                 Spacer()
                 Button(loc("Диагностика")) { exportDiagnostics() }

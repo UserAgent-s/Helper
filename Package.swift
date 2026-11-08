@@ -2,7 +2,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "MeetingAssistantCore",
+    name: "UserAgent057Core",
     platforms: [.macOS(.v14)],
     products: [
         .library(name: "Domain", targets: ["Domain"]),

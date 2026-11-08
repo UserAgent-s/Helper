@@ -1,4 +1,8 @@
-# MeetingAssistant
+# UserAgent057
+
+Отдельное приложение на базе исходников MeetingAssistant. Ветка: `codex/useragent057`. Bundle ID: `com.local.UserAgent057`. Настройки, Keychain и база данных отделены от исходного приложения.
+
+Текущий этап — переименование и отдельная сборка. Существующие облачные режимы Answers и Summary сохранены; полностью локальный перевод системного звука пока не реализован.
 
 Нативное macOS-приложение (Apple Silicon, macOS 14+) с тремя взаимоисключающими режимами: `passive`, `answers`, `recording`. Продуктовый контракт и архитектура — в `docs/product-contract.md` и `docs/architecture.md`. План реализации — в `claude-code-prompts/`.
 
@@ -7,8 +11,8 @@
 Что нужно для того, чтобы просто запустить и пользоваться приложением (без сборки из исходников):
 
 1. **Mac на Apple Silicon (M1/M2/M3/M4), macOS 14+.** Сборка только arm64 — на Intel-Mac не запустится.
-2. **Скачайте `MeetingAssistant.dmg`**, откройте, перетащите `MeetingAssistant.app` в `Applications`.
-3. **Первый запуск заблокирует Gatekeeper** — приложение подписано локальным (ad-hoc) сертификатом, а не сертификатом Apple Developer ID, и не нотаризовано. При первом запуске: правый клик по `MeetingAssistant.app` → «Открыть» → подтвердить «Открыть» в диалоге (обычный двойной клик выдаст «нельзя открыть, разработчик не подтверждён»). Либо: Системные настройки → «Конфиденциальность и безопасность» → внизу страницы кнопка «Всё равно открыть».
+2. **Скачайте `UserAgent057.dmg`**, откройте, перетащите `UserAgent057.app` в `Applications`.
+3. **Первый запуск заблокирует Gatekeeper** — приложение подписано локальным (ad-hoc) сертификатом, а не сертификатом Apple Developer ID, и не нотаризовано. При первом запуске: правый клик по `UserAgent057.app` → «Открыть» → подтвердить «Открыть» в диалоге (обычный двойной клик выдаст «нельзя открыть, разработчик не подтверждён»). Либо: Системные настройки → «Конфиденциальность и безопасность» → внизу страницы кнопка «Всё равно открыть».
 4. **Разрешения** — при первом входе в режим `Answers` или `Recording` macOS запросит Screen Recording, а для `Recording` ещё и Microphone. Оба выдаются через Системные настройки → «Конфиденциальность и безопасность» (подробная таблица — раздел «Разрешения» ниже).
 5. **API-ключ OpenAI** — нужен для `Answers` и для создания саммари; без ключа работают `Passive`, `Recording` (локальная транскрипция через Whisper) и просмотр истории. См. «Установка API-ключа» ниже.
 6. **Локальная модель Whisper** — для `Recording` скачивается сама при первом использовании (нужна сеть один раз, дальше офлайн). См. «Загрузка локальной Whisper-модели» ниже.
@@ -26,10 +30,10 @@
 
 ## Структура
 
-- `Package.swift` — локальный Swift-пакет `MeetingAssistantCore` с модулями `Domain`, `AudioCapture`, `RealtimeClient`, `Transcription`, `Persistence`, `SecurityStore`, `Diagnostics`, `Summary`. Собирается и тестируется напрямую через `swift build`/`swift test`, без Xcode.
+- `Package.swift` — локальный Swift-пакет `UserAgent057Core` с модулями `Domain`, `AudioCapture`, `RealtimeClient`, `Transcription`, `Persistence`, `SecurityStore`, `Diagnostics`, `Summary`. Собирается и тестируется напрямую через `swift build`/`swift test`, без Xcode.
 - `Sources/App`, `Sources/OverlayUI`, `Sources/HistoryUI` — код уровня приложения (SwiftUI + AppKit `NSPanel`), собирается через сгенерированный Xcode-проект.
-- `project.yml` — спецификация XcodeGen для продукта `MeetingAssistant.app` (bundle id `com.local.MeetingAssistant`).
-- `Resources/Info.plist`, `Resources/MeetingAssistant.entitlements` — App Sandbox, сетевой клиент, доступ к микрофону.
+- `project.yml` — спецификация XcodeGen для продукта `UserAgent057.app` (bundle id `com.local.UserAgent057`).
+- `Resources/Info.plist`, `Resources/UserAgent057.entitlements` — App Sandbox, сетевой клиент, доступ к микрофону.
 - `docs/` — продуктовый контракт, архитектура, ADR, статус реализации по этапам.
 - `claude-code-prompts/` — пошаговый план реализации.
 
@@ -39,8 +43,8 @@
 
 ```bash
 xcodegen generate
-xcodebuild -project MeetingAssistant.xcodeproj -scheme MeetingAssistant -destination 'platform=macOS' build
-xcodebuild -project MeetingAssistant.xcodeproj -scheme MeetingAssistant -destination 'platform=macOS' test
+xcodebuild -project UserAgent057.xcodeproj -scheme UserAgent057 -destination 'platform=macOS' build
+xcodebuild -project UserAgent057.xcodeproj -scheme UserAgent057 -destination 'platform=macOS' test
 ```
 
 ## Сборка и тесты доменного пакета (без Xcode)
@@ -58,10 +62,10 @@ API-ключ OpenAI хранится только в Keychain (см. `SecretStor
 
 1. Зайдите на [platform.openai.com](https://platform.openai.com) и войдите (или зарегистрируйтесь) — это отдельный аккаунт от обычного ChatGPT, оплата тоже отдельная (баланс/карта привязывается в разделе Billing).
 2. Слева откройте **API keys** (или сразу [platform.openai.com/api-keys](https://platform.openai.com/api-keys)).
-3. **Create new secret key** → задайте любое имя (например `MeetingAssistant`) → **Create secret key**.
+3. **Create new secret key** → задайте любое имя (например `UserAgent057`) → **Create secret key**.
 4. Скопируйте ключ сразу — он вида `sk-…` и показывается только один раз, повторно посмотреть его нельзя (только удалить и создать новый).
 5. В **Settings → Billing** пополните баланс или подключите карту — без этого запросы к API будут падать с ошибкой оплаты даже с валидным ключом.
-6. Вставьте скопированный ключ в MeetingAssistant (см. ниже, «Установка API-ключа»).
+6. Вставьте скопированный ключ в UserAgent057 (см. ниже, «Установка API-ключа»).
 
 Используются `Realtime API` (режим `Answers`) и `Responses API` (создание саммари) — оба входят в обычный платный доступ, отдельно включать их не нужно. Ключ даёт доступ ко всем API этого аккаунта — храните его так же, как пароль, и не публикуйте.
 
@@ -89,7 +93,7 @@ API-ключ OpenAI хранится только в Keychain (см. `SecretStor
 
 - **Passive** (по умолчанию) — ничего не захватывается. Переключатель режима — сегментированный Picker в главном окне или в строке меню.
 - **Answers** — выберите приложение-источник звука в Настройках (иначе захватывается весь дисплей), переключитесь на `Answers`. Ответ появляется в overlay-панели по мере генерации. Кнопка/горячая клавиша «Ответить сейчас» (по умолчанию `⌥Return`) форсирует ответ по уже накопленному контексту. Стиль оверлея — «Плавающее окно» (по умолчанию), «Прикреплено к вырезу» (компактная панель под вырезом MacBook в стиле Dynamic Island) или «Во весь экран» (крупный текст, выход по Esc) — настраивается в Настройках → «Оверлей ответов», там же выбор шрифта.
-- **Recording** — переключитесь на `Recording`. Live-transcript отображается в главном окне (обновляется по чанкам ~8 секунд, с метками «Я»/«Участники»). Остановка (переход в другой режим) финализирует последний сегмент, завершает встречу в истории и автоматически сохраняет транскрипт в Markdown на Рабочий стол — папка `<дата-время> Meeting Assistant/transcript.md`. Если включено «Сохранять аудио на диск» (Настройки → «Хранение аудио»), туда же копируются `mic.wav`/`system.wav` этой встречи.
+- **Recording** — переключитесь на `Recording`. Live-transcript отображается в главном окне (обновляется по чанкам ~8 секунд, с метками «Я»/«Участники»). Остановка (переход в другой режим) финализирует последний сегмент, завершает встречу в истории и автоматически сохраняет транскрипт в Markdown на Рабочий стол — папка `<дата-время> UserAgent057/transcript.md`. Если включено «Сохранять аудио на диск» (Настройки → «Хранение аудио»), туда же копируются `mic.wav`/`system.wav` этой встречи.
 
 ## Создание саммари
 
@@ -101,7 +105,7 @@ API-ключ OpenAI хранится только в Keychain (см. `SecretStor
 
 ## Расположение и удаление локальных данных
 
-- Данные: `~/Library/Application Support/MeetingAssistant/meetingassistant.sqlite3` (+ WAL-файлы).
+- Данные: `~/Library/Application Support/UserAgent057/useragent057.sqlite3` (+ WAL-файлы).
 - Удаление одной записи или всей истории — экран «История» в приложении (с подтверждением для полной очистки).
 - Полное ручное удаление и детали по каждому режиму — `docs/privacy.md`.
 
@@ -109,13 +113,13 @@ API-ключ OpenAI хранится только в Keychain (см. `SecretStor
 
 ```bash
 xcodegen generate
-xcodebuild -project MeetingAssistant.xcodeproj -scheme MeetingAssistant -configuration Release -destination 'platform=macOS' clean build
+xcodebuild -project UserAgent057.xcodeproj -scheme UserAgent057 -configuration Release -destination 'platform=macOS' clean build
 ```
 
 Архивация (для последующей подписи/нотаризации):
 
 ```bash
-xcodebuild -project MeetingAssistant.xcodeproj -scheme MeetingAssistant -configuration Release archive -archivePath build/MeetingAssistant.xcarchive
+xcodebuild -project UserAgent057.xcodeproj -scheme UserAgent057 -configuration Release archive -archivePath build/UserAgent057.xcarchive
 ```
 
 ## Подпись и нотаризация (документация, не выполняется автоматически)
@@ -124,14 +128,14 @@ xcodebuild -project MeetingAssistant.xcodeproj -scheme MeetingAssistant -configu
 
 ```bash
 codesign --deep --force --options runtime --sign "Developer ID Application: <ВАШЕ ИМЯ> (<TEAM_ID>)" \
-  build/MeetingAssistant.xcarchive/Products/Applications/MeetingAssistant.app
+  build/UserAgent057.xcarchive/Products/Applications/UserAgent057.app
 
-ditto -c -k --keepParent build/MeetingAssistant.xcarchive/Products/Applications/MeetingAssistant.app build/MeetingAssistant.zip
+ditto -c -k --keepParent build/UserAgent057.xcarchive/Products/Applications/UserAgent057.app build/UserAgent057.zip
 
-xcrun notarytool submit build/MeetingAssistant.zip \
+xcrun notarytool submit build/UserAgent057.zip \
   --apple-id "<ВАШ_APPLE_ID>" --team-id "<TEAM_ID>" --password "<APP_SPECIFIC_PASSWORD>" --wait
 
-xcrun stapler staple build/MeetingAssistant.xcarchive/Products/Applications/MeetingAssistant.app
+xcrun stapler staple build/UserAgent057.xcarchive/Products/Applications/UserAgent057.app
 ```
 
-Ни одна из этих команд не выполнялась в рамках автономной реализации — нет учётных данных разработчика Apple в этом окружении. Hardened Runtime и App Sandbox уже включены в `project.yml`/`Resources/MeetingAssistant.entitlements` (обязательное условие нотаризации).
+Ни одна из этих команд не выполнялась в рамках автономной реализации — нет учётных данных разработчика Apple в этом окружении. Hardened Runtime и App Sandbox уже включены в `project.yml`/`Resources/UserAgent057.entitlements` (обязательное условие нотаризации).

@@ -1,4 +1,4 @@
-name: MeetingAssistant
+name: UserAgent057
 options:
   bundleIdPrefix: com.local
   deploymentTarget:
@@ -11,11 +11,11 @@ settingGroups:
     CURRENT_PROJECT_VERSION: "1"
 
 packages:
-  MeetingAssistantCore:
+  UserAgent057Core:
     path: .
 
 targets:
-  MeetingAssistant:
+  UserAgent057:
     type: application
     platform: macOS
     deploymentTarget: "14.0"
@@ -30,10 +30,10 @@ targets:
         - versioning
       base:
         SWIFT_VERSION: "6.0"
-        PRODUCT_BUNDLE_IDENTIFIER: com.local.MeetingAssistant
+        PRODUCT_BUNDLE_IDENTIFIER: com.local.UserAgent057
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         INFOPLIST_FILE: Resources/Info.plist
-        CODE_SIGN_ENTITLEMENTS: Resources/MeetingAssistant.entitlements
+        CODE_SIGN_ENTITLEMENTS: Resources/UserAgent057.entitlements
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         ENABLE_APP_SANDBOX: NO
         ENABLE_HARDENED_RUNTIME: YES
@@ -52,26 +52,26 @@ targets:
           ONLY_ACTIVE_ARCH: NO
           SWIFT_COMPILATION_MODE: wholemodule
     dependencies:
-      - package: MeetingAssistantCore
+      - package: UserAgent057Core
         product: Domain
-      - package: MeetingAssistantCore
+      - package: UserAgent057Core
         product: AudioCapture
-      - package: MeetingAssistantCore
+      - package: UserAgent057Core
         product: RealtimeClient
-      - package: MeetingAssistantCore
+      - package: UserAgent057Core
         product: Transcription
-      - package: MeetingAssistantCore
+      - package: UserAgent057Core
         product: Persistence
-      - package: MeetingAssistantCore
+      - package: UserAgent057Core
         product: SecurityStore
-      - package: MeetingAssistantCore
+      - package: UserAgent057Core
         product: Diagnostics
-      - package: MeetingAssistantCore
+      - package: UserAgent057Core
         product: Summary
-      - package: MeetingAssistantCore
+      - package: UserAgent057Core
         product: OverlayReducer
 
-  MeetingAssistantTests:
+  UserAgent057Tests:
     type: bundle.unit-test
     platform: macOS
     deploymentTarget: "14.0"
@@ -82,28 +82,28 @@ targets:
         SWIFT_VERSION: "6.0"
         GENERATE_INFOPLIST_FILE: YES
     dependencies:
-      - target: MeetingAssistant
+      - target: UserAgent057
 
 schemes:
-  MeetingAssistant:
+  UserAgent057:
     build:
       targets:
-        MeetingAssistant: all
-        MeetingAssistantTests: [test]
+        UserAgent057: all
+        UserAgent057Tests: [test]
     run:
       config: Debug
     test:
       config: Debug
       targets:
-        - MeetingAssistantTests
+        - UserAgent057Tests
     archive:
       config: Release
 
-  MeetingAssistantTests:
+  UserAgent057Tests:
     build:
       targets:
-        MeetingAssistantTests: all
+        UserAgent057Tests: all
     test:
       config: Debug
       targets:
-        - MeetingAssistantTests
+        - UserAgent057Tests

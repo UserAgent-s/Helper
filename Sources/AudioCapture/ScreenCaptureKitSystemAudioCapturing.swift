@@ -5,7 +5,7 @@ import ScreenCaptureKit
 public final class ScreenCaptureKitSystemAudioCapturing: NSObject, SystemAudioCapturing, SCStreamOutput, SCStreamDelegate, @unchecked Sendable {
     private let outputFormat: AudioCaptureOutputFormat
     private let permissions: any PermissionsChecking
-    private let captureQueue = DispatchQueue(label: "com.local.MeetingAssistant.audiocapture.system")
+    private let captureQueue = DispatchQueue(label: "com.local.UserAgent057.audiocapture.system")
     private let stateLock = NSLock()
 
     private var activeStream: SCStream?

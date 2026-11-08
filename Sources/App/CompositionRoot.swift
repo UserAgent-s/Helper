@@ -159,17 +159,17 @@ final class CompositionRoot {
 
     private static func databaseFilePath() -> String {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
-        let directory = appSupport?.appendingPathComponent("MeetingAssistant", isDirectory: true)
+        let directory = appSupport?.appendingPathComponent("UserAgent057", isDirectory: true)
         if let directory {
             try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         }
-        return directory?.appendingPathComponent("meetingassistant.sqlite3").path ?? ":memory:"
+        return directory?.appendingPathComponent("useragent057.sqlite3").path ?? ":memory:"
     }
 
     private static func recordingsDirectoryURL() -> URL {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
         let base = appSupport ?? FileManager.default.temporaryDirectory
-        let directory = base.appendingPathComponent("MeetingAssistant", isDirectory: true).appendingPathComponent("Recordings", isDirectory: true)
+        let directory = base.appendingPathComponent("UserAgent057", isDirectory: true).appendingPathComponent("Recordings", isDirectory: true)
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         return directory
     }

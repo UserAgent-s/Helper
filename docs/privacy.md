@@ -1,4 +1,4 @@
-# Приватность MeetingAssistant
+# Приватность UserAgent057
 
 ## Что происходит в каждом режиме
 
@@ -24,7 +24,7 @@
 - Требует оба разрешения — Screen Recording и Microphone.
 - Вся транскрипция выполняется ЛОКАЛЬНО через WhisperKit. В сеть не отправляется ничего.
 - Исходное аудио НЕ сохраняется на диск по умолчанию (тумблер в Настройках существует для прозрачности, но включение не активирует запись аудиофайла в текущей реализации).
-- В базу (`~/Library/Application Support/MeetingAssistant/meetingassistant.sqlite3`) пишется только распознанный текст с таймкодами и меткой источника («Я» — микрофон, «Участники» — системный звук).
+- В базу (`~/Library/Application Support/UserAgent057/useragent057.sqlite3`) пишется только распознанный текст с таймкодами и меткой источника («Я» — микрофон, «Участники» — системный звук).
 
 ## Согласие участников встречи
 
@@ -32,7 +32,7 @@
 
 ## Секреты
 
-- API-ключ OpenAI хранится локально в `UserDefaults` приложения (`UserDefaultsSecretStore`, ключ `com.local.MeetingAssistant.settings.openaiAPIKey`), в стандартном plist-файле настроек приложения под `~/Library/Preferences/`.
+- API-ключ OpenAI хранится локально в `UserDefaults` приложения (`UserDefaultsSecretStore`, ключ `com.local.UserAgent057.settings.openaiAPIKey`), в стандартном plist-файле настроек приложения под `~/Library/Preferences/`.
 - Причина отказа от Keychain (`KeychainSecretStore`, реализация всё ещё есть в `SecurityStore` и может быть включена обратно): при ad-hoc-подписи (без стабильного Team ID) код-сигнатура приложения меняется на каждой пересборке, из-за чего Keychain ACL перестаёт узнавать "то же" приложение и запрашивает пароль пользователя заново при каждом запуске. Хранение в `UserDefaults` не зависит от код-сигнатуры и не требует повторного разрешения.
 - Ключ не попадает в SQLite, diagnostic export, исходный код или логи — только в собственный домен `UserDefaults` приложения.
 - В логах и diagnostic export известные форматы ключей (`sk-…`, `Bearer …`) редактируются (`SecretRedactor`), если бы случайно попали в текст ошибки.
@@ -46,7 +46,7 @@
 
 ## Локальные данные и удаление
 
-- База данных: `~/Library/Application Support/MeetingAssistant/meetingassistant.sqlite3` (+ `-wal`/`-shm` файлы режима WAL).
+- База данных: `~/Library/Application Support/UserAgent057/useragent057.sqlite3` (+ `-wal`/`-shm` файлы режима WAL).
 - Удаление одной записи истории или всей истории (с подтверждением) — через экран «История» в приложении.
-- Полное удаление всех локальных данных: закрыть приложение, удалить папку `~/Library/Application Support/MeetingAssistant/`, и удалить API-ключ (Настройки → «Удалить» рядом с API-ключом, либо `defaults delete com.local.MeetingAssistant com.local.MeetingAssistant.settings.openaiAPIKey`).
+- Полное удаление всех локальных данных: закрыть приложение, удалить папку `~/Library/Application Support/UserAgent057/`, и удалить API-ключ (Настройки → «Удалить» рядом с API-ключом, либо `defaults delete com.local.UserAgent057 com.local.UserAgent057.settings.openaiAPIKey`).
 - Whisper-модель кешируется CoreML/WhisperKit вне каталога приложения (стандартный кеш моделей); удаляется отдельно при необходимости освободить место.

@@ -25,7 +25,7 @@ struct OnboardingView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                Text(loc("Что захватывает MeetingAssistant"))
+                Text(loc("Что захватывает UserAgent057"))
                     .font(.title2)
 
                 VStack(alignment: .leading, spacing: 12) {

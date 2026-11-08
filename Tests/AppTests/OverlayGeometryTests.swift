@@ -1,6 +1,6 @@
 import Testing
 import CoreGraphics
-@testable import MeetingAssistant
+@testable import UserAgent057
 
 @Suite struct OverlayGeometryTests {
 

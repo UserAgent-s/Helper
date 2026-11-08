@@ -1,4 +1,4 @@
-# Архитектура MeetingAssistant
+# Архитектура UserAgent057
 
 ## Слои
 
@@ -114,7 +114,7 @@ protocol LatencyRecording: Sendable {
 }
 ```
 
-Полные модели (`Meeting`, `MeetingID`, `QuestionAnswerPair`, `MeetingSummary`, `LatencyMetric`, `ContinuousClockInstant`) определяются в `Sources/MeetingAssistantDomain/Models` на этапе `02`/`03`.
+Полные модели (`Meeting`, `MeetingID`, `QuestionAnswerPair`, `MeetingSummary`, `LatencyMetric`, `ContinuousClockInstant`) определяются в `Sources/UserAgent057Domain/Models` на этапе `02`/`03`.
 
 ## Sequence: `answers`, автоматический ответ
 

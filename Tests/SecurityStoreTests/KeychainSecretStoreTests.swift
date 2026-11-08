@@ -5,7 +5,7 @@ import Testing
 @Suite struct KeychainSecretStoreTests {
 
     private func uniqueStore() -> KeychainSecretStore {
-        KeychainSecretStore(service: "com.local.MeetingAssistant.tests", account: "test-\(UUID().uuidString)")
+        KeychainSecretStore(service: "com.local.UserAgent057.tests", account: "test-\(UUID().uuidString)")
     }
 
     @Test func retrievingBeforeStoringReturnsNil() throws {

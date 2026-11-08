@@ -1,7 +1,7 @@
 import Testing
 import Domain
 import Foundation
-@testable import MeetingAssistant
+@testable import UserAgent057
 
 private final class StubMeetingRepository: MeetingRepository, @unchecked Sendable {
     let meeting: Meeting
