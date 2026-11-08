@@ -124,7 +124,8 @@ public struct QuestionAnswerPair: Sendable, Equatable, Identifiable {
     public let triggerKind: AnswerTriggerKind
     public var questionTranscriptionStatus: QuestionTranscriptionStatus
     public var answerText: String
-    public let modelID: String
+    public let answerModelID: String
+    public var questionTranscriptionModelID: String?
     public let responseID: String
     public var speechEndToFirstDeltaMs: Int?
     public var firstDeltaToFirstPaintMs: Int?
@@ -143,7 +144,8 @@ public struct QuestionAnswerPair: Sendable, Equatable, Identifiable {
         triggerKind: AnswerTriggerKind,
         questionTranscriptionStatus: QuestionTranscriptionStatus = .pending,
         answerText: String,
-        modelID: String,
+        answerModelID: String,
+        questionTranscriptionModelID: String? = nil,
         responseID: String,
         speechEndToFirstDeltaMs: Int? = nil,
         firstDeltaToFirstPaintMs: Int? = nil,
@@ -161,7 +163,8 @@ public struct QuestionAnswerPair: Sendable, Equatable, Identifiable {
         self.triggerKind = triggerKind
         self.questionTranscriptionStatus = questionTranscriptionStatus
         self.answerText = answerText
-        self.modelID = modelID
+        self.answerModelID = answerModelID
+        self.questionTranscriptionModelID = questionTranscriptionModelID
         self.responseID = responseID
         self.speechEndToFirstDeltaMs = speechEndToFirstDeltaMs
         self.firstDeltaToFirstPaintMs = firstDeltaToFirstPaintMs

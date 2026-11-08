@@ -94,4 +94,16 @@ import Testing
         let totalSamples = secondBatch.reduce(0) { $0 + $1.samples.count }
         #expect(totalSamples == 300)
     }
+
+    @Test func pipelinePreservesLanguageAndConfidence() async throws {
+        let transcribing = FakeLocalTranscribing()
+        await transcribing.setResult([TranscribedSegment(text: "привет", startMs: 0, endMs: 500, source: .remote, language: "ru", confidence: 0.8)])
+        let pipeline = ChunkedTranscriptionPipeline(transcribing: transcribing, chunkDurationSeconds: 1, overlapSeconds: 0.2)
+
+        for _ in 0..<10 { _ = await pipeline.ingest(frame(sampleCount: 100)) }
+        let segments = try await pipeline.flush()
+
+        #expect(segments.first?.language == "ru")
+        #expect(segments.first?.confidence == 0.8)
+    }
 }

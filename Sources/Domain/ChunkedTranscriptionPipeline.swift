@@ -37,7 +37,9 @@ public actor ChunkedTranscriptionPipeline {
                 text: segment.text,
                 startMs: segment.startMs + Int(bufferStartMsSnapshot),
                 endMs: segment.endMs + Int(bufferStartMsSnapshot),
-                source: segment.source
+                source: segment.source,
+                language: segment.language,
+                confidence: segment.confidence
             )
         }
 

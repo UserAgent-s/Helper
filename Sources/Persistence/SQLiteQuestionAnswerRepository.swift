@@ -2,10 +2,14 @@ import Domain
 import Foundation
 
 public final class SQLiteQuestionAnswerRepository: QuestionAnswerRepository, Sendable {
-    private let connection: SQLiteConnection
+    private let connection: SQLiteDatabase
 
-    public init(path: String) {
-        connection = SQLiteConnection(path: path)
+    public init(database: SQLiteDatabase) {
+        connection = database
+    }
+
+    public convenience init(path: String) {
+        self.init(database: SQLiteDatabase(path: path))
     }
 
     public func save(_ pair: QuestionAnswerPair) async throws {
@@ -17,8 +21,9 @@ public final class SQLiteQuestionAnswerRepository: QuestionAnswerRepository, Sen
                 id, asked_at, source_bundle_id, question_text, question_status,
                 context_started_at, context_duration_ms, trigger_kind, answer_text, answer_status,
                 model_id, response_id, speech_end_to_first_delta_ms, first_delta_to_first_paint_ms,
-                response_total_ms, usage_tokens, estimated_cost_usd, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                response_total_ms, usage_tokens, estimated_cost_usd, created_at, updated_at,
+                question_transcription_model_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
                 question_text = excluded.question_text,
                 question_status = excluded.question_status,
@@ -29,7 +34,8 @@ public final class SQLiteQuestionAnswerRepository: QuestionAnswerRepository, Sen
                 response_total_ms = excluded.response_total_ms,
                 usage_tokens = excluded.usage_tokens,
                 estimated_cost_usd = excluded.estimated_cost_usd,
-                updated_at = excluded.updated_at
+                updated_at = excluded.updated_at,
+                question_transcription_model_id = excluded.question_transcription_model_id
             """,
             [
                 .text(pair.id.uuidString),
@@ -42,7 +48,7 @@ public final class SQLiteQuestionAnswerRepository: QuestionAnswerRepository, Sen
                 .text(pair.triggerKind.rawValueString),
                 .text(pair.answerText),
                 .text(pair.status.rawValueString),
-                .text(pair.modelID),
+                .text(pair.answerModelID),
                 .text(pair.responseID),
                 pair.speechEndToFirstDeltaMs.map(SQLiteValue.int) ?? .null,
                 pair.firstDeltaToFirstPaintMs.map(SQLiteValue.int) ?? .null,
@@ -51,6 +57,7 @@ public final class SQLiteQuestionAnswerRepository: QuestionAnswerRepository, Sen
                 pair.estimatedCostUSD.map(SQLiteValue.double) ?? .null,
                 .text(now),
                 .text(now),
+                pair.questionTranscriptionModelID.map(SQLiteValue.text) ?? .null,
             ]
         )
     }
@@ -91,7 +98,7 @@ public final class SQLiteQuestionAnswerRepository: QuestionAnswerRepository, Sen
     private static let columns = """
     id, asked_at, source_bundle_id, question_text, question_status, context_started_at, context_duration_ms,
     trigger_kind, answer_text, answer_status, model_id, response_id, speech_end_to_first_delta_ms,
-    first_delta_to_first_paint_ms, response_total_ms, usage_tokens, estimated_cost_usd
+    first_delta_to_first_paint_ms, response_total_ms, usage_tokens, estimated_cost_usd, question_transcription_model_id
     """
 
     private static func rowMapper(_ row: SQLiteRow) -> QuestionAnswerPair {
@@ -105,7 +112,8 @@ public final class SQLiteQuestionAnswerRepository: QuestionAnswerRepository, Sen
             triggerKind: AnswerTriggerKind(rawValueString: row.string(7) ?? "") ?? .automatic,
             questionTranscriptionStatus: QuestionTranscriptionStatus(rawValueString: row.string(4) ?? "") ?? .pending,
             answerText: row.string(8) ?? "",
-            modelID: row.string(10) ?? "",
+            answerModelID: row.string(10) ?? "",
+            questionTranscriptionModelID: row.string(17),
             responseID: row.string(11) ?? "",
             speechEndToFirstDeltaMs: row.int(12),
             firstDeltaToFirstPaintMs: row.int(13),

@@ -13,13 +13,13 @@ public enum ForceAnswerStrategy: Sendable, Equatable {
 }
 
 public actor OpenAIRealtimeAnswerClient: RealtimeAnswering {
-    private static let model = "gpt-realtime-2.1"
+    public static let modelID = "gpt-realtime-2.1"
     private static var endpointURL: URL {
         var components = URLComponents()
         components.scheme = "wss"
         components.host = "api.openai.com"
         components.path = "/v1/realtime"
-        components.queryItems = [URLQueryItem(name: "model", value: model)]
+        components.queryItems = [URLQueryItem(name: "model", value: modelID)]
         return components.url!
     }
 
@@ -94,7 +94,7 @@ public actor OpenAIRealtimeAnswerClient: RealtimeAnswering {
         sessionActive = true
         startReceiveLoop()
         try await transport.send(.sessionUpdate(makeSessionConfig()))
-        redactedLog("realtime session started (model=\(Self.model))")
+        redactedLog("realtime session started (model=\(Self.modelID))")
     }
 
     public func appendAudio(_ frame: PCMAudioFrame) async {
@@ -208,7 +208,7 @@ public actor OpenAIRealtimeAnswerClient: RealtimeAnswering {
 
     private func makeSessionConfig() -> SessionConfig {
         SessionConfig(
-            model: Self.model,
+            model: Self.modelID,
             instructions: instructions,
             outputModalities: ["text"],
             audio: AudioConfig(input: AudioInputConfig(

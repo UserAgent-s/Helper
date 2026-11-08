@@ -2,10 +2,14 @@ import Domain
 import Foundation
 
 public final class SQLiteMeetingRepository: MeetingRepository, Sendable {
-    private let connection: SQLiteConnection
+    private let connection: SQLiteDatabase
 
-    public init(path: String) {
-        connection = SQLiteConnection(path: path)
+    public init(database: SQLiteDatabase) {
+        connection = database
+    }
+
+    public convenience init(path: String) {
+        self.init(database: SQLiteDatabase(path: path))
     }
 
     public func createMeeting(startedAt: Date, sourceAppBundleID: String?) async throws -> MeetingID {

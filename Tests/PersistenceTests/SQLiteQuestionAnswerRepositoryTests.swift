@@ -15,7 +15,7 @@ import Domain
             contextWindowDurationMs: 1200,
             triggerKind: triggerKind,
             answerText: answerText,
-            modelID: "gpt-realtime-2.1",
+            answerModelID: "gpt-realtime-2.1",
             responseID: responseID,
             status: status
         )

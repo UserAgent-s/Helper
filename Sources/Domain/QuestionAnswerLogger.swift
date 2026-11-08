@@ -12,21 +12,29 @@ public actor QuestionAnswerLogger {
 
     private let localTranscribing: any LocalTranscribing
     private let repository: any QuestionAnswerRepository
-    private let modelID: String
+    nonisolated public let answerModelID: String
+    private let questionTranscriptionModelID: @Sendable () -> String?
     private let whisperTimeout: Duration
 
     private var drafts: [String: Draft] = [:]
+    private var writeTail: Task<Void, Never>?
 
     public init(
         localTranscribing: any LocalTranscribing,
         repository: any QuestionAnswerRepository,
-        modelID: String,
+        answerModelID: String,
+        questionTranscriptionModelID: @escaping @Sendable () -> String? = { nil },
         whisperTimeout: Duration = .seconds(15)
     ) {
         self.localTranscribing = localTranscribing
         self.repository = repository
-        self.modelID = modelID
+        self.answerModelID = answerModelID
+        self.questionTranscriptionModelID = questionTranscriptionModelID
         self.whisperTimeout = whisperTimeout
+    }
+
+    public func flush() async {
+        await writeTail?.value
     }
 
     public func beginDraft(
@@ -47,7 +55,8 @@ public actor QuestionAnswerLogger {
             contextWindowDurationMs: durationMs,
             triggerKind: triggerKind,
             answerText: "",
-            modelID: modelID,
+            answerModelID: answerModelID,
+            questionTranscriptionModelID: questionTranscriptionModelID(),
             responseID: responseID,
             status: .answerStreaming
         )
@@ -104,7 +113,9 @@ public actor QuestionAnswerLogger {
 
     private func persist(_ pair: QuestionAnswerPair) {
         let repository = self.repository
-        Task {
+        let previous = writeTail
+        writeTail = Task {
+            await previous?.value
             try? await repository.save(pair)
         }
     }

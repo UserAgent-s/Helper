@@ -1,6 +1,7 @@
 struct SQLiteMigration {
     let version: Int
     let statements: [String]
+    var backsUpExistingDatabase = false
 }
 
 enum SQLiteMigrations {
@@ -112,5 +113,13 @@ enum SQLiteMigrations {
             END
             """,
         ]),
+        SQLiteMigration(version: 2, statements: [
+            "ALTER TABLE qa_entries ADD COLUMN question_transcription_model_id TEXT",
+            """
+            UPDATE qa_entries
+            SET question_transcription_model_id = model_id, model_id = 'gpt-realtime-2.1'
+            WHERE model_id NOT LIKE 'gpt-realtime%'
+            """,
+        ], backsUpExistingDatabase: true),
     ]
 }

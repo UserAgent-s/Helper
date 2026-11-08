@@ -61,9 +61,10 @@ final class CompositionRoot {
         self.whisperKitTranscribing = whisperKitTranscribing
         localTranscribing = whisperKitTranscribing
         let databasePath = Self.databaseFilePath()
-        meetingRepository = SQLiteMeetingRepository(path: databasePath)
-        questionAnswerRepository = SQLiteQuestionAnswerRepository(path: databasePath)
-        summaryRepository = SQLiteSummaryRepository(path: databasePath)
+        let database = SQLiteDatabase(path: databasePath)
+        meetingRepository = SQLiteMeetingRepository(database: database)
+        questionAnswerRepository = SQLiteQuestionAnswerRepository(database: database)
+        summaryRepository = SQLiteSummaryRepository(database: database)
         secretStoring = UserDefaultsSecretStore()
         summaryGenerating = OpenAIResponsesSummaryClient(
             secretStoring: secretStoring,
@@ -88,7 +89,8 @@ final class CompositionRoot {
         questionAnswerLogger = QuestionAnswerLogger(
             localTranscribing: localTranscribing,
             repository: questionAnswerRepository,
-            modelID: settingsStore.whisperModelID
+            answerModelID: OpenAIRealtimeAnswerClient.modelID,
+            questionTranscriptionModelID: { [settingsStore] in settingsStore.whisperModelID }
         )
 
         let answersController = AnswersModeController(

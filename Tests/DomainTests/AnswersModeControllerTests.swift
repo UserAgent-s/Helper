@@ -198,7 +198,7 @@ import Testing
         let trigger = FakeAnswerTriggering()
         let transcribing = FakeLocalTranscribing()
         let repository = FakeQuestionAnswerRepository()
-        let logger = QuestionAnswerLogger(localTranscribing: transcribing, repository: repository, modelID: "test-model")
+        let logger = QuestionAnswerLogger(localTranscribing: transcribing, repository: repository, answerModelID: "test-model")
         let controller = AnswersModeController(
             systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" },
             questionAnswerLogger: logger
@@ -220,7 +220,7 @@ import Testing
         let trigger = FakeAnswerTriggering()
         let transcribing = FakeLocalTranscribing()
         let repository = FakeQuestionAnswerRepository()
-        let logger = QuestionAnswerLogger(localTranscribing: transcribing, repository: repository, modelID: "test-model")
+        let logger = QuestionAnswerLogger(localTranscribing: transcribing, repository: repository, answerModelID: "test-model")
         let controller = AnswersModeController(
             systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" },
             questionAnswerLogger: logger
@@ -298,7 +298,7 @@ import Testing
         let trigger = FakeAnswerTriggering()
         let transcribing = FakeLocalTranscribing()
         let repository = FakeQuestionAnswerRepository()
-        let logger = QuestionAnswerLogger(localTranscribing: transcribing, repository: repository, modelID: "test-model")
+        let logger = QuestionAnswerLogger(localTranscribing: transcribing, repository: repository, answerModelID: "test-model")
         let controller = AnswersModeController(
             systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" },
             questionAnswerLogger: logger
