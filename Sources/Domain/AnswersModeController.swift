@@ -28,8 +28,7 @@ public actor AnswersModeController: ModeController {
     private let failureStream: AsyncStream<String>
     private let failureContinuation: AsyncStream<String>.Continuation
 
-    private let streamEventStream: AsyncStream<AnswerStreamEvent>
-    private let streamEventContinuation: AsyncStream<AnswerStreamEvent>.Continuation
+    private let streamEventBroadcaster = AsyncBroadcaster<AnswerStreamEvent>()
 
     public init(
         systemAudio: any SystemAudioCapturing,
@@ -50,7 +49,6 @@ public actor AnswersModeController: ModeController {
         self.questionAnswerLogger = questionAnswerLogger
         self.latencyRecording = latencyRecording
         (self.failureStream, self.failureContinuation) = AsyncStream<String>.makeStream()
-        (self.streamEventStream, self.streamEventContinuation) = AsyncStream<AnswerStreamEvent>.makeStream()
     }
 
     private func startPersistentListenersIfNeeded() {
@@ -79,7 +77,7 @@ public actor AnswersModeController: ModeController {
         streamingText = ""
         contextWindowStartedAt = Date()
         await answersRingBuffer.clear()
-        streamEventContinuation.yield(.collectingContext)
+        streamEventBroadcaster.yield(.collectingContext)
 
         try await realtime.start(instructions: instructionsProvider())
         let realtime = self.realtime
@@ -137,8 +135,8 @@ public actor AnswersModeController: ModeController {
         failureContinuation.yield("system_audio_capture_ended")
     }
 
-    nonisolated public func streamEvents() -> AsyncStream<AnswerStreamEvent> {
-        streamEventStream
+    nonisolated public func streamEvents(subscriber: String = #fileID) -> AsyncStream<AnswerStreamEvent> {
+        streamEventBroadcaster.subscribe(subscriber)
     }
 
     private func handle(_ event: RealtimeAnswerEvent) async {
@@ -156,7 +154,7 @@ public actor AnswersModeController: ModeController {
             let firstDeltaObservedAt = Date()
             turnPhase = .streaming
             streamingText += text
-            streamEventContinuation.yield(.streaming(text: streamingText))
+            streamEventBroadcaster.yield(.streaming(text: streamingText))
             if isFirstDelta {
                 await latencyRecording?.record(.firstDeltaToFirstPaintMs(Int(Date().timeIntervalSince(firstDeltaObservedAt) * 1000)))
             }
@@ -174,14 +172,14 @@ public actor AnswersModeController: ModeController {
         case .waitingForQuestion:
             if turnPhase == .completed {
                 turnPhase = .collectingContext
-                streamEventContinuation.yield(.collectingContext)
+                streamEventBroadcaster.yield(.collectingContext)
             }
         case .completed(let id):
             guard id == activeResponseID else { return }
             turnPhase = .completed
             activeResponseID = nil
             let finalText = streamingText
-            streamEventContinuation.yield(.completed(finalText: finalText))
+            streamEventBroadcaster.yield(.completed(finalText: finalText))
             if let questionAnswerLogger {
                 let responseTotalMs = responseStartedAt.map { Int(Date().timeIntervalSince($0) * 1000) }
                 await questionAnswerLogger.recordCompleted(responseID: id, finalText: finalText, responseTotalMs: responseTotalMs)
@@ -196,7 +194,7 @@ public actor AnswersModeController: ModeController {
             turnPhase = .collectingContext
             activeResponseID = nil
             streamingText = ""
-            streamEventContinuation.yield(.cancelled)
+            streamEventBroadcaster.yield(.cancelled)
             if let questionAnswerLogger {
                 await questionAnswerLogger.recordCancelled(responseID: id)
             }
@@ -212,7 +210,7 @@ public actor AnswersModeController: ModeController {
               turnPhase != .manualResponsePending, turnPhase != .automaticResponsePending, turnPhase != .streaming
         else { return }
         turnPhase = .manualResponsePending
-        streamEventContinuation.yield(.manualResponsePending)
+        streamEventBroadcaster.yield(.manualResponsePending)
         Task { [realtime] in
             do {
                 try await realtime.forceResponse()
@@ -225,6 +223,6 @@ public actor AnswersModeController: ModeController {
     private func handleManualTriggerRejected() {
         guard turnPhase == .manualResponsePending, activeResponseID == nil else { return }
         turnPhase = .collectingContext
-        streamEventContinuation.yield(.noContext)
+        streamEventBroadcaster.yield(.noContext)
     }
 }

@@ -189,3 +189,37 @@ import Testing
         #expect(await coordinator.currentMode == .passive)
     }
 }
+
+@Suite struct ModeCoordinatorBroadcastTests {
+    private func modes(_ stream: AsyncStream<ModeState>, until target: [AppMode]) async -> [AppMode] {
+        var seen: [AppMode] = []
+        for await state in stream {
+            if seen.last != state.mode { seen.append(state.mode) }
+            if seen.suffix(target.count) == target[...] { break }
+        }
+        return seen
+    }
+
+    @Test func twoReadersBothSeeEveryTransition() async {
+        let recorder = CallRecorder()
+        let answers = FakeModeController(label: "answers", recorder: recorder)
+        let coordinator = ModeCoordinator(controllers: [.answers: answers])
+        let first = coordinator.stateUpdates(subscriber: "switcher")
+        let second = coordinator.stateUpdates(subscriber: "overlay")
+        _ = await coordinator.requestTransition(to: .answers)
+        _ = await coordinator.requestTransition(to: .passive)
+        let expected: [AppMode] = [.passive, .answers, .passive]
+        #expect(await modes(first, until: expected) == expected)
+        #expect(await modes(second, until: expected) == expected)
+    }
+
+    @Test func lateReaderSeesCurrentState() async {
+        let recorder = CallRecorder()
+        let answers = FakeModeController(label: "answers", recorder: recorder)
+        let coordinator = ModeCoordinator(controllers: [.answers: answers])
+        _ = await coordinator.requestTransition(to: .answers)
+        var iterator = coordinator.stateUpdates(subscriber: "late").makeAsyncIterator()
+        let first = await iterator.next()
+        #expect(first?.mode == .answers)
+    }
+}
