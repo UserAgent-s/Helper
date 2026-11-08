@@ -32,7 +32,16 @@ struct UserAgent057App: App {
                 }
         }
         .windowResizability(.contentSize)
+
+        Window(loc("Настройки"), id: SettingsWindow.id) {
+            SettingsRootView(viewModel: root.settingsViewModel)
+        }
+        .windowResizability(.contentMinSize)
     }
+}
+
+enum SettingsWindow {
+    static let id = "settings"
 }
 
 @MainActor

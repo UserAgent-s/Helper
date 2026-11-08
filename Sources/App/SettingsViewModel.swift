@@ -61,6 +61,26 @@ final class SettingsViewModel {
         set { overlayPreferences.fontFamily = newValue }
     }
 
+    var deviceRole: DeviceRole {
+        get { settingsStore.deviceRole }
+        set { settingsStore.deviceRole = newValue }
+    }
+
+    var historyRetentionDays: Int {
+        get { settingsStore.historyRetentionDays ?? 0 }
+        set { settingsStore.historyRetentionDays = newValue > 0 ? newValue : nil }
+    }
+
+    func selectChromeOnlyPreset() {
+        preferredAudioSourceBundleID = SystemAudioScope.chromeOnlyPreset.targetApplicationBundleID ?? ""
+        savePreferredAudioSource()
+    }
+
+    func selectWholeSystem() {
+        preferredAudioSourceBundleID = ""
+        savePreferredAudioSource()
+    }
+
     var audioStorageEnabled: Bool {
         get { settingsStore.audioStorageEnabled }
         set { settingsStore.audioStorageEnabled = newValue }

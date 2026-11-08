@@ -5,7 +5,7 @@ public actor AnswersModeController: ModeController {
     private let realtime: any RealtimeAnswering
     private let answerTrigger: any AnswerTriggering
     private let preferredAudioSource: (any PreferredAudioSourceStoring)?
-    private let instructionsProvider: @Sendable () -> String
+    private let instructionsProvider: @Sendable () async -> String
     private let answersRingBuffer: AnswersRingBuffer
     private let questionAnswerLogger: QuestionAnswerLogger?
     private let latencyRecording: (any LatencyRecording)?
@@ -35,7 +35,7 @@ public actor AnswersModeController: ModeController {
         realtime: any RealtimeAnswering,
         answerTrigger: any AnswerTriggering,
         preferredAudioSource: (any PreferredAudioSourceStoring)? = nil,
-        instructionsProvider: @escaping @Sendable () -> String,
+        instructionsProvider: @escaping @Sendable () async -> String,
         answersRingBuffer: AnswersRingBuffer = AnswersRingBuffer(),
         questionAnswerLogger: QuestionAnswerLogger? = nil,
         latencyRecording: (any LatencyRecording)? = nil
@@ -79,7 +79,7 @@ public actor AnswersModeController: ModeController {
         await answersRingBuffer.clear()
         streamEventBroadcaster.yield(.collectingContext)
 
-        try await realtime.start(instructions: instructionsProvider())
+        try await realtime.start(instructions: await instructionsProvider())
         let realtime = self.realtime
         realtimeLease = ResourceLease(name: "realtime") { await realtime.stop() }
 

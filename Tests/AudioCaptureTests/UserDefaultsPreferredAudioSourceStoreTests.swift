@@ -1,3 +1,4 @@
+import Domain
 import Foundation
 import Testing
 @testable import AudioCapture
@@ -9,21 +10,29 @@ import Testing
         return UserDefaultsPreferredAudioSourceStore(defaults: UserDefaults(suiteName: suiteName)!)
     }
 
-    @Test func defaultsToChromeWhenNeverSet() async {
+    @Test func defaultsToWholeSystemWhenNeverSet() async {
         let store = freshStore()
-        #expect(await store.preferredApplicationBundleID() == "com.google.Chrome")
+        #expect(await store.systemAudioScope() == .wholeSystem(excludingBundleIDs: []))
+        #expect(await store.preferredApplicationBundleID() == nil)
     }
 
-    @Test func explicitBundleIDOverridesDefault() async {
+    @Test func explicitBundleIDBecomesApplicationScopeWithFallback() async {
         let store = freshStore()
         await store.setPreferredApplicationBundleID("com.apple.Safari")
         #expect(await store.preferredApplicationBundleID() == "com.apple.Safari")
+        #expect(await store.systemAudioScope() == .application(bundleID: "com.apple.Safari", fallbackToWholeSystem: true))
     }
 
-    @Test func explicitlyClearingReturnsNilRatherThanFallingBackToDefault() async {
+    @Test func explicitlyClearingReturnsWholeSystem() async {
         let store = freshStore()
         await store.setPreferredApplicationBundleID("com.apple.Safari")
         await store.setPreferredApplicationBundleID(nil)
         #expect(await store.preferredApplicationBundleID() == nil)
+    }
+
+    @Test func scopeRoundTripsThroughJSON() async {
+        let store = freshStore()
+        await store.setSystemAudioScope(.wholeSystem(excludingBundleIDs: ["com.spotify.client"]))
+        #expect(await store.systemAudioScope() == .wholeSystem(excludingBundleIDs: ["com.spotify.client"]))
     }
 }

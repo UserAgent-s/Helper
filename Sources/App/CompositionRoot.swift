@@ -49,8 +49,10 @@ final class CompositionRoot {
         let permissionsChecking = SystemPermissionsChecker()
         self.permissionsChecking = permissionsChecking
         preferredAudioSource = UserDefaultsPreferredAudioSourceStore()
+        SettingsMigrator(defaults: .standard).migrateIfNeeded()
         let settingsStore = AppSettingsStore()
         self.settingsStore = settingsStore
+        let profileKnowledge: any ProfileKnowledgeProviding = LegacyBackgroundProfileProvider { [settingsStore] in settingsStore.backgroundContext }
         LocalizationCenter.shared.configure(with: settingsStore)
 
         answersSystemAudioCapturing = ScreenCaptureKitSystemAudioCapturing(outputFormat: .realtimeStreaming, permissions: permissionsChecking)
@@ -98,7 +100,9 @@ final class CompositionRoot {
             realtime: realtimeAnswering,
             answerTrigger: manualAnswerTrigger,
             preferredAudioSource: preferredAudioSource,
-            instructionsProvider: { RealtimeInstructions.system(for: settingsStore.answerLength, background: settingsStore.backgroundContext) },
+            instructionsProvider: { [profileKnowledge] in
+                RealtimeInstructions.system(for: settingsStore.answerLength, background: await profileKnowledge.realtimeDigest())
+            },
             answersRingBuffer: answersRingBuffer,
             questionAnswerLogger: questionAnswerLogger,
             latencyRecording: latencyRecording

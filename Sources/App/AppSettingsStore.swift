@@ -20,6 +20,7 @@ final class AppSettingsStore: @unchecked Sendable {
         static let appLanguage = "com.local.UserAgent057.settings.appLanguage"
         static let answerLength = "com.local.UserAgent057.settings.answerLength"
         static let backgroundContext = "com.local.UserAgent057.settings.backgroundContext"
+        static let deviceRole = "com.local.UserAgent057.settings.device.role"
     }
 
     init(defaults: UserDefaults = .standard) {
@@ -90,5 +91,10 @@ final class AppSettingsStore: @unchecked Sendable {
     var backgroundContext: String {
         get { defaults.string(forKey: Keys.backgroundContext) ?? "" }
         set { defaults.set(newValue, forKey: Keys.backgroundContext) }
+    }
+
+    var deviceRole: DeviceRole {
+        get { DeviceRole(rawValue: defaults.string(forKey: Keys.deviceRole) ?? "") ?? .primary }
+        set { defaults.set(newValue.rawValue, forKey: Keys.deviceRole) }
     }
 }

@@ -72,6 +72,7 @@ struct ModeSwitcherView: View {
     var whisperKitTranscribing: WhisperKitTranscribing
     var questionAnswerRepository: any QuestionAnswerRepository
     var meetingRepository: any MeetingRepository
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         VStack(spacing: 16) {
@@ -120,8 +121,11 @@ struct ModeSwitcherView: View {
         .sheet(isPresented: Binding(get: { navigationState.isShowingHistory }, set: { navigationState.isShowingHistory = $0 })) {
             HistoryView(viewModel: historyViewModel)
         }
-        .sheet(isPresented: Binding(get: { navigationState.isShowingSettings }, set: { navigationState.isShowingSettings = $0 })) {
-            SettingsView(viewModel: settingsViewModel)
+        .onChange(of: navigationState.isShowingSettings) { _, isShowing in
+            guard isShowing else { return }
+            openWindow(id: SettingsWindow.id)
+            NSApp.activate()
+            navigationState.isShowingSettings = false
         }
         .sheet(isPresented: Binding(get: { navigationState.isShowingOnboarding }, set: { navigationState.isShowingOnboarding = $0 })) {
             OnboardingView(secretStoring: secretStoring, whisperKitTranscribing: whisperKitTranscribing, permissionsChecking: permissionsChecking) {
