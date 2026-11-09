@@ -1,4 +1,4 @@
-import { answerSegments } from "./store.js";
+import { answerSegments, sessionCommand, sessionElapsed } from "./store.js";
 
 const MODE_LABELS = { passive: "Пассивный", answers: "Ответы", recording: "Запись" };
 const PHASE_LABELS = { idle: "ожидание", starting: "запуск", active: "активен", stopping: "остановка", failed: "ошибка" };
@@ -12,6 +12,11 @@ const ERROR_TEXT = {
   answer_in_progress: "Дождитесь окончания ответа и повторите сброс.",
   not_available: "Эта функция пока недоступна.",
   mode_transition_failed: "Не удалось переключить режим.",
+  session_start_failed: "Не удалось начать сессию.",
+  unknown_session: "Сессия не найдена.",
+  no_active_session: "Сессия не запущена.",
+  no_completed_answer: "Пока нет готового ответа для отметки.",
+  bookmark_failed: "Не удалось сохранить отметку.",
   unauthorized: "Устройство не сопряжено.",
   throttled: "Слишком много попыток. Подождите минуту.",
   too_many_clients: "Подключено слишком много устройств."
@@ -54,6 +59,22 @@ export function errorText(error) {
   return error.message && !ERROR_TEXT[error.code] ? base + ": " + error.message : base;
 }
 
+export function bookmarkText(bookmark) {
+  if (!bookmark) {
+    return "";
+  }
+  switch (bookmark.kind) {
+    case "star":
+      return "★ ответ отмечен";
+    case "moment":
+      return "Момент отмечен";
+    case "removed":
+      return "Отметка снята";
+    default:
+      return "";
+  }
+}
+
 export function noticeText(notice) {
   return NOTICE_TEXT[notice.code] || notice.message || notice.code;
 }
@@ -68,6 +89,11 @@ export function createView(doc, handlers) {
     levelMe: byId("level-me"),
     answerNow: byId("answer-now"),
     reset: byId("reset"),
+    session: byId("session-toggle").parentNode,
+    sessionToggle: byId("session-toggle"),
+    sessionStar: byId("session-star"),
+    sessionTimer: byId("session-timer"),
+    sessionFeedback: byId("session-feedback"),
     modeButtons: Array.prototype.slice.call(doc.querySelectorAll("[data-mode]")),
     pairing: byId("pairing"),
     pairingForm: byId("pairing-form"),
@@ -84,6 +110,8 @@ export function createView(doc, handlers) {
 
   elements.answerNow.addEventListener("click", () => handlers.command("answer_now"));
   elements.reset.addEventListener("click", () => handlers.command("reset_context"));
+  elements.sessionToggle.addEventListener("click", () => handlers.command(elements.sessionToggle.dataset.command || "session.start"));
+  elements.sessionStar.addEventListener("click", () => handlers.command("star_last"));
   for (const button of elements.modeButtons) {
     button.addEventListener("click", () => handlers.command("set_mode", { mode: button.dataset.mode }));
   }
@@ -168,6 +196,15 @@ export function createView(doc, handlers) {
       button.disabled = !can("set_mode");
       button.setAttribute("aria-pressed", button.dataset.mode === mode.mode ? "true" : "false");
     }
+    const session = state.session;
+    const command = sessionCommand(state);
+    elements.session.dataset.active = session ? "true" : "false";
+    elements.sessionToggle.dataset.command = command;
+    elements.sessionToggle.textContent = session ? "Остановить" : "Начать сессию";
+    elements.sessionToggle.disabled = !can(command);
+    elements.sessionStar.disabled = !session || !can("star_last");
+    elements.sessionTimer.textContent = session ? sessionElapsed(session.startedAt, view.now || Date.now()) : "—";
+    elements.sessionFeedback.textContent = session ? bookmarkText(session.lastBookmark) : "";
     elements.pairing.hidden = !view.showPairing;
     if (view.pairingCode && !elements.pairingCode.value) {
       elements.pairingCode.value = view.pairingCode;

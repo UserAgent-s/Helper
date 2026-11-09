@@ -93,12 +93,15 @@ final class OverlayCoordinator {
     private let menuBarController: MenuBarController
 
     init(root: CompositionRoot) {
-        windowController = AnswerOverlayWindowController(viewModel: root.answerOverlayViewModel, overlaySwitch: root.overlaySwitch)
+        let preferences = OverlayPreferencesStore()
+        windowController = AnswerOverlayWindowController(viewModel: root.answerOverlayViewModel, preferences: preferences, overlaySwitch: root.overlaySwitch)
         menuBarController = MenuBarController(
             overlayViewModel: root.answerOverlayViewModel,
             modeViewModel: root.modeViewModel,
+            sessionViewModel: root.sessionControlViewModel,
             navigationState: root.navigationState,
             overlaySwitch: root.overlaySwitch
         )
+        root.sessionControlViewModel.registerHotKeys(on: windowController, preferences: preferences)
     }
 }

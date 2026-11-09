@@ -14,6 +14,8 @@ public enum ServerEvent: Sendable, Equatable {
     case answerDone(AnswerDone)
     case sessionStarted(SessionInfo)
     case sessionStopped(SessionStopped)
+    case bookmarkAdded(BookmarkInfo)
+    case bookmarkRemoved(BookmarkRemoved)
     case deepStarted(DeepStarted)
     case deepDelta(DeepDelta)
     case deepDone(DeepDone)
@@ -26,7 +28,7 @@ public enum ServerEvent: Sendable, Equatable {
     public static let knownTypes: [String] = [
         "hello.ok", "pair.ok", "state.snapshot", "mode.changed", "notice", "level",
         "transcript.delta", "answer.started", "answer.delta", "answer.replace", "answer.done",
-        "session.started", "session.stopped", "deep.started", "deep.delta", "deep.done",
+        "session.started", "session.stopped", "bookmark.added", "bookmark.removed", "deep.started", "deep.delta", "deep.done",
         "screen.captured", "ack", "error", "pong",
     ]
 
@@ -45,6 +47,8 @@ public enum ServerEvent: Sendable, Equatable {
         case .answerDone: "answer.done"
         case .sessionStarted: "session.started"
         case .sessionStopped: "session.stopped"
+        case .bookmarkAdded: "bookmark.added"
+        case .bookmarkRemoved: "bookmark.removed"
         case .deepStarted: "deep.started"
         case .deepDelta: "deep.delta"
         case .deepDone: "deep.done"
@@ -74,6 +78,8 @@ public enum ServerEvent: Sendable, Equatable {
         case "answer.done": return .answerDone(try data(AnswerDone.self))
         case "session.started": return .sessionStarted(try data(SessionInfo.self))
         case "session.stopped": return .sessionStopped(try data(SessionStopped.self))
+        case "bookmark.added": return .bookmarkAdded(try data(BookmarkInfo.self))
+        case "bookmark.removed": return .bookmarkRemoved(try data(BookmarkRemoved.self))
         case "deep.started": return .deepStarted(try data(DeepStarted.self))
         case "deep.delta": return .deepDelta(try data(DeepDelta.self))
         case "deep.done": return .deepDone(try data(DeepDone.self))
@@ -100,6 +106,8 @@ public enum ServerEvent: Sendable, Equatable {
         case .answerDone(let p): try container.encode(p, forKey: key)
         case .sessionStarted(let p): try container.encode(p, forKey: key)
         case .sessionStopped(let p): try container.encode(p, forKey: key)
+        case .bookmarkAdded(let p): try container.encode(p, forKey: key)
+        case .bookmarkRemoved(let p): try container.encode(p, forKey: key)
         case .deepStarted(let p): try container.encode(p, forKey: key)
         case .deepDelta(let p): try container.encode(p, forKey: key)
         case .deepDone(let p): try container.encode(p, forKey: key)
@@ -194,10 +202,22 @@ extension ServerEvent {
     public struct SessionStopped: Codable, Sendable, Equatable {
         public let sessionId: String
         public let endedAt: Int64
+        public let reason: WireSessionStopReason?
 
-        public init(sessionId: String, endedAt: Int64) {
+        public init(sessionId: String, endedAt: Int64, reason: WireSessionStopReason? = nil) {
             self.sessionId = sessionId
             self.endedAt = endedAt
+            self.reason = reason
+        }
+    }
+
+    public struct BookmarkRemoved: Codable, Sendable, Equatable {
+        public let bookmarkId: String
+        public let sessionId: String
+
+        public init(bookmarkId: String, sessionId: String) {
+            self.bookmarkId = bookmarkId
+            self.sessionId = sessionId
         }
     }
 

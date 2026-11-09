@@ -74,6 +74,41 @@ function levelsFrom(list) {
   return levels;
 }
 
+function sessionFrom(info, previous) {
+  if (!info) {
+    return null;
+  }
+  const same = previous && previous.sessionId === info.sessionId;
+  return { sessionId: info.sessionId, startedAt: info.startedAt, stars: same ? previous.stars : 0, lastBookmark: same ? previous.lastBookmark : null };
+}
+
+function applyBookmark(session, data, added) {
+  if (!session || session.sessionId !== data.sessionId) {
+    return session;
+  }
+  if (!added) {
+    return { ...session, stars: Math.max(0, session.stars - 1), lastBookmark: { kind: "removed", bookmarkId: data.bookmarkId } };
+  }
+  const stars = data.kind === "star" ? session.stars + 1 : session.stars;
+  return { ...session, stars, lastBookmark: { kind: data.kind, bookmarkId: data.bookmarkId, markedAt: data.markedAt } };
+}
+
+export function sessionElapsed(startedAt, now) {
+  if (typeof startedAt !== "number" || typeof now !== "number") {
+    return "—";
+  }
+  const total = Math.max(0, Math.floor((now - startedAt) / 1000));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const seconds = total % 60;
+  const pad = (value) => String(value).padStart(2, "0");
+  return hours > 0 ? hours + ":" + pad(minutes) + ":" + pad(seconds) : pad(minutes) + ":" + pad(seconds);
+}
+
+export function sessionCommand(state) {
+  return state.session ? "session.stop" : "session.start";
+}
+
 function applySnapshot(state, envelope) {
   const data = envelope.data;
   const answer = data.answer
@@ -92,7 +127,7 @@ function applySnapshot(state, envelope) {
     notices: (data.notices || []).slice(-NOTICE_LIMIT),
     capabilities: data.capabilities || [],
     overlayEnabled: data.overlayEnabled !== false,
-    session: data.session || null
+    session: sessionFrom(data.session, state.session)
   };
 }
 
@@ -165,9 +200,13 @@ export function applyEnvelope(state, envelope) {
       return { ...next, notices: notices.length > NOTICE_LIMIT ? notices.slice(notices.length - NOTICE_LIMIT) : notices };
     }
     case "session.started":
-      return { ...next, session: { sessionId: data.sessionId, startedAt: data.startedAt } };
+      return { ...next, session: sessionFrom(data, next.session) };
     case "session.stopped":
-      return { ...next, session: null };
+      return next.session && next.session.sessionId !== data.sessionId ? next : { ...next, session: null };
+    case "bookmark.added":
+      return { ...next, session: applyBookmark(next.session, data, true) };
+    case "bookmark.removed":
+      return { ...next, session: applyBookmark(next.session, data, false) };
     default:
       return next;
   }
@@ -258,6 +297,9 @@ export function hotkeyAction(key, state) {
     case "r":
     case "R":
       return { command: "reset_context" };
+    case "s":
+    case "S":
+      return state.session ? { command: "star_last" } : null;
     case "[":
       return { local: { type: "stepPoint", delta: -1 } };
     case "]":

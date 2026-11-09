@@ -37,7 +37,9 @@ enum Expectations {
         "answer.replace": envelope(10, .answerReplace(.init(answerId: "resp_2", text: "1. Главный риск"))),
         "answer.done": envelope(11, .answerDone(.init(answerId: "resp_2", status: .completed, length: 15))),
         "session.started": envelope(12, sid: "ses_2", .sessionStarted(SessionInfo(sessionId: "ses_2", startedAt: 1_762_700_000_012))),
-        "session.stopped": envelope(13, sid: "ses_2", .sessionStopped(.init(sessionId: "ses_2", endedAt: 1_762_700_000_013))),
+        "session.stopped": envelope(13, sid: "ses_2", .sessionStopped(.init(sessionId: "ses_2", endedAt: 1_762_700_000_013, reason: .user))),
+        "bookmark.added": envelope(21, sid: "ses_2", .bookmarkAdded(BookmarkInfo(bookmarkId: "bm_1", sessionId: "ses_2", kind: .star, markedAt: 1_762_700_000_021, answerId: "qa_1"))),
+        "bookmark.removed": envelope(22, sid: "ses_2", .bookmarkRemoved(.init(bookmarkId: "bm_1", sessionId: "ses_2"))),
         "deep.started": envelope(14, .deepStarted(.init(requestId: "deep_1", pointId: "resp_2.0", model: .sonnet, format: .steps, language: .both))),
         "deep.delta": envelope(15, .deepDelta(.init(requestId: "deep_1", offset: 0, text: "Step one"))),
         "deep.done": envelope(16, .deepDone(.init(requestId: "deep_1", status: .failed, errorCode: "rate_limited"))),
@@ -58,6 +60,9 @@ enum Expectations {
         "capture_screen": ClientCommand(cmdId: "c-screen", action: .captureScreen),
         "session.start": ClientCommand(cmdId: "c-ses-start", action: .sessionStart(.init(title: "Interview"))),
         "session.stop": ClientCommand(cmdId: "c-ses-stop", action: .sessionStop),
+        "session.resume": ClientCommand(cmdId: "c-ses-resume", action: .sessionResume(.init(sessionId: "8F0C6B2A-3D4E-4F50-9A1B-2C3D4E5F6A7B"))),
+        "star_last": ClientCommand(cmdId: "c-star", action: .starLast),
+        "mark_moment": ClientCommand(cmdId: "c-moment", action: .markMoment(.init(note: "вопрос про шардирование"))),
     ]
 }
 

@@ -89,7 +89,8 @@ final class FakeHotKeyBackend: HotKeyBackend {
     @Test func defaultsKeepOptionReturnAndOptionCommandH() {
         #expect(HotKeyAction.answerNow.defaultCombo == HotKeyCombo(keyCode: UInt16(kVK_Return), modifierFlags: .option))
         #expect(HotKeyAction.toggleOverlay.defaultCombo == HotKeyCombo(keyCode: UInt16(kVK_ANSI_H), modifierFlags: [.option, .command]))
-        #expect(HotKeyAction.toggleSession.defaultCombo == nil)
+        #expect(HotKeyAction.toggleSession.defaultCombo == HotKeyCombo(keyCode: UInt16(kVK_ANSI_S), modifierFlags: [.control, .option, .command]))
+        #expect(HotKeyAction.starLastAnswer.defaultCombo == HotKeyCombo(keyCode: UInt16(kVK_ANSI_B), modifierFlags: [.control, .option, .command]))
         #expect(HotKeyAction.toggleScreen.defaultCombo == nil)
     }
 

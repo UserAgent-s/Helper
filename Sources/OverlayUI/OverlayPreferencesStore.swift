@@ -15,6 +15,8 @@ final class OverlayPreferencesStore {
         static let customOriginX = "com.local.UserAgent057.overlay.customOriginX"
         static let customOriginY = "com.local.UserAgent057.overlay.customOriginY"
         static let forceAnswerHotKey = "com.local.UserAgent057.overlay.forceAnswerHotKey"
+        static let toggleSessionHotKey = "com.local.UserAgent057.session.toggleHotKey"
+        static let starLastAnswerHotKey = "com.local.UserAgent057.session.starHotKey"
         static let toggleHotKey = "com.local.UserAgent057.overlay.toggleHotKey"
         static let style = "com.local.UserAgent057.overlay.style"
         static let fontFamily = "com.local.UserAgent057.overlay.fontFamily"
@@ -81,6 +83,16 @@ final class OverlayPreferencesStore {
     var toggleOverlayHotKey: HotKeyCombo {
         get { decoded(Keys.toggleHotKey) ?? .toggleOverlayDefault }
         set { encode(newValue, forKey: Keys.toggleHotKey) }
+    }
+
+    var toggleSessionHotKey: HotKeyCombo {
+        get { decoded(Keys.toggleSessionHotKey) ?? .toggleSessionDefault }
+        set { encode(newValue, forKey: Keys.toggleSessionHotKey) }
+    }
+
+    var starLastAnswerHotKey: HotKeyCombo {
+        get { decoded(Keys.starLastAnswerHotKey) ?? .starLastAnswerDefault }
+        set { encode(newValue, forKey: Keys.starLastAnswerHotKey) }
     }
 
     private func decoded(_ key: String) -> HotKeyCombo? {

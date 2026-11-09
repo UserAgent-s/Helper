@@ -251,6 +251,40 @@ enum ServerFixtures {
         #expect(handled == [false, false, false, false, true, true])
     }
 
+    @Test func sessionTimerAndStateFollowSessionEvents() throws {
+        let module = try store()
+        #expect(try module.run("return sessionCommand(globalThis.state);") as? String == "session.start")
+        #expect(try module.run("return hotkeyAction('s', globalThis.state);") is NSNull)
+        try apply(module, [
+            try ServerFixtures.json("session.started"),
+            try ServerFixtures.json("bookmark.added"),
+        ])
+        var session = try #require(try state(module)["session"] as? [String: Any])
+        #expect(session["sessionId"] as? String == "ses_2")
+        #expect(session["stars"] as? Int == 1)
+        #expect((session["lastBookmark"] as? [String: Any])?["kind"] as? String == "star")
+        #expect(try module.run("return sessionCommand(globalThis.state);") as? String == "session.stop")
+        #expect(try module.run("return hotkeyAction('S', globalThis.state);") as? [String: String] == ["command": "star_last"])
+        #expect(try module.run("return sessionElapsed(globalThis.state.session.startedAt, globalThis.state.session.startedAt + 65999);") as? String == "01:05")
+        #expect(try module.run("return sessionElapsed(0, 3723000);") as? String == "1:02:03")
+        #expect(try module.run("return sessionElapsed(5000, 1000);") as? String == "00:00")
+        #expect(try module.run("return sessionElapsed(undefined, 1000);") as? String == "—")
+
+        try apply(module, [
+            envelope(30, "state.snapshot", #"{"mode":{"mode":"answers","phase":"active"},"transcript":[],"levels":[],"notices":[],"session":{"sessionId":"ses_2","startedAt":1762700000012},"overlayEnabled":true,"capabilities":["session.stop"]}"#),
+            try ServerFixtures.json("bookmark.removed").replacingOccurrences(of: #""seq": 22"#, with: #""seq": 31"#),
+        ])
+        session = try #require(try state(module)["session"] as? [String: Any])
+        #expect(session["stars"] as? Int == 0)
+        #expect((session["lastBookmark"] as? [String: Any])?["kind"] as? String == "removed")
+
+        try apply(module, [envelope(32, "session.stopped", #"{"sessionId":"other","endedAt":1}"#)])
+        #expect(try state(module)["session"] is [String: Any])
+        try apply(module, [envelope(33, "session.stopped", #"{"sessionId":"ses_2","endedAt":2,"reason":"user"}"#)])
+        #expect(try state(module)["session"] is NSNull)
+        #expect(try module.run("return sessionCommand(globalThis.state);") as? String == "session.start")
+    }
+
     @Test func protocolModuleBuildsCommandsWithGetRandomValues() throws {
         let prelude = "globalThis.crypto = { getRandomValues: function (array) { for (var i = 0; i < array.length; i++) { array[i] = i * 17; } return array; } };"
         let module = try WebModuleContext(modules: ["protocol.js"], prelude: prelude)

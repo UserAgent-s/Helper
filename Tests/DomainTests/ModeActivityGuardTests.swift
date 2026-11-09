@@ -71,4 +71,37 @@ final class RecordingSleepPreventing: SleepPreventing, @unchecked Sendable {
         token.end()
         token.end()
     }
+
+    @Test func sessionHoldsAssertionInPassiveUntilIdle() async {
+        let preventing = RecordingSleepPreventing()
+        let guardian = ModeActivityGuard(preventing: preventing)
+        let id = SessionID()
+        await guardian.apply(SessionState.active(sessionID: id, startedAt: Date(), mode: nil))
+        #expect(await guardian.isHolding)
+        await guardian.apply(state(.answers, .active))
+        await guardian.apply(state(.passive, .idle))
+        #expect(await guardian.isHolding)
+        #expect(preventing.counts == (1, 0))
+        await guardian.apply(SessionState.finalizing(sessionID: id))
+        #expect(await guardian.isHolding)
+        await guardian.apply(SessionState.idle)
+        #expect(await !guardian.isHolding)
+        #expect(preventing.counts == (1, 1))
+    }
+
+    @Test func modeStillHoldsAfterSessionEnds() async {
+        let preventing = RecordingSleepPreventing()
+        let guardian = ModeActivityGuard(preventing: preventing)
+        let (sessions, continuation) = AsyncStream<SessionState>.makeStream()
+        await guardian.observeSessions(sessions)
+        await guardian.apply(state(.recording, .active))
+        continuation.yield(.active(sessionID: SessionID(), startedAt: Date(), mode: .recording))
+        continuation.yield(.idle)
+        try? await Task.sleep(for: .milliseconds(50))
+        #expect(await guardian.isHolding)
+        await guardian.apply(state(.passive, .idle))
+        #expect(await !guardian.isHolding)
+        await guardian.stop()
+        #expect(preventing.counts == (1, 1))
+    }
 }

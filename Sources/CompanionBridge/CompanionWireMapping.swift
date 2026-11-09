@@ -7,6 +7,28 @@ public enum CompanionWireMapping {
         Int64((date.timeIntervalSince1970 * 1000).rounded())
     }
 
+    public static func sessionId(_ id: SessionID) -> String {
+        id.rawValue.uuidString
+    }
+
+    public static func stopReason(_ reason: SessionStopReason) -> WireSessionStopReason {
+        switch reason {
+        case .user: .user
+        case .idleTimeout: .idle
+        }
+    }
+
+    public static func bookmark(_ bookmark: SessionBookmark) -> BookmarkInfo {
+        BookmarkInfo(
+            bookmarkId: bookmark.id,
+            sessionId: sessionId(bookmark.sessionID),
+            kind: bookmark.kind == .star ? .star : .moment,
+            markedAt: milliseconds(bookmark.markedAt),
+            answerId: bookmark.questionAnswerID?.uuidString,
+            note: bookmark.note
+        )
+    }
+
     public static func mode(_ mode: AppMode) -> WireMode {
         switch mode {
         case .passive: .passive

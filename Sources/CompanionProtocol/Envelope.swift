@@ -15,6 +15,7 @@ public enum CompanionLimits {
     public static let maxPairingCodeLength = 64
     public static let maxDeviceNameLength = 64
     public static let maxSessionTitleLength = 200
+    public static let maxMomentNoteLength = 500
     public static let maxCommandNameLength = 64
 }
 

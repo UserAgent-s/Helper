@@ -87,6 +87,10 @@ kbd {
 
 .modes, .actions { display: flex; gap: 6px; }
 .actions { margin-left: auto; }
+.session { display: flex; align-items: center; gap: 6px; }
+.session-timer { font-variant-numeric: tabular-nums; min-width: 4.5em; text-align: right; }
+.session[data-active="true"] .session-timer { color: var(--bad); font-weight: 600; }
+.session-feedback { font-size: 13px; }
 
 .banner {
   display: flex;
@@ -174,6 +178,8 @@ kbd {
   .actions { margin-left: 0; width: 100%; }
   .actions button { flex: 1; padding: 10px; }
   .modes { width: 100%; }
+  .session { width: 100%; }
+  .session button { flex: 1; padding: 10px; }
   .modes button { flex: 1; }
   .layout { grid-template-columns: minmax(0, 1fr); grid-template-areas: "answer" "transcript" "side"; padding: 12px; gap: 12px; }
   .answer { font-size: 19px; }

@@ -161,7 +161,7 @@ import Testing
         #expect(snapshot.levels.first?.rmsDBFS == -32)
         #expect(snapshot.notices.count == CompanionBridge.noticeLimit)
         #expect(snapshot.notices.last == NoticeInfo(code: "output_route_changed", severity: .warning, args: ["route": "built_in_speakers"]))
-        #expect(snapshot.capabilities == CompanionBridge.capabilities)
+        #expect(snapshot.capabilities == CompanionBridge.baseCapabilities)
         #expect(await sink.types.filter { $0 == "level" }.count == 2)
         #expect(await sink.types.filter { $0 == "transcript.delta" }.count == 2)
     }

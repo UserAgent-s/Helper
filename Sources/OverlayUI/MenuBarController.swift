@@ -8,10 +8,14 @@ final class MenuBarController: NSObject {
     private let statusItem: NSStatusItem
     private let overlayViewModel: AnswerOverlayViewModel
     private let modeViewModel: ModeSwitcherViewModel
+    private let sessionViewModel: SessionControlViewModel?
     private let navigationState: AppNavigationState
     private let overlaySwitch: OverlaySwitch
 
     private let statusLabelItem: NSMenuItem
+    private let sessionItem: NSMenuItem
+    private let starItem: NSMenuItem
+    private let momentItem: NSMenuItem
     private let passiveItem: NSMenuItem
     private let answersItem: NSMenuItem
     private let recordingItem: NSMenuItem
@@ -24,14 +28,18 @@ final class MenuBarController: NSObject {
     private let quitItem: NSMenuItem
     private var languageOptionItems: [AppLanguage: NSMenuItem] = [:]
 
-    init(overlayViewModel: AnswerOverlayViewModel, modeViewModel: ModeSwitcherViewModel, navigationState: AppNavigationState, overlaySwitch: OverlaySwitch) {
+    init(overlayViewModel: AnswerOverlayViewModel, modeViewModel: ModeSwitcherViewModel, sessionViewModel: SessionControlViewModel? = nil, navigationState: AppNavigationState, overlaySwitch: OverlaySwitch) {
         self.overlayViewModel = overlayViewModel
         self.modeViewModel = modeViewModel
+        self.sessionViewModel = sessionViewModel
         self.navigationState = navigationState
         self.overlaySwitch = overlaySwitch
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusLabelItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+        sessionItem = NSMenuItem(title: "", action: #selector(Self.toggleSessionTapped), keyEquivalent: "")
+        starItem = NSMenuItem(title: "", action: #selector(Self.starLastAnswerTapped), keyEquivalent: "")
+        momentItem = NSMenuItem(title: "", action: #selector(Self.markMomentTapped), keyEquivalent: "")
         passiveItem = NSMenuItem(title: "", action: #selector(Self.selectPassiveTapped), keyEquivalent: "")
         answersItem = NSMenuItem(title: "", action: #selector(Self.selectAnswersTapped), keyEquivalent: "")
         recordingItem = NSMenuItem(title: "", action: #selector(Self.selectRecordingTapped), keyEquivalent: "")
@@ -45,7 +53,10 @@ final class MenuBarController: NSObject {
         super.init()
 
         statusLabelItem.isEnabled = false
-        [passiveItem, answersItem, recordingItem, forceAnswerItem, historyItem, settingsItem, pairingItem, overlayItem, quitItem].forEach { $0.target = self }
+        sessionItem.setAccessibilityIdentifier("menu.session.toggle")
+        starItem.setAccessibilityIdentifier("menu.session.star")
+        momentItem.setAccessibilityIdentifier("menu.session.moment")
+        [sessionItem, starItem, momentItem, passiveItem, answersItem, recordingItem, forceAnswerItem, historyItem, settingsItem, pairingItem, overlayItem, quitItem].forEach { $0.target = self }
 
         let languageSubmenu = NSMenu()
         for language in AppLanguage.allCases {
@@ -60,6 +71,12 @@ final class MenuBarController: NSObject {
         let menu = NSMenu()
         menu.addItem(statusLabelItem)
         menu.addItem(.separator())
+        if sessionViewModel != nil {
+            menu.addItem(sessionItem)
+            menu.addItem(starItem)
+            menu.addItem(momentItem)
+            menu.addItem(.separator())
+        }
         menu.addItem(passiveItem)
         menu.addItem(answersItem)
         menu.addItem(recordingItem)
@@ -79,7 +96,12 @@ final class MenuBarController: NSObject {
         observeModeState()
         observeLanguage()
         observeOverlaySwitch()
+        observeSessionState()
     }
+
+    @objc private func toggleSessionTapped() { Task { await sessionViewModel?.toggle() } }
+    @objc private func starLastAnswerTapped() { Task { await sessionViewModel?.starLastAnswer() } }
+    @objc private func markMomentTapped() { Task { await sessionViewModel?.markMoment() } }
 
     @objc private func selectPassiveTapped() { modeViewModel.select(.passive) }
     @objc private func selectAnswersTapped() { modeViewModel.select(.answers) }
@@ -109,6 +131,37 @@ final class MenuBarController: NSObject {
         recordingItem.state = mode == .recording ? .on : .off
     }
 
+    private func observeSessionState() {
+        guard let sessionViewModel else { return }
+        withObservationTracking {
+            _ = sessionViewModel.state
+            _ = sessionViewModel.isBusy
+        } onChange: { [weak self] in
+            Task { @MainActor in
+                self?.syncSessionState()
+                self?.observeSessionState()
+            }
+        }
+        syncSessionState()
+    }
+
+    private func syncSessionState() {
+        guard let sessionViewModel else { return }
+        let active = sessionViewModel.isActive
+        sessionItem.title = active ? loc("Остановить сессию") : loc("Начать сессию")
+        sessionItem.state = active ? .on : .off
+        sessionItem.isEnabled = !sessionViewModel.isBusy && !isFinalizing(sessionViewModel.state)
+        starItem.title = loc("Отметить последний ответ ★")
+        momentItem.title = loc("Отметить момент")
+        starItem.isEnabled = active
+        momentItem.isEnabled = active
+    }
+
+    private func isFinalizing(_ state: SessionState) -> Bool {
+        if case .finalizing = state { return true }
+        return false
+    }
+
     private func syncStaticTitles() {
         passiveItem.title = loc("Пассивный")
         answersItem.title = loc("Ответы")
@@ -121,6 +174,7 @@ final class MenuBarController: NSObject {
         languageMenuItem.title = loc("Язык")
         quitItem.title = loc("Завершить UserAgent057")
         syncModeState()
+        syncSessionState()
     }
 
     private func modeLabel(_ mode: AppMode) -> String {

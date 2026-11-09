@@ -50,6 +50,11 @@ final class AnswerOverlayWindowController: NSObject {
         observeState()
     }
 
+    @discardableResult
+    func registerHotKey(_ combo: HotKeyCombo, action: @escaping @MainActor () -> Void) -> HotKeyRegistrationResult {
+        hotKeyManager.register(combo, action: action)
+    }
+
     func tearDown() {
         if let switchObserver {
             overlaySwitch.removeObserver(switchObserver)

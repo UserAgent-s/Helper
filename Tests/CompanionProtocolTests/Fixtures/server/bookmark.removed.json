@@ -1,0 +1,11 @@
+{
+  "data": {
+    "bookmarkId": "bm_1",
+    "sessionId": "ses_2"
+  },
+  "seq": 22,
+  "sid": "ses_2",
+  "ts": 1762700000022,
+  "type": "bookmark.removed",
+  "v": 1
+}

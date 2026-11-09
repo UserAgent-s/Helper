@@ -24,6 +24,12 @@
 <button type="button" data-mode="answers" aria-pressed="false">Ответы</button>
 <button type="button" data-mode="recording" aria-pressed="false">Запись</button>
 </div>
+<div class="session" role="group" aria-label="Сессия">
+<span id="session-timer" class="session-timer" aria-live="off">—</span>
+<button type="button" id="session-toggle" disabled>Начать сессию</button>
+<button type="button" id="session-star" disabled aria-label="Отметить последний ответ">★ <kbd>S</kbd></button>
+<span id="session-feedback" class="muted session-feedback"></span>
+</div>
 <div class="actions">
 <button type="button" id="answer-now" class="primary" disabled>Ответить <kbd>A</kbd></button>
 <button type="button" id="reset" disabled>Сброс <kbd>R</kbd></button>

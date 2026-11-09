@@ -14,6 +14,10 @@ public struct HotKeyCombo: Sendable, Equatable, Hashable, Codable {
 
     public static let toggleOverlayDefault = HotKeyCombo(keyCode: UInt16(kVK_ANSI_H), modifierFlags: [.option, .command])
 
+    public static let toggleSessionDefault = HotKeyCombo(keyCode: UInt16(kVK_ANSI_S), modifierFlags: [.control, .option, .command])
+
+    public static let starLastAnswerDefault = HotKeyCombo(keyCode: UInt16(kVK_ANSI_B), modifierFlags: [.control, .option, .command])
+
     static let relevantFlags: NSEvent.ModifierFlags = [.command, .option, .control, .shift]
 
     var modifiers: NSEvent.ModifierFlags { NSEvent.ModifierFlags(rawValue: modifierFlags).intersection(Self.relevantFlags) }
@@ -32,13 +36,16 @@ enum HotKeyAction: String, CaseIterable, Sendable {
     case answerNow
     case toggleOverlay
     case toggleSession
+    case starLastAnswer
     case toggleScreen
 
     var defaultCombo: HotKeyCombo? {
         switch self {
         case .answerNow: .forceAnswerNowDefault
         case .toggleOverlay: .toggleOverlayDefault
-        case .toggleSession, .toggleScreen: nil
+        case .toggleSession: .toggleSessionDefault
+        case .starLastAnswer: .starLastAnswerDefault
+        case .toggleScreen: nil
         }
     }
 }

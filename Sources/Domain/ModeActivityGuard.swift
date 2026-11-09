@@ -39,6 +39,9 @@ public actor ModeActivityGuard {
     private let preventing: any SleepPreventing
     private var token: (any SleepPreventionToken)?
     private var task: Task<Void, Never>?
+    private var sessionTask: Task<Void, Never>?
+    private var modeHold: AppMode?
+    private var sessionHold = false
 
     public init(preventing: any SleepPreventing = ProcessInfoSleepPreventing()) {
         self.preventing = preventing
@@ -57,17 +60,45 @@ public actor ModeActivityGuard {
         }
     }
 
+    public func observeSessions(_ states: AsyncStream<SessionState>) {
+        guard sessionTask == nil else { return }
+        sessionTask = Task { [weak self] in
+            for await state in states {
+                await self?.apply(state)
+            }
+        }
+    }
+
     public func stop() {
         task?.cancel()
         task = nil
+        sessionTask?.cancel()
+        sessionTask = nil
+        modeHold = nil
+        sessionHold = false
         release()
     }
 
     func apply(_ state: ModeState) {
         let shouldHold = Self.heldModes.contains(state.mode) && (state.phase == .starting || state.phase == .active)
-        if shouldHold, token == nil {
-            token = preventing.begin(reason: "UserAgent057 \(state.mode) mode")
-        } else if !shouldHold {
+        modeHold = shouldHold ? state.mode : nil
+        reconcile()
+    }
+
+    func apply(_ state: SessionState) {
+        if case .idle = state {
+            sessionHold = false
+        } else {
+            sessionHold = true
+        }
+        reconcile()
+    }
+
+    private func reconcile() {
+        let reason: String? = if let modeHold { "UserAgent057 \(modeHold) mode" } else if sessionHold { "UserAgent057 session" } else { nil }
+        if let reason, token == nil {
+            token = preventing.begin(reason: reason)
+        } else if reason == nil {
             release()
         }
     }

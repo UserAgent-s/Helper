@@ -134,14 +134,44 @@ public struct TranscriptLine: Codable, Sendable, Equatable {
     }
 }
 
+public enum WireSessionStopReason: String, Codable, Sendable, CaseIterable {
+    case user
+    case idle
+}
+
+public enum WireBookmarkKind: String, Codable, Sendable, CaseIterable {
+    case star
+    case moment
+}
+
 public struct SessionInfo: Codable, Sendable, Equatable {
     public let sessionId: String
     public let startedAt: Int64
     public let title: String?
+    public let resumed: Bool?
 
-    public init(sessionId: String, startedAt: Int64, title: String? = nil) {
+    public init(sessionId: String, startedAt: Int64, title: String? = nil, resumed: Bool? = nil) {
         self.sessionId = sessionId
         self.startedAt = startedAt
         self.title = title
+        self.resumed = resumed
+    }
+}
+
+public struct BookmarkInfo: Codable, Sendable, Equatable {
+    public let bookmarkId: String
+    public let sessionId: String
+    public let kind: WireBookmarkKind
+    public let markedAt: Int64
+    public let answerId: String?
+    public let note: String?
+
+    public init(bookmarkId: String, sessionId: String, kind: WireBookmarkKind, markedAt: Int64, answerId: String? = nil, note: String? = nil) {
+        self.bookmarkId = bookmarkId
+        self.sessionId = sessionId
+        self.kind = kind
+        self.markedAt = markedAt
+        self.answerId = answerId
+        self.note = note
     }
 }

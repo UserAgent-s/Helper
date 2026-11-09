@@ -37,9 +37,14 @@ public actor CompanionBridge: CompanionHubDelegate {
     public static let transcriptLimit = 40
     public static let noticeLimit = 10
     public static let levelInterval: Duration = .milliseconds(250)
-    public static let capabilities = ["answer_now", "set_mode", "reset_context"]
+    public static let baseCapabilities = ["answer_now", "set_mode", "reset_context"]
+    public static let sessionCapabilities = ["session.start", "session.stop", "session.resume", "star_last", "mark_moment"]
 
     private let control: any CompanionDomainControlling
+    private let sessions: (any SessionControlling)?
+    public nonisolated let capabilities: [String]
+    private var session: SessionInfo?
+    private var announcedSessionId: String?
     private let now: @Sendable () -> Date
     private let makeAnswerId: @Sendable () -> String
     private let clock = ContinuousClock()
@@ -60,10 +65,13 @@ public actor CompanionBridge: CompanionHubDelegate {
 
     public init(
         control: any CompanionDomainControlling,
+        sessions: (any SessionControlling)? = nil,
         now: @escaping @Sendable () -> Date = { Date() },
         makeAnswerId: @escaping @Sendable () -> String = { UUID().uuidString }
     ) {
         self.control = control
+        self.sessions = sessions
+        capabilities = Self.baseCapabilities + (sessions == nil ? [] : Self.sessionCapabilities)
         self.now = now
         self.makeAnswerId = makeAnswerId
         (outgoing, outgoingContinuation) = AsyncStream<ServerEvent>.makeStream()
@@ -92,6 +100,13 @@ public actor CompanionBridge: CompanionHubDelegate {
                 for await notice in feeds.notices { await self?.ingest(notice) }
             },
         ]
+        if let sessions {
+            let events = sessions.events(subscriber: "companion")
+            tasks.append(Task { [weak self] in
+                await self?.seedSession(from: sessions)
+                for await event in events { await self?.ingest(event) }
+            })
+        }
     }
 
     public func shutdown() {
@@ -118,9 +133,9 @@ public actor CompanionBridge: CompanionHubDelegate {
             transcript: transcript,
             levels: WireAudioSource.allCases.compactMap { levels[$0] },
             notices: notices,
-            session: nil,
+            session: session,
             overlayEnabled: overlayEnabled,
-            capabilities: Self.capabilities
+            capabilities: capabilities
         )
     }
 
@@ -140,10 +155,85 @@ public actor CompanionBridge: CompanionHubDelegate {
             guard await !control.isAnswerInFlight() else { return .rejected(code: "answer_in_progress") }
             await control.resetContext()
             return .ok
-        case .expand, .captureScreen, .sessionStart, .sessionStop:
+        case .sessionStart, .sessionStop, .sessionResume, .starLast, .markMoment:
+            guard let sessions else { return .rejected(code: "not_available") }
+            return await performSession(action, sessions: sessions)
+        case .expand, .captureScreen:
             return .rejected(code: "not_available")
         case .hello, .pair, .ping, .unknown:
             return .rejected(code: "unknown_command")
+        }
+    }
+
+    private func performSession(_ action: ClientCommand.Action, sessions: any SessionControlling) async -> CompanionCommandOutcome {
+        switch action {
+        case .sessionStart:
+            if case .active = await sessions.currentState { return .ok }
+            do {
+                try await sessions.start()
+                return .ok
+            } catch {
+                return .rejected(code: "session_start_failed")
+            }
+        case .sessionStop:
+            guard case .active = await sessions.currentState else { return .ok }
+            await sessions.stop()
+            return .ok
+        case .sessionResume(let request):
+            guard let uuid = UUID(uuidString: request.sessionId) else { return .rejected(code: "unknown_session") }
+            do {
+                try await sessions.resume(sessionID: SessionID(rawValue: uuid))
+                return .ok
+            } catch SessionCoordinatorError.unknownSession {
+                return .rejected(code: "unknown_session")
+            } catch {
+                return .rejected(code: "session_start_failed")
+            }
+        case .starLast:
+            switch (try? await sessions.toggleStarLastAnswer()) ?? .noCompletedAnswer {
+            case .starred, .unstarred: return .ok
+            case .noCompletedAnswer: return .rejected(code: "no_completed_answer")
+            case .noActiveSession: return .rejected(code: "no_active_session")
+            }
+        case .markMoment(let request):
+            do {
+                guard try await sessions.markMoment(note: request.note) != nil else { return .rejected(code: "no_active_session") }
+                return .ok
+            } catch {
+                return .rejected(code: "bookmark_failed")
+            }
+        default:
+            return .rejected(code: "unknown_command")
+        }
+    }
+
+    private func seedSession(from sessions: any SessionControlling) async {
+        guard session == nil, case .active(let id, let startedAt, _) = await sessions.currentState else { return }
+        session = SessionInfo(sessionId: CompanionWireMapping.sessionId(id), startedAt: CompanionWireMapping.milliseconds(startedAt))
+    }
+
+    func ingest(_ event: SessionEvent) async {
+        switch event {
+        case .started(let id, let resumed):
+            let wireId = CompanionWireMapping.sessionId(id)
+            guard announcedSessionId != wireId else { return }
+            announcedSessionId = wireId
+            var startedAt = now()
+            if case .active(id, let at, _) = await sessions?.currentState { startedAt = at }
+            let info = SessionInfo(sessionId: wireId, startedAt: CompanionWireMapping.milliseconds(startedAt), resumed: resumed)
+            session = info
+            emit(.sessionStarted(info))
+        case .stopped(let id, let reason):
+            let wireId = CompanionWireMapping.sessionId(id)
+            if session?.sessionId == wireId { session = nil }
+            if announcedSessionId == wireId { announcedSessionId = nil }
+            emit(.sessionStopped(.init(sessionId: wireId, endedAt: CompanionWireMapping.milliseconds(now()), reason: CompanionWireMapping.stopReason(reason))))
+        case .discarded:
+            break
+        case .bookmarkAdded(let bookmark):
+            emit(.bookmarkAdded(CompanionWireMapping.bookmark(bookmark)))
+        case .bookmarkRemoved(let id, let sessionID):
+            emit(.bookmarkRemoved(.init(bookmarkId: id, sessionId: CompanionWireMapping.sessionId(sessionID))))
         }
     }
 

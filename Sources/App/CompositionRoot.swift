@@ -49,6 +49,7 @@ final class CompositionRoot {
     let recordingModeController: RecordingModeController
 
     let modeViewModel: ModeSwitcherViewModel
+    let sessionControlViewModel: SessionControlViewModel
     let answersModeController: AnswersModeController
     let answerOverlayViewModel: AnswerOverlayViewModel
     let recordingTranscriptViewModel: RecordingTranscriptViewModel
@@ -200,6 +201,7 @@ final class CompositionRoot {
             }
         )
         self.sessionCoordinator = sessionCoordinator
+        sessionControlViewModel = SessionControlViewModel(sessions: sessionCoordinator)
         let answerTranscripts = answersController.transcriptEvents(subscriber: "sessionRecorder")
         Task {
             await sessionContext.bind(sessionCoordinator)
@@ -233,7 +235,8 @@ final class CompositionRoot {
         )
         recordingTranscriptViewModel = RecordingTranscriptViewModel(recordingController: recordingController)
         let companionBridge = CompanionBridge(
-            control: LiveCompanionDomain(modeCoordinator: modeCoordinator, answers: answersController, trigger: manualAnswerTrigger)
+            control: LiveCompanionDomain(modeCoordinator: modeCoordinator, answers: answersController, trigger: manualAnswerTrigger),
+            sessions: sessionCoordinator
         )
         let companionFeeds = LiveCompanionDomain.feeds(modeCoordinator: modeCoordinator, answers: answersController, captureHub: captureHub)
         let companionService = CompanionService(
@@ -245,8 +248,12 @@ final class CompositionRoot {
         self.companionBridge = companionBridge
         self.companionService = companionService
         let sleepStates = modeCoordinator.stateUpdates(subscriber: "modeActivityGuard")
+        let sessionSleepStates = sessionCoordinator.stateUpdates(subscriber: "modeActivityGuard")
         let modeActivityGuard = self.modeActivityGuard
-        Task { await modeActivityGuard.start(states: sleepStates) }
+        Task {
+            await modeActivityGuard.start(states: sleepStates)
+            await modeActivityGuard.observeSessions(sessionSleepStates)
+        }
         let overlayEnabled = overlaySwitch.isEnabled
         overlaySwitch.observe { enabled in
             Task { await companionBridge.setOverlayEnabled(enabled) }

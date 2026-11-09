@@ -24,11 +24,15 @@ public struct ClientCommand: Sendable, Equatable {
         case captureScreen
         case sessionStart(SessionStart)
         case sessionStop
+        case sessionResume(SessionResume)
+        case starLast
+        case markMoment(MarkMoment)
         case unknown(name: String)
 
         public static let knownNames: [String] = [
             "hello", "pair", "ping", "answer_now", "set_mode", "reset_context",
             "expand", "capture_screen", "session.start", "session.stop",
+            "session.resume", "star_last", "mark_moment",
         ]
 
         public var name: String {
@@ -43,6 +47,9 @@ public struct ClientCommand: Sendable, Equatable {
             case .captureScreen: "capture_screen"
             case .sessionStart: "session.start"
             case .sessionStop: "session.stop"
+            case .sessionResume: "session.resume"
+            case .starLast: "star_last"
+            case .markMoment: "mark_moment"
             case .unknown(let name): name
             }
         }
@@ -109,6 +116,22 @@ public struct ClientCommand: Sendable, Equatable {
             self.title = title
         }
     }
+
+    public struct SessionResume: Codable, Sendable, Equatable {
+        public let sessionId: String
+
+        public init(sessionId: String) {
+            self.sessionId = sessionId
+        }
+    }
+
+    public struct MarkMoment: Codable, Sendable, Equatable {
+        public let note: String?
+
+        public init(note: String? = nil) {
+            self.note = note
+        }
+    }
 }
 
 extension ClientCommand: Codable {
@@ -139,6 +162,9 @@ extension ClientCommand: Codable {
         case "capture_screen": action = .captureScreen
         case "session.start": action = .sessionStart(try container.decodeIfPresent(SessionStart.self, forKey: .args) ?? SessionStart())
         case "session.stop": action = .sessionStop
+        case "session.resume": action = .sessionResume(try args(SessionResume.self))
+        case "star_last": action = .starLast
+        case "mark_moment": action = .markMoment(try container.decodeIfPresent(MarkMoment.self, forKey: .args) ?? MarkMoment())
         default: action = .unknown(name: name)
         }
     }
@@ -155,7 +181,9 @@ extension ClientCommand: Codable {
         case .setMode(let p): try container.encode(p, forKey: .args)
         case .expand(let p): try container.encode(p, forKey: .args)
         case .sessionStart(let p): try container.encode(p, forKey: .args)
-        case .answerNow, .resetContext, .captureScreen, .sessionStop, .unknown: break
+        case .sessionResume(let p): try container.encode(p, forKey: .args)
+        case .markMoment(let p): try container.encode(p, forKey: .args)
+        case .answerNow, .resetContext, .captureScreen, .sessionStop, .starLast, .unknown: break
         }
     }
 }
@@ -195,9 +223,15 @@ extension ClientCommand {
             if let title = start.title {
                 try Self.bounded(title, field: "title", limit: CompanionLimits.maxSessionTitleLength, allowEmpty: true)
             }
+        case .sessionResume(let resume):
+            try Self.identifier(resume.sessionId, field: "sessionId", limit: CompanionLimits.maxIdentifierLength)
+        case .markMoment(let mark):
+            if let note = mark.note {
+                try Self.bounded(note, field: "note", limit: CompanionLimits.maxMomentNoteLength, allowEmpty: true)
+            }
         case .unknown(let name):
             try Self.bounded(name, field: "name", limit: CompanionLimits.maxCommandNameLength, allowEmpty: false)
-        case .answerNow, .setMode, .resetContext, .captureScreen, .sessionStop:
+        case .answerNow, .setMode, .resetContext, .captureScreen, .sessionStop, .starLast:
             break
         }
     }

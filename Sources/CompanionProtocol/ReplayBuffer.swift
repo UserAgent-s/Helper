@@ -4,7 +4,7 @@ extension ServerEvent {
     public var isReplayable: Bool {
         switch self {
         case .modeChanged, .notice, .transcriptDelta, .answerStarted, .answerDelta, .answerReplace, .answerDone,
-             .sessionStarted, .sessionStopped, .deepStarted, .deepDelta, .deepDone, .screenCaptured:
+             .sessionStarted, .sessionStopped, .bookmarkAdded, .bookmarkRemoved, .deepStarted, .deepDelta, .deepDone, .screenCaptured:
             true
         case .helloOK, .pairOK, .stateSnapshot, .level, .ack, .error, .pong, .unknown:
             false

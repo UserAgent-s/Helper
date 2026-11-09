@@ -1,0 +1,14 @@
+{
+  "data": {
+    "answerId": "qa_1",
+    "bookmarkId": "bm_1",
+    "kind": "star",
+    "markedAt": 1762700000021,
+    "sessionId": "ses_2"
+  },
+  "seq": 21,
+  "sid": "ses_2",
+  "ts": 1762700000021,
+  "type": "bookmark.added",
+  "v": 1
+}

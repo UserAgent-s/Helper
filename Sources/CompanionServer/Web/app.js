@@ -80,6 +80,12 @@ const render = createView(document, {
   }
 });
 
+globalThis.setInterval(() => {
+  if (state.session) {
+    scheduleRender();
+  }
+}, 1000);
+
 function scheduleRender() {
   if (renderQueued) {
     return;

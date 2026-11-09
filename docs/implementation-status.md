@@ -1158,3 +1158,41 @@ M1 по коду закрыт (S1.1–S1.7). Ручной чек-лист M1 в 
   - интеграция с `FakeRealtimeWebSocketTransport` и SQLite в памяти (`SessionPersistenceIntegrationTests`): `answeredQuestionPersistedWithSessionID` и `transcriptSegmentsPersistedWithSpeaker`. Для этого `RealtimeClientTests` зависит от `Persistence`.
   - В трёх старых тестах `SessionCoordinatorTests` в сессию добавлена реплика, иначе пустая сессия удалялась бы при остановке.
 
+### S4.5 Управление сессией: веб, меню, хоткеи
+
+- Протокол компаньона:
+  - новые команды `session.resume {sessionId}`, `star_last` и `mark_moment {note?}` (заметка до 500 символов);
+  - новые события `bookmark.added` (`BookmarkInfo`: id, сессия, `star`/`moment`, время, `answerId`, заметка) и `bookmark.removed`;
+  - `SessionInfo` получил `resumed`, `session.stopped` получил `reason` (`user` или `idle`).
+  Новые события попадают в буфер повтора. На каждую команду и событие есть золотая фикстура.
+- `CompanionBridge(control:sessions:)`. Если `SessionControlling` передан, `session.*`, `star_last` и `mark_moment` делегируются ему, и в `capabilities` добавляются `sessionCapabilities`. Без него эти команды по-прежнему отвечают `not_available`. Коды отказа:
+  - `unknown_session`;
+  - `session_start_failed`;
+  - `no_active_session`;
+  - `no_completed_answer`;
+  - `bookmark_failed`.
+- Повторный `session.start` при активной сессии отвечает `ok` и не вызывает координатор: `SessionCoordinator.start()` в этом случае переключил бы режим на `answers`, а по критерию шага повторный старт ничего не меняет. `session.stop` без сессии тоже отвечает `ok`.
+- Мост берёт `session.started`, `session.stopped` и закладки из `SessionControlling.events`, а не из потока состояний. Так события идут в одном порядке, а `startedAt` читается из `currentState` в момент `.started`.
+  - При старте мост один раз читает текущее состояние, чтобы в снимке была сессия, начатая до подключения. Такая сессия не считается объявленной, поэтому её `session.started` всё равно уходит клиентам.
+  - `.discarded` на провод не отправляется: клиенту достаточно `session.stopped`.
+  - `sid` в конверте пока не заполняется.
+- `ModeActivityGuard.observeSessions` держит `beginActivity(.idleSystemSleepDisabled)`, пока сессия не в состоянии `idle`, даже в пассивном режиме между отрезками. Используется один токен на режим и сессию.
+- Mac:
+  - `SessionControlViewModel` (`@MainActor @Observable`) подписан на `stateUpdates` координатора. `toggle`, `start` и `stop` перед действием читают `currentState` у координатора, а не кэш. Флаг `isBusy` отбрасывает второе нажатие, пока первое не завершилось.
+  - В меню строки состояния три пункта, видимые только при наличии модели: «Начать сессию» / «Остановить сессию» (с галочкой при активной сессии), «Отметить последний ответ ★» и «Отметить момент». Две отметки доступны только при активной сессии. Строки добавлены в `Localizable.xcstrings` (ru, en, uk). Stop не открывает окон и диалогов.
+  - Глобальные хоткеи на Carbon через тот же `GlobalHotKeyManager`, что и ⌥↩ и ⌥⌘H. Второй менеджер заводить нельзя: у бэкенда общая сигнатура, и id горячих клавиш двух менеджеров пересеклись бы. Поэтому `AnswerOverlayWindowController.registerHotKey` открывает регистрацию наружу.
+  - Хоткеи по умолчанию: ⌃⌥⌘S (старт или стоп сессии) и ⌃⌥⌘B (звезда последнему ответу). ⌥⌘S не взят, потому что это «Сохранить всё» в Xcode и других редакторах, а глобальная регистрация перехватила бы его. Хранятся в `OverlayPreferencesStore` (`session.toggleHotKey` и `session.starHotKey`). Экрана настройки хоткеев пока нет. В меню сочетания не показываются, чтобы не разойтись с настройкой.
+- Веб-панель:
+  - блок сессии в шапке: таймер `MM:SS` или `Ч:MM:SS` с перерисовкой раз в секунду, пока идёт сессия; кнопка «Начать сессию» / «Остановить»; кнопка ★ и строка отклика («★ ответ отмечен», «Момент отмечен», «Отметка снята»);
+  - клавиша `S` отправляет `star_last`, только когда идёт сессия;
+  - в `store.js` сессия хранит счётчик звёзд и последнюю отметку; снимок той же сессии их сохраняет;
+  - у новых кодов отказа есть русские тексты.
+- `title` из `session.start` пока игнорируется: в координаторе нет заголовка сессии.
+- Тесты:
+  - `CompanionBridgeSessionTests`: 4 (делегирование и идемпотентность, `not_available` без координатора, события и снимок, сессия до старта моста);
+  - `ModeActivityGuardTests`: +2;
+  - `WebReducerJSCTests.sessionTimerAndStateFollowSessionEvents`;
+  - `SessionControlViewModelTests` (AppTests): 4, в том числе хоткеи через `FakeHotKeyBackend`;
+  - золотые фикстуры: +5;
+  - XCUITest `SessionMenuBarUITests.testSessionStartStopFromMenuBar` (старт и стоп из меню, после Stop нет диалогов, листов и новых окон). Он компилируется в `build-for-testing` и запускается владельцем через `make ui-test`.
+

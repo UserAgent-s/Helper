@@ -1,6 +1,7 @@
 {
   "data": {
     "endedAt": 1762700000013,
+    "reason": "user",
     "sessionId": "ses_2"
   },
   "seq": 13,
