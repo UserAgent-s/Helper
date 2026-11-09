@@ -62,11 +62,15 @@ final class CompositionRoot {
         let profileKnowledge: any ProfileKnowledgeProviding = LegacyBackgroundProfileProvider { [settingsStore] in settingsStore.backgroundContext }
         LocalizationCenter.shared.configure(with: settingsStore)
 
-        systemAudioCapturing = ScreenCaptureKitSystemAudioCapturing(outputFormat: .realtimeStreaming, permissions: permissionsChecking)
         let avMicrophone = AVEngineMicrophoneCapturing(permissions: permissionsChecking)
         microphoneCapturing = avMicrophone
         let audioDeviceCatalog = CoreAudioDeviceCatalog()
         self.audioDeviceCatalog = audioDeviceCatalog
+        if settingsStore.systemAudioBackend == .coreAudioTap, #available(macOS 14.2, *) {
+            systemAudioCapturing = CoreAudioTapSystemAudioCapturing(catalog: audioDeviceCatalog)
+        } else {
+            systemAudioCapturing = ScreenCaptureKitSystemAudioCapturing(outputFormat: .realtimeStreaming, permissions: permissionsChecking)
+        }
         let preferredAudioSource = self.preferredAudioSource
         let captureHub = CaptureHub(
             system: systemAudioCapturing,

@@ -265,6 +265,15 @@ struct AdvancedSettingsTab: View {
                 TextField(loc("Whisper модель"), text: $viewModel.whisperModelID)
                 TextField(loc("Модель саммари"), text: $viewModel.summaryModelID)
             }
+            Section(loc("Захват системного звука (developer)")) {
+                Picker(loc("Backend"), selection: $viewModel.systemAudioBackend) {
+                    Text("ScreenCaptureKit").tag(SystemAudioBackend.screenCaptureKit)
+                    Text("Core Audio tap").tag(SystemAudioBackend.coreAudioTap)
+                }
+                Text(loc("Экспериментальный переключатель для сравнения. Применяется после перезапуска приложения. Core Audio tap спросит отдельное разрешение «Запись системного звука»."))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
             Section(loc("VAD (developer)")) {
                 LabeledContent(loc("Threshold"), value: String(format: "%.2f", viewModel.vadThreshold))
                 Slider(value: $viewModel.vadThreshold, in: 0...1)

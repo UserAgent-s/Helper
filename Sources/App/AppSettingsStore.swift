@@ -4,6 +4,11 @@ import RealtimeClient
 import Transcription
 import Summary
 
+enum SystemAudioBackend: String, CaseIterable {
+    case screenCaptureKit
+    case coreAudioTap
+}
+
 final class AppSettingsStore: @unchecked Sendable {
     private let defaults: UserDefaults
 
@@ -22,6 +27,7 @@ final class AppSettingsStore: @unchecked Sendable {
         static let backgroundContext = "com.local.UserAgent057.settings.backgroundContext"
         static let deviceRole = "com.local.UserAgent057.settings.device.role"
         static let outputRoutePolicy = "com.local.UserAgent057.settings.audio.outputRoutePolicy"
+        static let systemAudioBackend = "com.local.UserAgent057.settings.developer.systemAudioBackend"
     }
 
     init(defaults: UserDefaults = .standard) {
@@ -97,6 +103,11 @@ final class AppSettingsStore: @unchecked Sendable {
     var deviceRole: DeviceRole {
         get { DeviceRole(rawValue: defaults.string(forKey: Keys.deviceRole) ?? "") ?? .primary }
         set { defaults.set(newValue.rawValue, forKey: Keys.deviceRole) }
+    }
+
+    var systemAudioBackend: SystemAudioBackend {
+        get { SystemAudioBackend(rawValue: defaults.string(forKey: Keys.systemAudioBackend) ?? "") ?? .screenCaptureKit }
+        set { defaults.set(newValue.rawValue, forKey: Keys.systemAudioBackend) }
     }
 
     var outputRoutePolicy: OutputRoutePolicy {

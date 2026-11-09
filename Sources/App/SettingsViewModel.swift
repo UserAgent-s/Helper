@@ -64,6 +64,11 @@ final class SettingsViewModel {
         set { overlayPreferences.fontFamily = newValue }
     }
 
+    var systemAudioBackend: SystemAudioBackend {
+        get { settingsStore.systemAudioBackend }
+        set { settingsStore.systemAudioBackend = newValue }
+    }
+
     var outputRoutePolicy: OutputRoutePolicy {
         get { settingsStore.outputRoutePolicy }
         set { settingsStore.outputRoutePolicy = newValue }

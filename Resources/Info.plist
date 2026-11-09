@@ -22,6 +22,8 @@
 	<string>14.0</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.productivity</string>
+	<key>NSAudioCaptureUsageDescription</key>
+	<string>UserAgent057 слушает системный звук встречи, чтобы подсказывать ответы. Этот доступ нужен только экспериментальному способу захвата Core Audio (настройка разработчика).</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>UserAgent057 использует микрофон только в режиме записи митинга (Recording), чтобы локально расшифровать вашу реплику. Аудио с микрофона не покидает устройство и не сохраняется в исходном виде.</string>
 	<key>NSHumanReadableCopyright</key>
