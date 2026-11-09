@@ -70,6 +70,10 @@ targets:
         product: Summary
       - package: UserAgent057Core
         product: OverlayReducer
+      - package: UserAgent057Core
+        product: CompanionProtocol
+      - package: UserAgent057Core
+        product: CompanionServer
 
   UserAgent057Tests:
     type: bundle.unit-test

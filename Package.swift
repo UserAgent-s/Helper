@@ -15,9 +15,11 @@ let package = Package(
         .library(name: "Summary", targets: ["Summary"]),
         .library(name: "OverlayReducer", targets: ["OverlayReducer"]),
         .library(name: "CompanionProtocol", targets: ["CompanionProtocol"]),
+        .library(name: "CompanionServer", targets: ["CompanionServer"]),
     ],
     dependencies: [
         .package(url: "https://github.com/argmaxinc/argmax-oss-swift.git", exact: "1.1.0"),
+        .package(url: "https://github.com/swhitty/FlyingFox.git", exact: "0.27.1"),
     ],
     targets: [
         .target(
@@ -70,6 +72,20 @@ let package = Package(
         ),
         .target(
             name: "CompanionProtocol",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .target(
+            name: "CompanionServer",
+            dependencies: [
+                "CompanionProtocol",
+                .product(name: "FlyingFox", package: "FlyingFox"),
+            ],
+            resources: [.copy("Web")],
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .testTarget(
+            name: "CompanionServerTests",
+            dependencies: ["CompanionServer", "CompanionProtocol"],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
         .testTarget(

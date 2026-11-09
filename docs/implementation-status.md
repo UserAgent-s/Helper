@@ -808,3 +808,13 @@ M1 по коду закрыт (S1.1–S1.7). Ручной чек-лист M1 в 
 - Отклонение от плана: «Revoke закрывает соединения» здесь проверяется только как событие в `revocations`. Закрытие сокета появится в S2.4.
 - Тесты: `PairingStoreTests` (17), `RequestGuardTests` (12), `SQLitePairedDeviceStoreTests` (3). Тесты версий миграций теперь ждут `[1, 2, 3]`.
 
+### S2.4 CompanionServer на FlyingFox
+
+- `Package.swift`: FlyingFox `exact: 0.27.1`, таргет `CompanionServer` (ресурсы `Web/`), `CompanionServerTests`. В `project.yml` приложению добавлены продукты `CompanionProtocol` и `CompanionServer`, используются они с S2.5.
+- `CompanionTransport.swift`: коды закрытия, `CompanionOutbound`, `CompanionServerConfiguration` (47057, ping 10 с, 64 КБ), протоколы `CompanionTransport` и `CompanionHubDelegate` (`snapshot`, `perform`).
+- `CompanionHub.swift`: actor. hello с токеном и `lastSeq`, pair по WS, ack по `deviceId+cmdId` (идемпотентно), рассылка `publish`, `ReplayBuffer`, лимиты клиентов, таймаут hello, `FailureThrottle`, закрытие при отзыве.
+- `FlyingFoxCompanionTransport.swift`: маршруты `/`, `/app.js`, `/app.css`, `/healthz`, `/ws`, RequestGuard на всех, заголовки безопасности, свой `WSHandler` (лимит на кадр и фрагменты, ping/pong, liveness 30 с), запасной свободный порт.
+- `LocalInterfaceAddresses.swift` (`getifaddrs`). `Web/` — заглушки, настоящая панель появится в S2.6.
+- Решения и ограничения описаны в ADR 0005, раздел S2.4. Главное: `remoteIPAddress` из FlyingFox не используется (доверяет `X-Forwarded-For`), большой одиночный кадр буферизуется целиком до проверки.
+- Тесты: `ServerIntegrationTests` (17) через `URLSessionWebSocketTask` на 127.0.0.1 со случайным портом. Проверяют snapshot, 4401, команду до hello, идемпотентность (в том числе после переподключения), рассылку и третьего клиента (4409), 1009, 1002, таймаут hello, отзыв, pair по WS, повторный код, доигрывание по `lastSeq`, заголовки, чужой Origin и Host, освобождение порта, запасной порт. Три прогона подряд зелёные. Итого swift 423 + AppTests.
+
