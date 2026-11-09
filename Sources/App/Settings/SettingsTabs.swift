@@ -218,8 +218,29 @@ struct DeviceRoleSettingsTab: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
+            Section(loc("Веб-панель второго экрана")) {
+                Toggle(loc("Включить сервер веб-панели в локальной сети"), isOn: $viewModel.companionServerEnabled)
+                Text(companionStatus)
+                    .font(.caption)
+                    .foregroundStyle(viewModel.companionStartFailed ? .red : .secondary)
+                Text(loc("Сервер принимает только устройства, сопряжённые по коду. Экран сопряжения появится на шаге S2.8."))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
         }
         .formStyle(.grouped)
+    }
+}
+
+extension DeviceRoleSettingsTab {
+    var companionStatus: String {
+        if viewModel.companionStartFailed {
+            return loc("Не удалось запустить сервер")
+        }
+        guard viewModel.companionServerEnabled, let port = viewModel.companionPort else {
+            return loc("Сервер выключен")
+        }
+        return loc("Сервер работает, порт") + " \(port)"
     }
 }
 

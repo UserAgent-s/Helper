@@ -74,6 +74,8 @@ targets:
         product: CompanionProtocol
       - package: UserAgent057Core
         product: CompanionServer
+      - package: UserAgent057Core
+        product: CompanionBridge
 
   UserAgent057Tests:
     type: bundle.unit-test

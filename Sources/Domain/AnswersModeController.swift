@@ -31,6 +31,7 @@ public actor AnswersModeController: ModeController {
     private let failureContinuation: AsyncStream<String>.Continuation
 
     private let streamEventBroadcaster = AsyncBroadcaster<AnswerStreamEvent>()
+    private let answerUpdateBroadcaster = AsyncBroadcaster<AnswerStreamUpdate>()
     private let transcriptBroadcaster = AsyncBroadcaster<TranscriptEvent>()
 
     public init(
@@ -76,7 +77,7 @@ public actor AnswersModeController: ModeController {
         streamingText = ""
         contextWindowStartedAt = Date()
         questionItemIDsByResponse.removeAll()
-        streamEventBroadcaster.yield(.collectingContext)
+        emit(.collectingContext)
 
         try await realtime.start(instructions: await instructionsProvider())
         let realtime = self.realtime
@@ -116,7 +117,7 @@ public actor AnswersModeController: ModeController {
         streamingText = ""
         contextWindowStartedAt = Date()
         questionItemIDsByResponse.removeAll()
-        streamEventBroadcaster.yield(.collectingContext)
+        emit(.collectingContext)
     }
 
     public func stop() async {
@@ -166,6 +167,19 @@ public actor AnswersModeController: ModeController {
         streamEventBroadcaster.subscribe(subscriber)
     }
 
+    nonisolated public func answerUpdates(subscriber: String = #fileID, policy: BroadcastBufferPolicy = .unbounded) -> AsyncStream<AnswerStreamUpdate> {
+        answerUpdateBroadcaster.subscribe(subscriber, policy: policy)
+    }
+
+    public var isAnswerInFlight: Bool {
+        activeResponseID != nil || turnPhase == .manualResponsePending || turnPhase == .automaticResponsePending || turnPhase == .streaming
+    }
+
+    private func emit(_ event: AnswerStreamEvent, responseID: String? = nil, trigger: AnswerTriggerKind? = nil) {
+        streamEventBroadcaster.yield(event)
+        answerUpdateBroadcaster.yield(AnswerStreamUpdate(responseID: responseID, trigger: trigger, event: event))
+    }
+
     private(set) var handledEventCountForTesting = 0
 
     private func handle(_ event: RealtimeAnswerEvent) async {
@@ -184,7 +198,7 @@ public actor AnswersModeController: ModeController {
             let firstDeltaObservedAt = Date()
             turnPhase = .streaming
             streamingText += text
-            streamEventBroadcaster.yield(.streaming(text: streamingText))
+            emit(.streaming(text: streamingText), responseID: id, trigger: activeResponseTrigger)
             if isFirstDelta {
                 await latencyRecording?.record(.firstDeltaToFirstPaintMs(Int(Date().timeIntervalSince(firstDeltaObservedAt) * 1000)))
             }
@@ -201,14 +215,14 @@ public actor AnswersModeController: ModeController {
         case .waitingForQuestion:
             if turnPhase == .completed {
                 turnPhase = .collectingContext
-                streamEventBroadcaster.yield(.collectingContext)
+                emit(.collectingContext)
             }
         case .completed(let id):
             guard id == activeResponseID else { return }
             turnPhase = .completed
             activeResponseID = nil
             let finalText = streamingText
-            streamEventBroadcaster.yield(.completed(finalText: finalText))
+            emit(.completed(finalText: finalText), responseID: id, trigger: activeResponseTrigger)
             if let questionAnswerLogger {
                 let responseTotalMs = responseStartedAt.map { Int(Date().timeIntervalSince($0) * 1000) }
                 await questionAnswerLogger.recordCompleted(responseID: id, finalText: finalText, responseTotalMs: responseTotalMs)
@@ -222,7 +236,7 @@ public actor AnswersModeController: ModeController {
             turnPhase = .collectingContext
             activeResponseID = nil
             streamingText = ""
-            streamEventBroadcaster.yield(.cancelled)
+            emit(.cancelled, responseID: id, trigger: activeResponseTrigger)
             if let questionAnswerLogger {
                 await questionAnswerLogger.recordCancelled(responseID: id)
             }
@@ -246,7 +260,7 @@ public actor AnswersModeController: ModeController {
               turnPhase != .manualResponsePending, turnPhase != .automaticResponsePending, turnPhase != .streaming
         else { return }
         turnPhase = .manualResponsePending
-        streamEventBroadcaster.yield(.manualResponsePending)
+        emit(.manualResponsePending)
         Task { [realtime] in
             do {
                 try await realtime.forceResponse()
@@ -259,6 +273,6 @@ public actor AnswersModeController: ModeController {
     private func handleManualTriggerRejected() {
         guard turnPhase == .manualResponsePending, activeResponseID == nil else { return }
         turnPhase = .collectingContext
-        streamEventBroadcaster.yield(.noContext)
+        emit(.noContext)
     }
 }

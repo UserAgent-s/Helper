@@ -25,15 +25,38 @@ actor FakeHubDelegate: CompanionHubDelegate {
 struct TimedOut: Error {}
 
 func withTimeout<T: Sendable>(_ seconds: Double = 5, _ body: @escaping @Sendable () async throws -> T) async throws -> T {
-    try await withThrowingTaskGroup(of: T.self) { group in
-        group.addTask { try await body() }
-        group.addTask {
-            try await Task.sleep(for: .seconds(seconds))
-            throw TimedOut()
+    let gate = ResumeOnce<T>()
+    return try await withCheckedThrowingContinuation { continuation in
+        gate.install(continuation)
+        let work = Task {
+            do {
+                gate.resume(.success(try await body()))
+            } catch {
+                gate.resume(.failure(error))
+            }
         }
-        let value = try await group.next()!
-        group.cancelAll()
-        return value
+        Task {
+            try? await Task.sleep(for: .seconds(seconds))
+            gate.resume(.failure(TimedOut()))
+            work.cancel()
+        }
+    }
+}
+
+final class ResumeOnce<T: Sendable>: @unchecked Sendable {
+    private let lock = NSLock()
+    private var continuation: CheckedContinuation<T, any Error>?
+
+    func install(_ continuation: CheckedContinuation<T, any Error>) {
+        lock.withLock { self.continuation = continuation }
+    }
+
+    func resume(_ result: Result<T, any Error>) {
+        let pending = lock.withLock { () -> CheckedContinuation<T, any Error>? in
+            defer { continuation = nil }
+            return continuation
+        }
+        pending?.resume(with: result)
     }
 }
 

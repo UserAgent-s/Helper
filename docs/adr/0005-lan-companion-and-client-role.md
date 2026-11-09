@@ -110,3 +110,13 @@
   Личные события (`ack`, `pong`, `hello.ok`, `error`, `snapshot`) берут общий `seq` и не хранятся, так что у других клиентов появляются пропуски `seq`. Это нормально: разрыв клиент ищет по `offset` ответа, а не по сплошному `seq`.
 - **Ping.** Сервер шлёт WS-ping каждые 10 с. Если от клиента 30 с нет ни одного кадра, соединение закрывается с `1001 ping_timeout`.
 - **Stop** закрывает все WS кодом 1001, затем вызывает `HTTPServer.stop` и дожидается задачи. Тест проверяет, что порт свободен и занимается заново.
+
+### Мост Domain ↔ CompanionHub (S2.5)
+
+- Мост вынесен в SwiftPM-таргет `CompanionBridge` (Domain + CompanionProtocol + CompanionServer), а не в `Sources/App`. Так тесты с loopback-сервером и фейковым Realtime-транспортом идут в `swift test`, без xcodebuild. App только собирает объекты в `CompositionRoot`.
+- В `AnswersModeController` появился второй поток `answerUpdates`: `AnswerStreamUpdate {responseID, trigger, event}`. Старый `streamEvents` (оверлей) не тронут. `answerId` на проводе равен `response.id`; UUID берётся, только если id нет.
+- `answer.started` отправляется на первую `streaming` нового id, а не на `responseStarted`. Второй `responseStarted` контроллер уже отбрасывает (`activeResponseID != nil`), поэтому автоответ, догнавший ручной, даёт один `answer.started`. Новый id при незакрытом старом закрывает старый как `cancelled`. Выход из режима answers тоже закрывает ответ как `cancelled`: контроллер при `stop()` событие `cancelled` не шлёт.
+- Все события идут через одну очередь (`AsyncStream` + одна задача-насос), поэтому порядок на проводе совпадает с порядком изменения состояния моста. Снимок берётся из состояния моста. Событие, уже учтённое в снимке, может прийти ещё раз из очереди; клиент сверяет `offset` у `answer.delta` и `itemId` у `transcript.delta` (S2.6).
+- Команды: `answer_now` → `ManualAnswerTrigger.fire` (только в answers), `set_mode` → `ModeCoordinator.requestTransition(reason: "companion")`, `reset_context` отклоняется с `answer_in_progress`, пока ответ в полёте (`isAnswerInFlight`: есть `activeResponseID` или фаза pending/streaming). `expand`, `capture_screen`, `session.*` отвечают `not_available` до готовности модулей.
+- Уровни прореживаются до 4 в секунду на источник, в снимке хранится последний. Стенограмма: последние 40 реплик с заменой по `itemId`. Уведомления: последние 10. Сессий пока нет, `session` в снимке `nil`.
+- Сервер выключен по умолчанию, включается переключателем во вкладке «Роль» (`companion.serverEnabled`), слушает все интерфейсы. Без сопряжённых устройств команды недоступны: экрана сопряжения до S2.8 нет.

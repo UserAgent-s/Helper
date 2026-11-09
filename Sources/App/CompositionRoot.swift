@@ -8,6 +8,8 @@ import SecurityStore
 import Diagnostics
 import Summary
 import OverlayReducer
+import CompanionProtocol
+import CompanionBridge
 
 @MainActor
 final class CompositionRoot {
@@ -50,6 +52,8 @@ final class CompositionRoot {
     let historyViewModel: HistoryViewModel
     let settingsViewModel: SettingsViewModel
     let navigationState = AppNavigationState()
+    let companionBridge: CompanionBridge
+    let companionService: CompanionService
 
     init() {
         let permissionsChecking = SystemPermissionsChecker()
@@ -177,6 +181,23 @@ final class CompositionRoot {
             manualAnswerTrigger: manualAnswerTrigger
         )
         recordingTranscriptViewModel = RecordingTranscriptViewModel(recordingController: recordingController)
+        let companionBridge = CompanionBridge(
+            control: LiveCompanionDomain(modeCoordinator: modeCoordinator, answers: answersController, trigger: manualAnswerTrigger)
+        )
+        let companionFeeds = LiveCompanionDomain.feeds(modeCoordinator: modeCoordinator, answers: answersController, captureHub: captureHub)
+        let companionService = CompanionService(
+            pairing: PairingStore(storage: SQLitePairedDeviceStore(database: database)),
+            bridge: companionBridge,
+            serverVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev"
+        )
+        self.companionBridge = companionBridge
+        self.companionService = companionService
+        Task {
+            await companionBridge.start(feeds: companionFeeds)
+            if settingsStore.companionServerEnabled {
+                _ = try? await companionService.start()
+            }
+        }
         historyViewModel = HistoryViewModel(
             questionAnswerRepository: questionAnswerRepository,
             meetingRepository: meetingRepository,
@@ -193,7 +214,8 @@ final class CompositionRoot {
                 levels: captureHub.levels.subscribe("audioSettings", policy: .bufferingNewest(8))
             ),
             permissionsChecking: permissionsChecking,
-            recordingsDirectory: recordingsDirectory
+            recordingsDirectory: recordingsDirectory,
+            companionService: companionService
         )
 
         let meetingRepository = self.meetingRepository

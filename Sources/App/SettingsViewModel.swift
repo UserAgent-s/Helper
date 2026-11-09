@@ -1,4 +1,5 @@
 import AppKit
+import CompanionBridge
 import Domain
 import Foundation
 import Observation
@@ -15,6 +16,17 @@ final class SettingsViewModel {
     private let permissionsChecking: any PermissionsChecking
     private let recordingsDirectory: URL
     private let overlayPreferences = OverlayPreferencesStore()
+    private let companionService: CompanionService?
+    private(set) var companionPort: UInt16?
+    private(set) var companionStartFailed = false
+    var companionServerEnabled: Bool {
+        didSet {
+            guard companionServerEnabled != oldValue else { return }
+            settingsStore.companionServerEnabled = companionServerEnabled
+            let enabled = companionServerEnabled
+            Task { await applyCompanionServer(enabled) }
+        }
+    }
 
     var apiKeyInput = ""
     private(set) var hasStoredAPIKey = false
@@ -104,8 +116,11 @@ final class SettingsViewModel {
         secretStoring: any SecretStoring,
         audio: AudioSettingsViewModel,
         permissionsChecking: any PermissionsChecking,
-        recordingsDirectory: URL
+        recordingsDirectory: URL,
+        companionService: CompanionService? = nil
     ) {
+        self.companionService = companionService
+        self.companionServerEnabled = settingsStore.companionServerEnabled
         self.audio = audio
         self.settingsStore = settingsStore
         self.secretStoring = secretStoring
@@ -116,8 +131,26 @@ final class SettingsViewModel {
     func load() async {
         refreshAPIKeyStatus()
         await audio.load()
+        companionPort = await companionService?.port
         screenRecordingStatus = await permissionsChecking.status(for: .screenRecording)
         microphoneStatus = await permissionsChecking.status(for: .microphone)
+    }
+
+    func applyCompanionServer(_ enabled: Bool) async {
+        guard let companionService else { return }
+        if enabled {
+            do {
+                companionPort = try await companionService.start()
+                companionStartFailed = false
+            } catch {
+                companionPort = nil
+                companionStartFailed = true
+            }
+        } else {
+            await companionService.stop()
+            companionPort = nil
+            companionStartFailed = false
+        }
     }
 
     func refreshAPIKeyStatus() {
