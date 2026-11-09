@@ -74,7 +74,7 @@ actor ScriptedLiveResponder: LiveResponder {
 
     nonisolated func events() -> AsyncStream<RealtimeAnswerEvent> { stream }
 
-    func injectContext(_ text: String) async throws {
+    func injectContext(_ context: InjectedContext) async throws {
         guard active else { throw RealtimeClientError.notConnected }
         contextItems += 1
     }

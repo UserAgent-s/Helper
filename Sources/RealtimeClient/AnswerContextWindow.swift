@@ -27,6 +27,10 @@ actor AnswerContextWindow {
         return evictIfNeeded()
     }
 
+    func trackInjectedTextItem(_ itemID: String) {
+        committedUserItemIDs.append(TrackedItem(id: itemID, addedAt: now()))
+    }
+
     func trackAssistantOutputItem(responseID: String, itemID: String) {
         assistantOutputItemIDs[responseID, default: []].append(itemID)
     }

@@ -36,7 +36,7 @@ private actor HotKeyResponder: LiveResponder {
     }
 
     nonisolated var capabilities: ProviderCapabilities { [.serverVAD, .textInjection, .manualResponse, .streamingText] }
-    func injectContext(_ text: String) async throws {}
+    func injectContext(_ context: InjectedContext) async throws {}
     func start(instructions: String) async throws {}
     func appendAudio(_ frame: PCMAudioFrame) async {}
     nonisolated func events() -> AsyncStream<RealtimeAnswerEvent> { stream }

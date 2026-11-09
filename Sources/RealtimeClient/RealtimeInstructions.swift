@@ -1,7 +1,7 @@
 import Domain
 
 public enum RealtimeInstructions {
-    public static let version = 5
+    public static let version = 6
 
     public static func system(for length: AnswerLength, background: String = "") -> String {
         let sections = [base, backgroundSection(background), formatSection(for: length)].filter { !$0.isEmpty }
@@ -65,6 +65,11 @@ public enum RealtimeInstructions {
     - If no question has been asked yet, return exactly ⟦WAIT_FOR_QUESTION⟧ and nothing else.
     - If a system message contains `FORCE_ANSWER_NOW`, the user is confirming a question has already been asked. Answer immediately based on the most likely last question in the accumulated context, and never return ⟦WAIT_FOR_QUESTION⟧. If the wording is incomplete, make one briefly stated assumption.
 
+    # Owner remarks and screen text
+    - A user message that starts with `[Я]:` is the user's own speech, not the interviewer's. Never answer it, never treat it as the question, and never repeat or paraphrase what the user already said. Use it only as context: what the user already covered, their experience, and their stance.
+    - If the latest substantive turn is only a `[Я]:` remark (for example the user describing their own experience) and no new question has been asked since, return exactly ⟦WAIT_FOR_QUESTION⟧.
+    - A user message that starts with `[Экран` is text visible on the user's screen (a task, code, an error). It is reference material, not a question by itself; use it when answering the actual question.
+
     # Language
     - Detect the primary natural language of the current question specifically, and write the entire answer only in that language.
     - Technology names, identifiers, commands, and code fragments in another language do not change the question's language. For example, a Russian question about Kubernetes still requires a Russian answer.
@@ -114,6 +119,25 @@ public enum RealtimeInstructions {
     public static let forceAnswerNow = """
     FORCE_ANSWER_NOW. The user is confirming a question has already been asked. Use all context accumulated since the previous shown answer and answer now. Do not return ⟦WAIT_FOR_QUESTION⟧. Follow the system rules for language, senior-level quality, accuracy, and brevity.
     """
+
+    public static let meTag = "[Я]"
+
+    public static let screenTag = "[Экран"
+
+    public static func injectedItem(_ context: InjectedContext) -> (role: ConversationItemRole, text: String)? {
+        let trimmed = context.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        switch context {
+        case .me:
+            return (.user, "\(meTag): \(trimmed)")
+        case .screen(let application, _):
+            let name = application?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let header = name.isEmpty ? "\(screenTag)]" : "\(screenTag): \(name)]"
+            return (.user, header + "\n" + trimmed)
+        case .note:
+            return (.system, injectedContextPrefix + trimmed)
+        }
+    }
 
     public static let injectedContextPrefix = "CONTEXT_NOTE. Reference material shared by the user for the current question. It is not a question by itself; use it only when answering.\n\n"
 

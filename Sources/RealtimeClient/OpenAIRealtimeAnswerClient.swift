@@ -140,18 +140,15 @@ public actor OpenAIRealtimeAnswerClient: LiveResponder {
         [.serverVAD, .inputTranscription, .textInjection, .manualResponse, .streamingText]
     }
 
-    public func injectContext(_ text: String) async throws {
+    public func injectContext(_ context: InjectedContext) async throws {
         guard sessionActive else { throw RealtimeClientError.notConnected }
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
+        guard let item = RealtimeInstructions.injectedItem(context) else { return }
         let itemID = Self.makeItemID(prefix: "ctx_")
-        let evicted = await contextWindow.trackCommittedUserItem(itemID)
-        try await transport.send(.conversationItemCreate(ConversationItemPayload(
-            id: itemID,
-            role: .system,
-            text: RealtimeInstructions.injectedContextPrefix + trimmed
-        )))
-        await deleteEvicted(evicted)
+        await contextWindow.trackInjectedTextItem(itemID)
+        try await transport.send(.conversationItemCreate(ConversationItemPayload(id: itemID, role: item.role, text: item.text)))
+        if !responseInProgress {
+            await deleteEvicted(await contextWindow.evictExpired())
+        }
     }
 
     public func forceResponse() async throws {

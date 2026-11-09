@@ -5,7 +5,7 @@ public struct InactiveLiveResponder: LiveResponder {
 
     public var capabilities: ProviderCapabilities { [] }
 
-    public func injectContext(_ text: String) async throws {
+    public func injectContext(_ context: InjectedContext) async throws {
         throw ProviderSeamError.unsupported("textInjection")
     }
 

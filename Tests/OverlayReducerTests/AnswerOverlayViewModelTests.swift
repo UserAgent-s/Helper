@@ -40,7 +40,7 @@ private actor FakeLiveResponder: LiveResponder {
 
     nonisolated var capabilities: ProviderCapabilities { [.serverVAD, .textInjection, .manualResponse, .streamingText] }
 
-    func injectContext(_ text: String) async throws {}
+    func injectContext(_ context: InjectedContext) async throws {}
 
     func start(instructions: String) async throws {
         startCallCount += 1
