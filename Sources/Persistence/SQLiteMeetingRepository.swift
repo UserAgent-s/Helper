@@ -37,8 +37,9 @@ public final class SQLiteMeetingRepository: MeetingRepository, Sendable {
         try await connection.ensureReady()
         try await connection.run(
             """
-            INSERT INTO utterances (id, meeting_id, source, started_ms, ended_ms, text, language, confidence, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO utterances (id, meeting_id, source, started_ms, ended_ms, text, language, confidence, created_at, speaker, origin, captured_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'whisper_local',
+                (SELECT strftime('%Y-%m-%dT%H:%M:%SZ', started_at, '+' || (? / 1000.0) || ' seconds') FROM meetings WHERE id = ?))
             """,
             [
                 .text(UUID().uuidString),
@@ -50,6 +51,9 @@ public final class SQLiteMeetingRepository: MeetingRepository, Sendable {
                 segment.language.map(SQLiteValue.text) ?? .null,
                 segment.confidence.map(SQLiteValue.double) ?? .null,
                 .text(ISO8601DateFormatter().string(from: Date())),
+                .text(segment.source == .local ? Speaker.me.rawValue : Speaker.them.rawValue),
+                .int(segment.startMs),
+                .text(meetingID.rawValue.uuidString),
             ]
         )
     }

@@ -1054,3 +1054,29 @@ M1 по коду закрыт (S1.1–S1.7). Ручной чек-лист M1 в 
 | Эхо на динамиках, Meet и Zoom (чек-лист, п. 3 и 4) | | | |
 
 - Платные тесты в этом шаге не запускались: ключ и запуск остаются за владельцем.
+
+## M4. Сессии ассистента
+
+### S4.1 Миграция схемы для сессий (version 4) с резервной копией
+
+- `Sources/Persistence/SessionSchema.swift` содержит инструкции миграции `version 4` (в плане она называется «v2»; номера 1–3 уже заняты). `SQLiteMigrations.all` подключает её с `backsUpExistingDatabase: true`. Копия `*.pre-v4.bak` снимается через `sqlite3_backup` внутри той же `BEGIN IMMEDIATE`, что и миграция; на свежей базе копии нет.
+- Что добавлено:
+  - в `meetings`: `kind` (по умолчанию `recording`), `title_source`, `pinned`, `last_activity_at`, `knowledge_digest`;
+  - таблица `session_spans`, по одному span `legacy_<id>` на каждую старую встречу;
+  - в `utterances`: `speaker`, `origin`, `captured_at`, `translation_text`, `translation_lang` с бэкфиллом;
+  - в `qa_entries`: `session_id` (каскадное удаление) и `screen_context_id` (`SET NULL`);
+  - новые таблицы `screen_contexts`, `deep_expansions`, `bookmarks` и `search_aliases`.
+- Поисковые индексы. Внешние FTS5 `*_fts` (`unicode61 remove_diacritics 2`) и `*_trgm` (`trigram`, MEM-2) заведены для utterances, qa_entries, screen_contexts и deep_expansions. Для bookmarks есть только `*_fts`. Триггеры создаёт один генератор `SessionSchema.searchable`. Старые `utterances_fts` и `qa_entries_fts` пересобраны в новых колонках и с новым токенайзером. Индекс получает текст с заменой «ё» на «е» (unicode61 их не сводит, это проверено пробой), поэтому `'rebuild'` для них запрещён; подробности в ADR 0006.
+- `SQLiteDatabase` получил внутренний инициализатор с явным списком миграций: он нужен для теста отката и для чтения резервной копии без миграций. Перед миграциями выполняется `wal_checkpoint(PASSIVE)`.
+- `SQLiteMeetingRepository.appendSegment` теперь пишет `speaker` (`local` превращается в `me`), `origin = whisper_local` и `captured_at`, иначе новые реплики микрофона в recording получили бы значение по умолчанию `them`.
+- Тесты `SQLiteMigrationV2Tests` (6):
+  - `migratesPopulatedV1Database`: бэкфилл, span, копия с версией 3, старая встреча читается репозиторием;
+  - `ftsRebuiltFindsLegacyUtterance`: «ёлку» находится по «елку», работают префикс, триграмма, поиск через `search` обоих репозиториев и alias без учёта регистра;
+  - `deleteSessionCascadesAllChildren`: удаление сессии не трогает соседнюю и чистит FTS-строки;
+  - `ftsTriggersOnNewTables`: колоночные запросы, update и delete, `SET NULL`;
+  - `migrationIsIdempotentOnReopen`: копия при повторном открытии не перезаписывается;
+  - `failedMigrationRollsBack`: сбой на последней инструкции откатывает всё, старый FTS продолжает работать, копия остаётся, следующий запуск мигрирует.
+  - Ожидания версий в `SQLiteDatabaseTests` обновлены до `[1, 2, 3, 4]`.
+- Открытые вопросы:
+  - `RetentionSweeper` по-прежнему удаляет Q&A по `asked_at`, а не через сессию; это переходит в S4.9;
+  - строка продуктового контракта «полный разговор не сохраняется» меняется в S4.4, когда появится запись стенограммы в сессии.

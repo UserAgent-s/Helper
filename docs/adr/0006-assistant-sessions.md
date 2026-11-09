@@ -28,3 +28,12 @@
 ## Критерии пересмотра
 
 Если понадобятся параллельные сессии или сессии на клиентском устройстве.
+
+## Дополнение S4.1: схема
+
+- «Миграция v2» из плана — это `schema_migrations.version = 4`: версии 1–3 уже заняты (базовая схема, модель расшифровки вопроса, сопряжённые устройства). Миграция идёт одной транзакцией `BEGIN IMMEDIATE`. До неё, внутри той же блокировки, `sqlite3_backup` из отдельного read-only соединения пишет копию `useragent057.sqlite3.pre-v4.bak`. Перед циклом миграций выполняется `wal_checkpoint(PASSIVE)`. Сам `sqlite3_backup` читает и WAL, так что копия консистентна и без чекпоинта.
+- Сессия — это строка `meetings` с `kind = 'assistant'`. Старые записи получают `kind = 'recording'` и один span `legacy_<id>` с режимом `recording`. Все дочерние таблицы (`session_spans`, `screen_contexts`, `deep_expansions`, `bookmarks`, а также `qa_entries.session_id`) ссылаются на `meetings(id) ON DELETE CASCADE`. Каскад запускает FTS-триггеры, поэтому удаление сессии чистит и поисковые индексы. `qa_entries.screen_context_id` при удалении снимка экрана обнуляется (`SET NULL`).
+- `utterances.speaker` хранит `Speaker.rawValue` (`me` и `them`). Бэкфилл переводит `source = 'local'` (микрофон, Whisper) в `me`, а остальное — в `them`. `origin` старых строк — `whisper_local`. `captured_at` считается как `meetings.started_at + started_ms` с точностью до секунды, в том же формате ISO8601, что и остальная база.
+- У каждой текстовой таблицы два внешних FTS5-индекса (MEM-2): `<table>_fts` с `unicode61 remove_diacritics 2` и `<table>_trgm` с `trigram`. У `bookmarks` только словарный индекс: заметки короткие. Триграммы без `remove_diacritics`, потому что эта опция появилась в SQLite 3.45, а на macOS 14 системная 3.43.
+- `unicode61` не приравнивает «ё» к «е» (проверено пробой). Поэтому триггеры и первичное заполнение пишут в индекс `replace(text, 'ё', 'е')`. Замена сохраняет длину в байтах, так что `snippet()` по контент-таблице не сдвигается. Встроенный `'rebuild'` для этих индексов использовать нельзя: он индексирует текст без замены, и последующие `'delete'` разойдутся с индексом. Перестраивать нужно через `'delete-all'` и `INSERT … SELECT` с той же заменой.
+- `search_aliases(term, alias)` с `COLLATE NOCASE` засеяна несколькими парами RU и EN (Kafka/Кафка, Postgres, Kubernetes/k8s, Redis). Использует её `FTSQueryBuilder` в S4.7.

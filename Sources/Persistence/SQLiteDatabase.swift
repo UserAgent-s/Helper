@@ -10,10 +10,16 @@ public actor SQLiteDatabase {
         set { owner.handle = newValue }
     }
     private var didMigrate = false
+    private let migrations: [SQLiteMigration]
 
     public init(path: String, busyTimeoutMs: Int = 5000) {
+        self.init(path: path, busyTimeoutMs: busyTimeoutMs, migrations: SQLiteMigrations.all)
+    }
+
+    init(path: String, busyTimeoutMs: Int = 5000, migrations: [SQLiteMigration]) {
         self.path = path
         self.busyTimeoutMs = busyTimeoutMs
+        self.migrations = migrations
     }
 
     public func ensureReady() throws {
@@ -141,7 +147,10 @@ public actor SQLiteDatabase {
 
     private func runMigrations() throws {
         var appliedThisLaunch: Set<Int> = []
-        for migration in SQLiteMigrations.all {
+        if path != ":memory:" {
+            _ = try? query("PRAGMA wal_checkpoint(PASSIVE)", map: { _ in 0 })
+        }
+        for migration in migrations {
             try withTransaction {
                 try run("""
                 CREATE TABLE IF NOT EXISTS schema_migrations (

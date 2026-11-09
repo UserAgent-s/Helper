@@ -132,5 +132,6 @@ enum SQLiteMigrations {
             )
             """,
         ]),
+        SQLiteMigration(version: 4, statements: SessionSchema.statements, backsUpExistingDatabase: true),
     ]
 }
