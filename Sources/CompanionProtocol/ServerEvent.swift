@@ -20,6 +20,7 @@ public enum ServerEvent: Sendable, Equatable {
     case deepDelta(DeepDelta)
     case deepDone(DeepDone)
     case screenCaptured(ScreenCaptured)
+    case exportReady(ExportReady)
     case ack(Ack)
     case error(ServerError)
     case pong(Pong)
@@ -29,7 +30,7 @@ public enum ServerEvent: Sendable, Equatable {
         "hello.ok", "pair.ok", "state.snapshot", "mode.changed", "notice", "level",
         "transcript.delta", "answer.started", "answer.delta", "answer.replace", "answer.done",
         "session.started", "session.stopped", "bookmark.added", "bookmark.removed", "deep.started", "deep.delta", "deep.done",
-        "screen.captured", "ack", "error", "pong",
+        "screen.captured", "export.ready", "ack", "error", "pong",
     ]
 
     public var type: String {
@@ -53,6 +54,7 @@ public enum ServerEvent: Sendable, Equatable {
         case .deepDelta: "deep.delta"
         case .deepDone: "deep.done"
         case .screenCaptured: "screen.captured"
+        case .exportReady: "export.ready"
         case .ack: "ack"
         case .error: "error"
         case .pong: "pong"
@@ -84,6 +86,7 @@ public enum ServerEvent: Sendable, Equatable {
         case "deep.delta": return .deepDelta(try data(DeepDelta.self))
         case "deep.done": return .deepDone(try data(DeepDone.self))
         case "screen.captured": return .screenCaptured(try data(ScreenCaptured.self))
+        case "export.ready": return .exportReady(try data(ExportReady.self))
         case "ack": return .ack(try data(Ack.self))
         case "error": return .error(try data(ServerError.self))
         case "pong": return .pong(try container.decodeIfPresent(Pong.self, forKey: key) ?? Pong())
@@ -112,6 +115,7 @@ public enum ServerEvent: Sendable, Equatable {
         case .deepDelta(let p): try container.encode(p, forKey: key)
         case .deepDone(let p): try container.encode(p, forKey: key)
         case .screenCaptured(let p): try container.encode(p, forKey: key)
+        case .exportReady(let p): try container.encode(p, forKey: key)
         case .ack(let p): try container.encode(p, forKey: key)
         case .error(let p): try container.encode(p, forKey: key)
         case .pong(let p): try container.encode(p, forKey: key)
@@ -208,6 +212,20 @@ extension ServerEvent {
             self.sessionId = sessionId
             self.endedAt = endedAt
             self.reason = reason
+        }
+    }
+
+    public struct ExportReady: Codable, Sendable, Equatable {
+        public let sessionId: String
+        public let url: String
+        public let filename: String
+        public let expiresAt: Int64
+
+        public init(sessionId: String, url: String, filename: String, expiresAt: Int64) {
+            self.sessionId = sessionId
+            self.url = url
+            self.filename = filename
+            self.expiresAt = expiresAt
         }
     }
 

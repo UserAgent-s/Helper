@@ -63,4 +63,11 @@ public enum CompanionCommandOutcome: Sendable, Equatable {
 public protocol CompanionHubDelegate: Sendable {
     func snapshot() async -> StateSnapshot
     func perform(_ action: ClientCommand.Action, deviceId: String) async -> CompanionCommandOutcome
+    func exportDocument(sessionId: String) async -> CompanionExportOutcome
+}
+
+extension CompanionHubDelegate {
+    public func exportDocument(sessionId: String) async -> CompanionExportOutcome {
+        .rejected(code: "not_available")
+    }
 }

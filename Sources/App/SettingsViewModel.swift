@@ -82,6 +82,11 @@ final class SettingsViewModel {
         set { overlaySwitch.setEnabled(newValue) }
     }
 
+    var autoSummaryOnStop: Bool {
+        get { settingsStore.autoSummaryOnStop }
+        set { settingsStore.autoSummaryOnStop = newValue }
+    }
+
     var meetingAutoExportEnabled: Bool {
         get { settingsStore.meetingAutoExportEnabled }
         set { settingsStore.meetingAutoExportEnabled = newValue }

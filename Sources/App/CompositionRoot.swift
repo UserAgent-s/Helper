@@ -44,6 +44,7 @@ final class CompositionRoot {
     let questionAnswerLogger: QuestionAnswerLogger
     let sessionRepository: any SessionRepository
     let sessionCoordinator: SessionCoordinator
+    let sessionFinalizer: SessionFinalizer
     let sessionRecorder: SessionRecorder
 
     let recordingModeController: RecordingModeController
@@ -192,12 +193,22 @@ final class CompositionRoot {
         let sessionRecorder = SessionRecorder(repository: sessionRepository, sessions: sessionContext)
         self.sessionRecorder = sessionRecorder
         let questionAnswerLogger = self.questionAnswerLogger
+        let sessionFinalizer = SessionFinalizer(
+            repository: sessionRepository,
+            summaries: summaryGenerating,
+            summaryStore: summaryRepository,
+            isAutoSummaryEnabled: { [settingsStore] in settingsStore.autoSummaryOnStop }
+        )
+        self.sessionFinalizer = sessionFinalizer
         let sessionCoordinator = SessionCoordinator(
             repository: sessionRepository,
             modes: modeCoordinator,
             beforeFinalize: {
                 await questionAnswerLogger.flush()
                 await sessionRecorder.flush()
+            },
+            afterFinish: { sessionID in
+                await sessionFinalizer.finalize(sessionID: sessionID)
             }
         )
         self.sessionCoordinator = sessionCoordinator
@@ -236,7 +247,8 @@ final class CompositionRoot {
         recordingTranscriptViewModel = RecordingTranscriptViewModel(recordingController: recordingController)
         let companionBridge = CompanionBridge(
             control: LiveCompanionDomain(modeCoordinator: modeCoordinator, answers: answersController, trigger: manualAnswerTrigger),
-            sessions: sessionCoordinator
+            sessions: sessionCoordinator,
+            exporter: SessionMarkdownExporter(repository: sessionRepository, summaries: summaryRepository)
         )
         let companionFeeds = LiveCompanionDomain.feeds(modeCoordinator: modeCoordinator, answers: answersController, captureHub: captureHub)
         let companionService = CompanionService(

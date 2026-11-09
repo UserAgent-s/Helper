@@ -326,6 +326,13 @@ struct SessionsDataSettingsTab: View {
                     .foregroundStyle(.secondary)
                 Button(loc("Открыть папку с записями")) { viewModel.openRecordingsFolder() }
             }
+            Section(loc("Итоги сессии")) {
+                Toggle(loc("Делать саммари после остановки сессии"), isOn: $viewModel.autoSummaryOnStop)
+                    .accessibilityIdentifier("settings.sessions.autoSummaryOnStop")
+                Text(loc("Выключено по умолчанию. При включении транскрипт сессии отправляется в OpenAI для саммари. Заголовок сессии создаётся локально всегда."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             Section(loc("Экспорт встреч")) {
                 Toggle(loc("Автоматически экспортировать встречу после записи"), isOn: $viewModel.meetingAutoExportEnabled)
                 Text(loc("Выключено по умолчанию. Транскрипт и аудио попадают в ~/Documents/UserAgent057/Exports. Рабочий стол не используется."))

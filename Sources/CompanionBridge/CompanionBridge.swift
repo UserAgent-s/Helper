@@ -39,9 +39,11 @@ public actor CompanionBridge: CompanionHubDelegate {
     public static let levelInterval: Duration = .milliseconds(250)
     public static let baseCapabilities = ["answer_now", "set_mode", "reset_context"]
     public static let sessionCapabilities = ["session.start", "session.stop", "session.resume", "star_last", "mark_moment"]
+    public static let exportCapabilities = ["export.request"]
 
     private let control: any CompanionDomainControlling
     private let sessions: (any SessionControlling)?
+    private let exporter: (any SessionDocumentExporting)?
     public nonisolated let capabilities: [String]
     private var session: SessionInfo?
     private var announcedSessionId: String?
@@ -66,12 +68,14 @@ public actor CompanionBridge: CompanionHubDelegate {
     public init(
         control: any CompanionDomainControlling,
         sessions: (any SessionControlling)? = nil,
+        exporter: (any SessionDocumentExporting)? = nil,
         now: @escaping @Sendable () -> Date = { Date() },
         makeAnswerId: @escaping @Sendable () -> String = { UUID().uuidString }
     ) {
         self.control = control
         self.sessions = sessions
-        capabilities = Self.baseCapabilities + (sessions == nil ? [] : Self.sessionCapabilities)
+        self.exporter = exporter
+        capabilities = Self.baseCapabilities + (sessions == nil ? [] : Self.sessionCapabilities) + (exporter == nil ? [] : Self.exportCapabilities)
         self.now = now
         self.makeAnswerId = makeAnswerId
         (outgoing, outgoingContinuation) = AsyncStream<ServerEvent>.makeStream()
@@ -158,10 +162,23 @@ public actor CompanionBridge: CompanionHubDelegate {
         case .sessionStart, .sessionStop, .sessionResume, .starLast, .markMoment:
             guard let sessions else { return .rejected(code: "not_available") }
             return await performSession(action, sessions: sessions)
-        case .expand, .captureScreen:
+        case .expand, .captureScreen, .exportRequest:
             return .rejected(code: "not_available")
         case .hello, .pair, .ping, .unknown:
             return .rejected(code: "unknown_command")
+        }
+    }
+
+    public func exportDocument(sessionId: String) async -> CompanionExportOutcome {
+        guard let exporter else { return .rejected(code: "not_available") }
+        guard let uuid = UUID(uuidString: sessionId) else { return .rejected(code: "unknown_session") }
+        do {
+            guard let document = try await exporter.exportDocument(sessionID: SessionID(rawValue: uuid)) else {
+                return .rejected(code: "unknown_session")
+            }
+            return .document(CompanionExportDocument(filename: document.filename, markdown: document.markdown))
+        } catch {
+            return .rejected(code: "export_failed")
         }
     }
 

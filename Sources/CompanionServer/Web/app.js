@@ -1,7 +1,7 @@
 import { createSupervisor } from "./connection.js";
 import { describeClose, helloCommand, makeCommand, pairCommand, pairingCodeFromHash, parseEnvelope, pingCommand, socketURL } from "./protocol.js";
 import { applyEnvelope, applyLocal, hotkeyAction, initialState, pointText, shouldHandleHotkey } from "./store.js";
-import { copyText, createView } from "./ui.js";
+import { copyText, createView, startDownload } from "./ui.js";
 
 const TOKEN_KEY = "ua057.deviceToken";
 
@@ -100,6 +100,11 @@ function scheduleRender() {
 
 function update(next) {
   state = next;
+  if (state.download) {
+    const download = state.download;
+    state = applyLocal(state, { type: "downloadStarted" });
+    startDownload(document, download);
+  }
   scheduleRender();
 }
 

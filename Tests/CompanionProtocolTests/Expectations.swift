@@ -43,6 +43,7 @@ enum Expectations {
         "deep.started": envelope(14, .deepStarted(.init(requestId: "deep_1", pointId: "resp_2.0", model: .sonnet, format: .steps, language: .both))),
         "deep.delta": envelope(15, .deepDelta(.init(requestId: "deep_1", offset: 0, text: "Step one"))),
         "deep.done": envelope(16, .deepDone(.init(requestId: "deep_1", status: .failed, errorCode: "rate_limited"))),
+        "export.ready": envelope(23, .exportReady(.init(sessionId: "8F0C6B2A-3D4E-4F50-9A1B-2C3D4E5F6A7B", url: "/export/8F0C6B2A-3D4E-4F50-9A1B-2C3D4E5F6A7B.md?t=tkt_base64url_value", filename: "UserAgent057-2025-11-09-1500.md", expiresAt: 1_762_700_120_023))),
         "screen.captured": envelope(17, .screenCaptured(.init(captureId: "cap_1", capturedAt: 1_762_700_000_017, charCount: 512, preview: "func solve("))),
         "ack": envelope(18, .ack(.init(cmdId: "c-01", ok: false, code: "not_available", message: "expand is not available yet"))),
         "error": envelope(19, .error(.init(code: "unauthorized", fatal: true))),
@@ -62,6 +63,7 @@ enum Expectations {
         "session.stop": ClientCommand(cmdId: "c-ses-stop", action: .sessionStop),
         "session.resume": ClientCommand(cmdId: "c-ses-resume", action: .sessionResume(.init(sessionId: "8F0C6B2A-3D4E-4F50-9A1B-2C3D4E5F6A7B"))),
         "star_last": ClientCommand(cmdId: "c-star", action: .starLast),
+        "export.request": ClientCommand(cmdId: "c-export", action: .exportRequest(.init(sessionId: "8F0C6B2A-3D4E-4F50-9A1B-2C3D4E5F6A7B"))),
         "mark_moment": ClientCommand(cmdId: "c-moment", action: .markMoment(.init(note: "вопрос про шардирование"))),
     ]
 }

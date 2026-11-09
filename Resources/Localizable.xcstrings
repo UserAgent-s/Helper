@@ -3727,6 +3727,75 @@
           }
         }
       }
+    },
+    "Итоги сессии": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Итоги сессии"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Session wrap-up"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Підсумки сесії"
+          }
+        }
+      }
+    },
+    "Делать саммари после остановки сессии": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Делать саммари после остановки сессии"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Summarize after a session stops"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Робити саммарі після зупинки сесії"
+          }
+        }
+      }
+    },
+    "Выключено по умолчанию. При включении транскрипт сессии отправляется в OpenAI для саммари. Заголовок сессии создаётся локально всегда.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выключено по умолчанию. При включении транскрипт сессии отправляется в OpenAI для саммари. Заголовок сессии создаётся локально всегда."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off by default. When on, the session transcript is sent to OpenAI for a summary. The session title is always created locally."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вимкнено за замовчуванням. Якщо увімкнено, транскрипт сесії надсилається в OpenAI для саммарі. Заголовок сесії завжди створюється локально."
+          }
+        }
+      }
     }
   }
 }

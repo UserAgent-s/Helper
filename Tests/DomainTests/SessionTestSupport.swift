@@ -6,6 +6,11 @@ actor InMemorySessionRepository: SessionRepository {
     private(set) var storedBookmarks: [SessionBookmark] = []
     var completedAnswers: [SessionID: [UUID]] = [:]
     var failCreate = false
+    private(set) var questionAnswers: [SessionID: [QuestionAnswerPair]] = [:]
+
+    func setQuestionAnswers(_ pairs: [QuestionAnswerPair], for sessionID: SessionID) {
+        questionAnswers[sessionID] = pairs
+    }
 
     func setCompletedAnswers(_ answers: [UUID], for sessionID: SessionID) {
         completedAnswers[sessionID] = answers
@@ -75,7 +80,7 @@ actor InMemorySessionRepository: SessionRepository {
 
     func detail(sessionID: SessionID) async throws -> SessionDetail? {
         guard let session = sessions[sessionID] else { return nil }
-        return SessionDetail(session: session, utterances: [], questionAnswers: [], bookmarks: storedBookmarks.filter { $0.sessionID == sessionID }, expansions: [], screenContexts: [])
+        return SessionDetail(session: session, utterances: utterances[sessionID] ?? [], questionAnswers: questionAnswers[sessionID] ?? [], bookmarks: storedBookmarks.filter { $0.sessionID == sessionID }, expansions: [], screenContexts: [])
     }
 
     func addBookmark(_ bookmark: SessionBookmark) async throws {

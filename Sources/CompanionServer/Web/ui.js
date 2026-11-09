@@ -1,4 +1,4 @@
-import { answerSegments, sessionCommand, sessionElapsed } from "./store.js";
+import { answerSegments, exportTarget, sessionCommand, sessionElapsed } from "./store.js";
 
 const MODE_LABELS = { passive: "Пассивный", answers: "Ответы", recording: "Запись" };
 const PHASE_LABELS = { idle: "ожидание", starting: "запуск", active: "активен", stopping: "остановка", failed: "ошибка" };
@@ -17,6 +17,7 @@ const ERROR_TEXT = {
   no_active_session: "Сессия не запущена.",
   no_completed_answer: "Пока нет готового ответа для отметки.",
   bookmark_failed: "Не удалось сохранить отметку.",
+  export_failed: "Не удалось подготовить экспорт.",
   unauthorized: "Устройство не сопряжено.",
   throttled: "Слишком много попыток. Подождите минуту.",
   too_many_clients: "Подключено слишком много устройств."
@@ -93,6 +94,7 @@ export function createView(doc, handlers) {
     sessionToggle: byId("session-toggle"),
     sessionStar: byId("session-star"),
     sessionTimer: byId("session-timer"),
+    sessionExport: byId("session-export"),
     sessionFeedback: byId("session-feedback"),
     modeButtons: Array.prototype.slice.call(doc.querySelectorAll("[data-mode]")),
     pairing: byId("pairing"),
@@ -112,6 +114,12 @@ export function createView(doc, handlers) {
   elements.reset.addEventListener("click", () => handlers.command("reset_context"));
   elements.sessionToggle.addEventListener("click", () => handlers.command(elements.sessionToggle.dataset.command || "session.start"));
   elements.sessionStar.addEventListener("click", () => handlers.command("star_last"));
+  elements.sessionExport.addEventListener("click", () => {
+    const target = elements.sessionExport.dataset.session;
+    if (target) {
+      handlers.command("export.request", { sessionId: target });
+    }
+  });
   for (const button of elements.modeButtons) {
     button.addEventListener("click", () => handlers.command("set_mode", { mode: button.dataset.mode }));
   }
@@ -205,6 +213,9 @@ export function createView(doc, handlers) {
     elements.sessionStar.disabled = !session || !can("star_last");
     elements.sessionTimer.textContent = session ? sessionElapsed(session.startedAt, view.now || Date.now()) : "—";
     elements.sessionFeedback.textContent = session ? bookmarkText(session.lastBookmark) : "";
+    const target = exportTarget(state);
+    elements.sessionExport.dataset.session = target || "";
+    elements.sessionExport.disabled = !target || !can("export.request");
     elements.pairing.hidden = !view.showPairing;
     if (view.pairingCode && !elements.pairingCode.value) {
       elements.pairingCode.value = view.pairingCode;
@@ -217,6 +228,21 @@ export function createView(doc, handlers) {
     renderTranscript(state);
     renderNotices(state);
   };
+}
+
+export function startDownload(doc, download) {
+  if (!download || typeof download.url !== "string" || download.url.indexOf("/export/") !== 0) {
+    return false;
+  }
+  const link = doc.createElement("a");
+  link.href = download.url;
+  link.setAttribute("download", download.filename || "session.md");
+  link.rel = "noopener";
+  link.className = "clipboard-buffer";
+  doc.body.appendChild(link);
+  link.click();
+  doc.body.removeChild(link);
+  return true;
 }
 
 export function copyText(doc, text) {

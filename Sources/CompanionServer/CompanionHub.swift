@@ -26,6 +26,7 @@ public actor CompanionHub {
     private var acks: [String: Task<ServerEvent.Ack, Never>] = [:]
     private var ackOrder: [String] = []
     private var revocationTask: Task<Void, Never>?
+    private var exportTickets: CompanionExportTickets
     private(set) var performedCommandCount = 0
 
     public init(
@@ -34,8 +35,10 @@ public actor CompanionHub {
         serverVersion: String,
         helloTimeout: Duration = .seconds(10),
         replayCapacity: Int = 2000,
+        exportTickets: CompanionExportTickets = CompanionExportTickets(),
         now: @escaping @Sendable () -> Date = { Date() }
     ) {
+        self.exportTickets = exportTickets
         self.replay = ReplayBuffer(capacity: replayCapacity)
         self.pairing = pairing
         self.delegate = delegate
@@ -129,6 +132,12 @@ public actor CompanionHub {
             send(.pong(.init(nonce: ping.nonce)), to: id)
         case .unknown:
             send(.ack(.init(cmdId: command.cmdId, ok: false, code: "unknown_command")), to: id)
+        case .exportRequest(let request):
+            guard let deviceId = clients[id]?.deviceId else {
+                fail(id, code: "unauthorized", closeCode: CompanionCloseCode.unauthorized)
+                return
+            }
+            await handleExport(request, cmdId: command.cmdId, deviceId: deviceId, from: id)
         default:
             guard let deviceId = clients[id]?.deviceId else {
                 fail(id, code: "unauthorized", closeCode: CompanionCloseCode.unauthorized)
@@ -206,6 +215,33 @@ public actor CompanionHub {
         }
     }
 
+    public func redeemExport(sessionId: String, ticket: String) -> CompanionExportDocument? {
+        exportTickets.redeem(sessionId: sessionId, ticket: ticket, now: now())
+    }
+
+    public var outstandingExportTickets: Int {
+        exportTickets.count
+    }
+
+    private func handleExport(_ request: ClientCommand.ExportRequest, cmdId: String, deviceId: String, from id: UUID) async {
+        performedCommandCount += 1
+        switch await delegate.exportDocument(sessionId: request.sessionId) {
+        case .rejected(let code):
+            send(.ack(.init(cmdId: cmdId, ok: false, code: code)), to: id)
+        case .document(let document):
+            guard clients[id]?.deviceId == deviceId else { return }
+            let issued = exportTickets.issue(sessionId: request.sessionId, deviceId: deviceId, document: document, now: now())
+            let ready = ServerEvent.ExportReady(
+                sessionId: request.sessionId,
+                url: "/export/\(request.sessionId).md?t=\(issued.ticket)",
+                filename: document.filename,
+                expiresAt: Int64((issued.expiresAt.timeIntervalSince1970 * 1000).rounded())
+            )
+            send(.exportReady(ready), to: id)
+            send(.ack(.init(cmdId: cmdId, ok: true)), to: id)
+        }
+    }
+
     private func perform(_ command: ClientCommand, deviceId: String) async -> ServerEvent.Ack {
         let key = deviceId + "\u{1F}" + command.cmdId
         if let existing = acks[key] {
@@ -230,6 +266,10 @@ public actor CompanionHub {
     }
 
     private func apply(_ revocation: PairingRevocation) {
+        switch revocation {
+        case .device(let deviceId): exportTickets.revoke(deviceId: deviceId)
+        case .all: exportTickets.revoke(deviceId: nil)
+        }
         for (id, client) in clients {
             guard let deviceId = client.deviceId else { continue }
             if case .device(let revoked) = revocation, revoked != deviceId { continue }

@@ -34,6 +34,7 @@ final class AppSettingsStore: @unchecked Sendable {
         static let companionPort = "com.local.UserAgent057.settings.companion.port"
         static let companionLoopbackOnly = "com.local.UserAgent057.settings.companion.loopbackOnly"
         static let meetingAutoExportEnabled = "com.local.UserAgent057.settings.export.autoExportEnabled"
+        static let autoSummaryOnStop = "com.local.UserAgent057.settings.sessions.autoSummaryOnStop"
     }
 
     init(defaults: UserDefaults = .standard) {
@@ -124,6 +125,11 @@ final class AppSettingsStore: @unchecked Sendable {
     var outputRoutePolicy: OutputRoutePolicy {
         get { OutputRoutePolicy(rawValue: defaults.string(forKey: Keys.outputRoutePolicy) ?? "") ?? .auto }
         set { defaults.set(newValue.rawValue, forKey: Keys.outputRoutePolicy) }
+    }
+
+    var autoSummaryOnStop: Bool {
+        get { defaults.bool(forKey: Keys.autoSummaryOnStop) }
+        set { defaults.set(newValue, forKey: Keys.autoSummaryOnStop) }
     }
 
     var meChannelEnabled: Bool {

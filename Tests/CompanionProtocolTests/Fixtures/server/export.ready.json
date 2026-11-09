@@ -1,0 +1,12 @@
+{
+  "data": {
+    "expiresAt": 1762700120023,
+    "filename": "UserAgent057-2025-11-09-1500.md",
+    "sessionId": "8F0C6B2A-3D4E-4F50-9A1B-2C3D4E5F6A7B",
+    "url": "/export/8F0C6B2A-3D4E-4F50-9A1B-2C3D4E5F6A7B.md?t=tkt_base64url_value"
+  },
+  "seq": 23,
+  "ts": 1762700000023,
+  "type": "export.ready",
+  "v": 1
+}

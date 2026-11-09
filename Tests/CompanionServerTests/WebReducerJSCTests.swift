@@ -285,6 +285,27 @@ enum ServerFixtures {
         #expect(try module.run("return sessionCommand(globalThis.state);") as? String == "session.start")
     }
 
+    @Test func exportReadyQueuesOneDownloadForLastSession() throws {
+        let module = try store()
+        #expect(try module.run("return exportTarget(globalThis.state);") is NSNull)
+        try apply(module, [try ServerFixtures.json("session.started")])
+        #expect(try module.run("return exportTarget(globalThis.state);") as? String == "ses_2")
+        try apply(module, [envelope(40, "session.stopped", #"{"sessionId":"ses_2","endedAt":2,"reason":"user"}"#)])
+        #expect(try state(module)["session"] is NSNull)
+        #expect(try module.run("return exportTarget(globalThis.state);") as? String == "ses_2")
+
+        let seqBefore = try state(module)["lastSeq"] as? Int
+        try apply(module, [try ServerFixtures.json("export.ready")])
+        let download = try #require(try state(module)["download"] as? [String: Any])
+        #expect(download["filename"] as? String == "UserAgent057-2025-11-09-1500.md")
+        #expect((download["url"] as? String)?.hasPrefix("/export/") == true)
+        #expect(try state(module)["lastSeq"] as? Int == seqBefore)
+        #expect(try module.run("globalThis.state = applyLocal(globalThis.state, { type: 'downloadStarted' }); return globalThis.state.download;") is NSNull)
+
+        try apply(module, [envelope(41, "export.ready", #"{"sessionId":"ses_2","url":"/elsewhere/x.md","filename":"x.md","expiresAt":1}"#)])
+        #expect(try state(module)["download"] is NSNull)
+    }
+
     @Test func protocolModuleBuildsCommandsWithGetRandomValues() throws {
         let prelude = "globalThis.crypto = { getRandomValues: function (array) { for (var i = 0; i < array.length; i++) { array[i] = i * 17; } return array; } };"
         let module = try WebModuleContext(modules: ["protocol.js"], prelude: prelude)

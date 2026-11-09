@@ -20,6 +20,11 @@ actor FakeHubDelegate: CompanionHubDelegate {
         if delay > .zero { try? await Task.sleep(for: delay) }
         return .ok
     }
+
+    func exportDocument(sessionId: String) async -> CompanionExportOutcome {
+        guard sessionId == "ses-ok" else { return .rejected(code: "unknown_session") }
+        return .document(CompanionExportDocument(filename: "UserAgent057-2025-11-09-1500.md", markdown: "# Сессия\n"))
+    }
 }
 
 struct TimedOut: Error {}

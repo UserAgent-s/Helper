@@ -1,6 +1,6 @@
 export const TRANSCRIPT_LIMIT = 40;
 export const NOTICE_LIMIT = 10;
-export const PER_CLIENT_TYPES = ["hello.ok", "pair.ok", "ack", "error", "pong"];
+export const PER_CLIENT_TYPES = ["hello.ok", "pair.ok", "ack", "error", "pong", "export.ready"];
 
 export function initialState() {
   return {
@@ -19,6 +19,8 @@ export function initialState() {
     capabilities: [],
     overlayEnabled: true,
     session: null,
+    lastSessionId: null,
+    download: null,
     pending: {},
     lastError: null
   };
@@ -105,6 +107,13 @@ export function sessionElapsed(startedAt, now) {
   return hours > 0 ? hours + ":" + pad(minutes) + ":" + pad(seconds) : pad(minutes) + ":" + pad(seconds);
 }
 
+export function exportTarget(state) {
+  if (state.session) {
+    return state.session.sessionId;
+  }
+  return state.lastSessionId || null;
+}
+
 export function sessionCommand(state) {
   return state.session ? "session.stop" : "session.start";
 }
@@ -149,6 +158,11 @@ function applyPerClient(state, envelope) {
     }
     case "error":
       return { ...state, lastError: { code: data.code, message: data.message || null, fatal: data.fatal === true } };
+    case "export.ready":
+      if (typeof data.url !== "string" || data.url.indexOf("/export/") !== 0) {
+        return state;
+      }
+      return { ...state, download: { sessionId: data.sessionId, url: data.url, filename: data.filename || "session.md", expiresAt: data.expiresAt } };
     default:
       return state;
   }
@@ -202,7 +216,7 @@ export function applyEnvelope(state, envelope) {
     case "session.started":
       return { ...next, session: sessionFrom(data, next.session) };
     case "session.stopped":
-      return next.session && next.session.sessionId !== data.sessionId ? next : { ...next, session: null };
+      return next.session && next.session.sessionId !== data.sessionId ? next : { ...next, session: null, lastSessionId: data.sessionId };
     case "bookmark.added":
       return { ...next, session: applyBookmark(next.session, data, true) };
     case "bookmark.removed":
@@ -224,6 +238,8 @@ export function applyLocal(state, action) {
       return { ...state, pairedToken: null };
     case "dismissError":
       return { ...state, lastError: null };
+    case "downloadStarted":
+      return { ...state, download: null };
     case "selectPoint": {
       const count = state.answer ? state.answer.points.length : 0;
       if (action.index < 0 || action.index >= count) {

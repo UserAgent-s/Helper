@@ -152,12 +152,43 @@ struct CompanionHTTPHandler: HTTPHandler {
             return response
         case "/healthz":
             return Self.response(.ok, body: "ok")
+        case let path where path.hasPrefix(Self.exportPrefix):
+            return await export(path: path, ticket: request.query["t"], remote: remote)
         default:
             guard let asset = CompanionWebAssets.asset(forPath: request.path) else {
                 return Self.response(.notFound, body: "not found")
             }
             return Self.response(.ok, data: asset.data, contentType: asset.contentType)
         }
+    }
+
+    static let exportPrefix = "/export/"
+    static let exportSuffix = ".md"
+
+    static func exportSessionId(fromPath path: String) -> String? {
+        guard path.hasPrefix(exportPrefix), path.hasSuffix(exportSuffix) else { return nil }
+        let sessionId = String(path.dropFirst(exportPrefix.count).dropLast(exportSuffix.count))
+        guard !sessionId.isEmpty, sessionId.utf8.count <= CompanionLimits.maxIdentifierLength,
+              sessionId.unicodeScalars.allSatisfy({ $0.isASCII && (CharacterSet.alphanumerics.contains($0) || "._-".unicodeScalars.contains($0)) })
+        else { return nil }
+        return sessionId
+    }
+
+    private func export(path: String, ticket: String?, remote: String) async -> HTTPResponse {
+        guard let sessionId = Self.exportSessionId(fromPath: path), let ticket,
+              let document = await hub.redeemExport(sessionId: sessionId, ticket: ticket)
+        else {
+            await hub.recordRejectedRequest(from: remote)
+            return Self.response(.notFound, body: "not found")
+        }
+        var response = Self.response(.ok, data: Data(document.markdown.utf8), contentType: "text/markdown; charset=utf-8")
+        response.headers[.contentDisposition] = Self.attachment(filename: document.filename)
+        return response
+    }
+
+    static func attachment(filename: String) -> String {
+        let safe = String(filename.unicodeScalars.filter { $0.isASCII && (CharacterSet.alphanumerics.contains($0) || "._-".unicodeScalars.contains($0)) }.map(Character.init))
+        return "attachment; filename=\"\(safe.isEmpty ? "session.md" : safe)\""
     }
 
     static func remoteIP(_ request: HTTPRequest) -> String? {

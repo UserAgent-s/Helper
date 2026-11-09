@@ -27,12 +27,13 @@ public struct ClientCommand: Sendable, Equatable {
         case sessionResume(SessionResume)
         case starLast
         case markMoment(MarkMoment)
+        case exportRequest(ExportRequest)
         case unknown(name: String)
 
         public static let knownNames: [String] = [
             "hello", "pair", "ping", "answer_now", "set_mode", "reset_context",
             "expand", "capture_screen", "session.start", "session.stop",
-            "session.resume", "star_last", "mark_moment",
+            "session.resume", "star_last", "mark_moment", "export.request",
         ]
 
         public var name: String {
@@ -50,6 +51,7 @@ public struct ClientCommand: Sendable, Equatable {
             case .sessionResume: "session.resume"
             case .starLast: "star_last"
             case .markMoment: "mark_moment"
+            case .exportRequest: "export.request"
             case .unknown(let name): name
             }
         }
@@ -132,6 +134,14 @@ public struct ClientCommand: Sendable, Equatable {
             self.note = note
         }
     }
+
+    public struct ExportRequest: Codable, Sendable, Equatable {
+        public let sessionId: String
+
+        public init(sessionId: String) {
+            self.sessionId = sessionId
+        }
+    }
 }
 
 extension ClientCommand: Codable {
@@ -165,6 +175,7 @@ extension ClientCommand: Codable {
         case "session.resume": action = .sessionResume(try args(SessionResume.self))
         case "star_last": action = .starLast
         case "mark_moment": action = .markMoment(try container.decodeIfPresent(MarkMoment.self, forKey: .args) ?? MarkMoment())
+        case "export.request": action = .exportRequest(try args(ExportRequest.self))
         default: action = .unknown(name: name)
         }
     }
@@ -183,6 +194,7 @@ extension ClientCommand: Codable {
         case .sessionStart(let p): try container.encode(p, forKey: .args)
         case .sessionResume(let p): try container.encode(p, forKey: .args)
         case .markMoment(let p): try container.encode(p, forKey: .args)
+        case .exportRequest(let p): try container.encode(p, forKey: .args)
         case .answerNow, .resetContext, .captureScreen, .sessionStop, .starLast, .unknown: break
         }
     }
@@ -229,6 +241,8 @@ extension ClientCommand {
             if let note = mark.note {
                 try Self.bounded(note, field: "note", limit: CompanionLimits.maxMomentNoteLength, allowEmpty: true)
             }
+        case .exportRequest(let request):
+            try Self.identifier(request.sessionId, field: "sessionId", limit: CompanionLimits.maxIdentifierLength)
         case .unknown(let name):
             try Self.bounded(name, field: "name", limit: CompanionLimits.maxCommandNameLength, allowEmpty: false)
         case .answerNow, .setMode, .resetContext, .captureScreen, .sessionStop, .starLast:

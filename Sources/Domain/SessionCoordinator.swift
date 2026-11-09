@@ -7,6 +7,7 @@ public actor SessionCoordinator: SessionControlling, SessionContextProviding {
     private let idleTimeout: TimeInterval
     private let idleCheckInterval: Duration
     private let beforeFinalize: @Sendable () async -> Void
+    private let afterFinish: @Sendable (SessionID) async -> Void
 
     private var state: SessionState = .idle {
         didSet { if state != oldValue { stateBroadcaster.yield(state) } }
@@ -28,7 +29,8 @@ public actor SessionCoordinator: SessionControlling, SessionContextProviding {
         now: @escaping @Sendable () -> Date = { Date() },
         idleTimeout: TimeInterval = 30 * 60,
         idleCheckInterval: Duration = .seconds(60),
-        beforeFinalize: @escaping @Sendable () async -> Void = {}
+        beforeFinalize: @escaping @Sendable () async -> Void = {},
+        afterFinish: @escaping @Sendable (SessionID) async -> Void = { _ in }
     ) {
         self.repository = repository
         self.modes = modes
@@ -36,6 +38,7 @@ public actor SessionCoordinator: SessionControlling, SessionContextProviding {
         self.idleTimeout = idleTimeout
         self.idleCheckInterval = idleCheckInterval
         self.beforeFinalize = beforeFinalize
+        self.afterFinish = afterFinish
     }
 
     public var currentState: SessionState { state }
@@ -190,6 +193,7 @@ public actor SessionCoordinator: SessionControlling, SessionContextProviding {
         await beforeFinalize()
         try? await repository.finish(sessionID: id, at: now())
         let discarded = (try? await repository.deleteIfEmpty(sessionID: id)) ?? false
+        if !discarded { await afterFinish(id) }
         state = .idle
         eventBroadcaster.yield(.stopped(id, reason: reason))
         if discarded { eventBroadcaster.yield(.discarded(id)) }

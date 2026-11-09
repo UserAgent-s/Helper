@@ -1196,3 +1196,63 @@ M1 по коду закрыт (S1.1–S1.7). Ручной чек-лист M1 в 
   - золотые фикстуры: +5;
   - XCUITest `SessionMenuBarUITests.testSessionStartStopFromMenuBar` (старт и стоп из меню, после Stop нет диалогов, листов и новых окон). Он компилируется в `build-for-testing` и запускается владельцем через `make ui-test`.
 
+
+### S4.6 Финализация: заголовок, Markdown-экспорт, саммари по opt-in
+
+- `SessionTitleHeuristic` (Domain): «ДД.ММ · первый вопрос» по самому раннему Q&A с непустым вопросом, иначе «Звонок ЧЧ:ММ». Пробелы и переводы строк схлопываются. Вопрос длиннее 60 символов режется по последнему пробелу и получает «…». Дата считается григорианским календарём в заданном часовом поясе без `DateFormatter`, чтобы тесты не зависели от локали.
+  - Отклонение от плана: файл лежит в `Sources/Domain`, а не в `Sources/Summary`. Финализатор живёт в Domain, а Domain не может зависеть от Summary.
+- `SessionFinalizer` (Domain, actor). `SessionCoordinator` получил хук `afterFinish`. Он вызывается внутри `performFinish` после `finish` и `deleteIfEmpty` и до события `.stopped`, только для неудалённой сессии. Поэтому к моменту `.stopped` заголовок уже записан.
+  - Заголовок перезаписывается, только если источника нет или он `heuristic`. Заголовок пользователя не трогается. После resume и повторного стопа эвристика пересчитывается.
+  - Саммари запускается в отдельной задаче, чтобы не держать последовательную цепочку координатора. Условия запуска: включена настройка `autoSummaryOnStop`, есть генератор и хранилище, в сессии есть реплики.
+  - Ошибка саммари увеличивает счётчик `summaryFailureCount` и больше ни на что не влияет: сессия остаётся `completed` с заголовком.
+- Саммари использует существующий `SummaryGenerating.summarize(meetingID:)`, отдельного `summarize(sessionID:)` нет. `SessionID` — это `MeetingID`, реплики сессии лежат в той же таблице `utterances` с `source` `local`/`remote`, а `finish` ставит `completed`. Поэтому `OpenAIResponsesSummaryClient` работает с сессией без изменений. Результат сохраняется через `SummaryRepository.save`.
+- Настройка «Делать саммари после остановки сессии»:
+  - ключ `com.local.UserAgent057.settings.sessions.autoSummaryOnStop`, по умолчанию выключена;
+  - находится на вкладке «Сессии и данные», в разделе «Итоги сессии»;
+  - подпись предупреждает, что транскрипт уйдёт в OpenAI;
+  - строки добавлены в ru, en и uk.
+  Без opt-in финализатор не делает сетевых вызовов и не пишет файлов.
+- `SessionMarkdownRenderer` (Summary) — чистая функция от `SessionDetail`, необязательного `MeetingSummary`, `SessionMarkdownLabels` (`.russian` или `.english`) и часового пояса.
+  - Порядок разделов: заголовок с метаданными (начало, длительность, число вопросов и отметок); «Саммари»; «Отмеченное» (★ со ссылкой на текст вопроса, ⚑ с заметкой); «Вопросы и ответы» с раскрытиями под ответом; «Транскрипт» с подписями «Я» / «Собеседник» и строкой перевода; «Тексты экрана». Пустые разделы не выводятся.
+  - Время показывается смещением от начала сессии (`+MM:SS` или `+Ч:MM:SS`). Так документ не зависит от часового пояса, кроме строки «Начало».
+  - Заголовки саммари и раскрытий понижаются, чтобы не ломать иерархию. Внутри fenced-блоков заголовки не трогаются.
+  - Текст экрана оборачивается в fence длиннее самой длинной серии обратных кавычек внутри.
+- `SessionMarkdownExporter` (Summary) реализует `SessionDocumentExporting` (Domain): читает `detail` и саммари и называет файл `UserAgent057-ГГГГ-ММ-ДД-ЧЧММ.md`. Имя только ASCII, поэтому `Content-Disposition` без `filename*`.
+- Протокол: команда `export.request {sessionId}` и событие `export.ready {sessionId, url, filename, expiresAt}`.
+  - `export.ready` персональное: уходит только запросившему клиенту и не попадает в буфер повтора, так что тикет не реплеится другому устройству.
+  - Веб не двигает по нему `lastSeq`.
+- `CompanionHub` обрабатывает `export.request` сам, а не через `perform`: ответ содержит одноразовый тикет, который выдаёт хаб.
+  - Сначала хаб запрашивает документ у делегата (`CompanionHubDelegate.exportDocument`; реализация по умолчанию возвращает `not_available`). Затем выдаёт тикет и отправляет `export.ready` и `ack ok`.
+  - Кэш идемпотентности по `cmdId` для экспорта не используется: повтор команды выдаёт новый тикет.
+  - Коды отказа: `unknown_session`, `export_failed`, `not_available`.
+- `CompanionExportTickets`:
+  - тикет — 32 случайных байта в base64url; в памяти хранится только SHA-256;
+  - тикет привязан к сессии и устройству, живёт 120 с; одновременно не больше 8 тикетов, при переполнении вытесняется самый старый;
+  - тикет одноразовый и сгорает при первой попытке, даже если `sessionId` не совпал;
+  - при отзыве устройства его тикеты удаляются.
+  Документ рендерится в момент запроса и хранится вместе с тикетом. GET отдаёт снимок и ничего не перечитывает.
+- Маршрут `GET /export/{sid}.md?t=<ticket>` в `FlyingFoxCompanionTransport`:
+  - те же `RequestGuard` и throttle, что и у остальных маршрутов;
+  - `sid` только из `[A-Za-z0-9._-]`;
+  - успех: 200 с `text/markdown; charset=utf-8`, `Content-Disposition: attachment` и общими заголовками безопасности, включая `no-store`;
+  - любая неудача: 404 и запись отказа в throttle.
+- `CompanionBridge(control:sessions:exporter:)`: с экспортёром в `capabilities` появляется `export.request`. Невалидный UUID и отсутствующая сессия дают `unknown_session`, исключение экспортёра — `export_failed`.
+- Веб:
+  - кнопка `.md` в блоке сессии экспортирует текущую сессию или последнюю остановленную (`lastSessionId` запоминается по `session.stopped`);
+  - `export.ready` кладёт в состояние `download` только для URL, начинающегося с `/export/`;
+  - `app.js` сразу снимает `download` (`downloadStarted`) и кликает по временной ссылке `<a download>`;
+  - файл скачивается на устройство с панелью, на Mac ничего не пишется.
+- Тесты:
+  - `titleHeuristicFallbacks`;
+  - `SessionFinalizerTests`: 6, в том числе `finalizerNoNetworkWhenAutoSummaryOff`, `finalizerSummaryFailureKeepsSessionCompleted` и `titlePresentImmediatelyAfterStop`;
+  - `sessionMarkdownGoldenRussian` и `sessionMarkdownGoldenEnglish` с фикстурами `Tests/SummaryTests/Fixtures/session-{ru,en}.md`. Покрыты звезда, момент, раскрытие, перевод, экран, саммари и прерванный ответ. Фикстуры перегенерируются через `UA057_UPDATE_GOLDEN=1`;
+  - экспортёр на SQLite;
+  - `ExportTicketStoreTests` (в том числе `exportTicketSingleUse`);
+  - `ExportRouteIntegrationTests`: реальный HTTP, второй GET даёт 404;
+  - `CompanionBridgeExportTests`: 2;
+  - `WebReducerJSCTests.exportReadyQueuesOneDownloadForLastSession`;
+  - золотые фикстуры протокола: +2.
+- Не сделано в этом шаге:
+  - `session.start {title}` по-прежнему игнорируется;
+  - нет экрана истории для экспорта прошлых сессий: веб экспортирует только текущую или последнюю сессию;
+  - саммари не обновляет заголовок (`titleSource` `summary` не используется).
