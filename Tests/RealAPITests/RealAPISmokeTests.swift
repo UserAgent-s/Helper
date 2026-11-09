@@ -1,34 +1,10 @@
-import AVFoundation
 import Diagnostics
 import Domain
 import Foundation
 import RealtimeClient
 import Testing
 
-private struct EnvironmentCredentialProvider: RealtimeCredentialProviding {
-    func currentCredential() async throws -> RealtimeCredential {
-        RealtimeCredential(apiKey: ProcessInfo.processInfo.environment["OPENAI_API_KEY"] ?? "")
-    }
-}
-
-private enum SpeechFixture {
-    static func pcm24k(_ text: String) throws -> [Int16] {
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("ua057-\(UUID().uuidString).wav")
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/say")
-        process.arguments = ["-o", url.path, "--file-format=WAVE", "--data-format=LEI16@24000", text]
-        try process.run()
-        process.waitUntilExit()
-        defer { try? FileManager.default.removeItem(at: url) }
-        let file = try AVAudioFile(forReading: url, commonFormat: .pcmFormatInt16, interleaved: true)
-        let buffer = try #require(AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: AVAudioFrameCount(file.length)))
-        try file.read(into: buffer)
-        let channel = try #require(buffer.int16ChannelData)
-        return Array(UnsafeBufferPointer(start: channel[0], count: Int(buffer.frameLength)))
-    }
-}
-
-@Suite(.enabled(if: ProcessInfo.processInfo.environment["RUN_REAL_API_TESTS"] == "1"), .serialized)
+@Suite(.enabled(if: RealAPIEnvironment.isEnabled), .serialized)
 struct RealAPISmokeTests {
     private func makeClient() -> OpenAIRealtimeAnswerClient {
         OpenAIRealtimeAnswerClient(credentialProviding: EnvironmentCredentialProvider(), latencyRecording: NoOpLatencyRecorder())
