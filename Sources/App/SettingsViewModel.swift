@@ -12,7 +12,6 @@ import Transcription
 final class SettingsViewModel {
     private let settingsStore: AppSettingsStore
     private let secretStoring: any SecretStoring
-    private let preferredAudioSource: any PreferredAudioSourceStoring
     private let permissionsChecking: any PermissionsChecking
     private let recordingsDirectory: URL
     private let overlayPreferences = OverlayPreferencesStore()
@@ -25,11 +24,7 @@ final class SettingsViewModel {
         hasStoredAPIKey ? loc("сохранён") : loc("не задан")
     }
 
-    var preferredAudioSourceBundleID = ""
-    private(set) var runningApplications: [(name: String, bundleID: String)] = []
-    var microphoneDeviceUID = ""
-    private(set) var inputDevices: [AudioDeviceInfo] = []
-    private let audioDeviceCatalog: (any AudioDeviceCataloging)?
+    let audio: AudioSettingsViewModel
 
     private(set) var screenRecordingStatus = PermissionStatus.notDetermined
     private(set) var microphoneStatus = PermissionStatus.notDetermined
@@ -69,13 +64,6 @@ final class SettingsViewModel {
         set { settingsStore.systemAudioBackend = newValue }
     }
 
-    var outputRoutePolicy: OutputRoutePolicy {
-        get { settingsStore.outputRoutePolicy }
-        set { settingsStore.outputRoutePolicy = newValue }
-    }
-
-    private(set) var currentOutputRoute: OutputRoute = .unknown
-
     var deviceRole: DeviceRole {
         get { settingsStore.deviceRole }
         set { settingsStore.deviceRole = newValue }
@@ -89,16 +77,6 @@ final class SettingsViewModel {
     var diagnosticsIncludeContentOptIn: Bool {
         get { settingsStore.diagnosticsIncludeContentOptIn }
         set { settingsStore.diagnosticsIncludeContentOptIn = newValue }
-    }
-
-    func selectChromeOnlyPreset() {
-        preferredAudioSourceBundleID = SystemAudioScope.chromeOnlyPreset.targetApplicationBundleID ?? ""
-        savePreferredAudioSource()
-    }
-
-    func selectWholeSystem() {
-        preferredAudioSourceBundleID = ""
-        savePreferredAudioSource()
     }
 
     var audioStorageEnabled: Bool {
@@ -124,31 +102,20 @@ final class SettingsViewModel {
     init(
         settingsStore: AppSettingsStore,
         secretStoring: any SecretStoring,
-        preferredAudioSource: any PreferredAudioSourceStoring,
+        audio: AudioSettingsViewModel,
         permissionsChecking: any PermissionsChecking,
-        recordingsDirectory: URL,
-        audioDeviceCatalog: (any AudioDeviceCataloging)? = nil
+        recordingsDirectory: URL
     ) {
-        self.audioDeviceCatalog = audioDeviceCatalog
+        self.audio = audio
         self.settingsStore = settingsStore
         self.secretStoring = secretStoring
-        self.preferredAudioSource = preferredAudioSource
         self.permissionsChecking = permissionsChecking
         self.recordingsDirectory = recordingsDirectory
-        runningApplications = NSWorkspace.shared.runningApplications.compactMap { app in
-            guard let bundleID = app.bundleIdentifier, let name = app.localizedName else { return nil }
-            return (name, bundleID)
-        }.sorted { $0.name < $1.name }
     }
 
     func load() async {
         refreshAPIKeyStatus()
-        preferredAudioSourceBundleID = await preferredAudioSource.preferredApplicationBundleID() ?? ""
-        refreshInputDevices()
-        switch await preferredAudioSource.microphoneSelection() {
-        case .systemDefaultExcludingContinuity: microphoneDeviceUID = ""
-        case .device(let uid): microphoneDeviceUID = uid
-        }
+        await audio.load()
         screenRecordingStatus = await permissionsChecking.status(for: .screenRecording)
         microphoneStatus = await permissionsChecking.status(for: .microphone)
     }
@@ -173,21 +140,6 @@ final class SettingsViewModel {
     func deleteAPIKey() {
         try? secretStoring.deleteAPIKey()
         refreshAPIKeyStatus()
-    }
-
-    func savePreferredAudioSource() {
-        let trimmed = preferredAudioSourceBundleID.trimmingCharacters(in: .whitespacesAndNewlines)
-        Task { await preferredAudioSource.setPreferredApplicationBundleID(trimmed.isEmpty ? nil : trimmed) }
-    }
-
-    func refreshInputDevices() {
-        currentOutputRoute = OutputRouteClassifier.classify(audioDeviceCatalog?.defaultOutputDevice())
-        inputDevices = (audioDeviceCatalog?.devices() ?? []).filter(\.hasInput).sorted { $0.name < $1.name }
-    }
-
-    func saveMicrophoneSelection() {
-        let selection: MicrophoneSelection = microphoneDeviceUID.isEmpty ? .systemDefaultExcludingContinuity : .device(uid: microphoneDeviceUID)
-        Task { await preferredAudioSource.setMicrophoneSelection(selection) }
     }
 
     func requestScreenRecordingAccess() {

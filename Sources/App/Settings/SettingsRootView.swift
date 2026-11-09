@@ -58,7 +58,7 @@ struct SettingsRootView: View {
     private func content(for tab: SettingsTab) -> some View {
         switch tab {
         case .general: GeneralSettingsTab()
-        case .audio: AudioSettingsTab(viewModel: viewModel)
+        case .audio: AudioSettingsTab(viewModel: viewModel.audio)
         case .answers: AnswersSettingsTab(viewModel: viewModel)
         case .profile: ProfileSettingsTab(viewModel: viewModel)
         case .devices: DeviceRoleSettingsTab(viewModel: viewModel)

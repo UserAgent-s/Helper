@@ -30,7 +30,7 @@ final class ModeSwitcherViewModel {
         case .permissionDenied(.microphone):
             return loc("Нет доступа к микрофону. Откройте Настройки и предоставьте разрешение Microphone.")
         case .targetApplicationNotRunning(let bundleID):
-            return loc("Приложение") + " «\(bundleID)» " + loc("не запущено. Откройте его и попробуйте снова.")
+            return loc("Приложение") + " «\(bundleID)» " + loc("не запущено, а переход на весь звук Mac для него выключен. Откройте приложение или выберите «Весь звук Mac» в настройках «Звук».")
         case .noControllerRegistered:
             return loc("Этот режим сейчас недоступен.")
         case .unknown:

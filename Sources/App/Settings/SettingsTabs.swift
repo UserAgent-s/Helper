@@ -21,71 +21,139 @@ struct GeneralSettingsTab: View {
 }
 
 struct AudioSettingsTab: View {
-    @Bindable var viewModel: SettingsViewModel
+    @Bindable var viewModel: AudioSettingsViewModel
+    @State private var exclusionCandidate = ""
 
     var body: some View {
         Form {
-            Section(loc("Источник системного звука (answers)")) {
-                Picker(loc("Приложение"), selection: $viewModel.preferredAudioSourceBundleID) {
-                    Text(loc("Весь системный звук")).tag("")
-                    if !viewModel.preferredAudioSourceBundleID.isEmpty,
-                       !viewModel.runningApplications.contains(where: { $0.bundleID == viewModel.preferredAudioSourceBundleID }) {
-                        Text("\(viewModel.preferredAudioSourceBundleID) " + loc("(не запущен)")).tag(viewModel.preferredAudioSourceBundleID)
+            Section(loc("Источник системного звука")) {
+                Picker(loc("Источник"), selection: Binding(
+                    get: { viewModel.sourceMode },
+                    set: { mode in
+                        Task {
+                            switch mode {
+                            case .wholeSystem: await viewModel.selectWholeSystem()
+                            case .chrome: await viewModel.selectChromePreset()
+                            case .application:
+                                if let first = viewModel.runningApplications.first {
+                                    await viewModel.selectApplication(bundleID: first.bundleID)
+                                }
+                            }
+                        }
                     }
-                    ForEach(viewModel.runningApplications, id: \.bundleID) { app in
-                        Text(app.name).tag(app.bundleID)
+                )) {
+                    Text(loc("Весь звук Mac")).tag(AudioSettingsViewModel.SourceMode.wholeSystem)
+                    Text(loc("Только Google Chrome (Meet)")).tag(AudioSettingsViewModel.SourceMode.chrome)
+                    Text(loc("Приложение…")).tag(AudioSettingsViewModel.SourceMode.application)
+                }
+                .pickerStyle(.radioGroup)
+                if viewModel.sourceMode == .application {
+                    Picker(loc("Приложение"), selection: Binding(
+                        get: { viewModel.selectedApplicationBundleID ?? "" },
+                        set: { bundleID in Task { await viewModel.selectApplication(bundleID: bundleID) } }
+                    )) {
+                        if let selected = viewModel.selectedApplicationBundleID,
+                           !viewModel.runningApplications.contains(where: { $0.bundleID == selected }) {
+                            Text(selected + " " + loc("(не запущен)")).tag(selected)
+                        }
+                        ForEach(viewModel.runningApplications, id: \.bundleID) { app in
+                            Text(app.name).tag(app.bundleID)
+                        }
                     }
                 }
-                .onChange(of: viewModel.preferredAudioSourceBundleID) { viewModel.savePreferredAudioSource() }
-                HStack {
-                    Button(loc("Весь системный звук")) { viewModel.selectWholeSystem() }
-                    Button(loc("Только Chrome")) { viewModel.selectChromeOnlyPreset() }
+                if viewModel.sourceMode == .wholeSystem {
+                    ForEach(viewModel.exclusions, id: \.self) { bundleID in
+                        HStack {
+                            Text(loc("Не слушать:") + " " + viewModel.applicationName(for: bundleID))
+                            Spacer()
+                            Button(loc("Убрать")) { Task { await viewModel.removeExclusion(bundleID: bundleID) } }
+                        }
+                    }
+                    HStack {
+                        Picker(loc("Исключить приложение"), selection: $exclusionCandidate) {
+                            Text(loc("Выберите…")).tag("")
+                            ForEach(viewModel.runningApplications.filter { !viewModel.exclusions.contains($0.bundleID) }, id: \.bundleID) { app in
+                                Text(app.name).tag(app.bundleID)
+                            }
+                        }
+                        Button(loc("Исключить")) {
+                            let candidate = exclusionCandidate
+                            exclusionCandidate = ""
+                            Task { await viewModel.excludeApplication(bundleID: candidate) }
+                        }
+                        .disabled(exclusionCandidate.isEmpty)
+                    }
                 }
-                Text(loc("По умолчанию захватывается весь системный звук. «Только Chrome» — пресет для Google Meet в браузере. Устройство вывода (наушники, динамики Mac) выбирается в системном меню звука macOS."))
+                Text(loc("В режиме ответов весь выбранный звук уходит в OpenAI. Звук самого UserAgent057 не захватывается никогда. Если выбранное приложение не запущено, захват идёт со всего звука Mac с уведомлением."))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            Section(loc("Уровни")) {
+                LevelMeterRow(title: loc("Система"), level: viewModel.levels[.systemAudio])
+                LevelMeterRow(title: loc("Я (микрофон)"), level: viewModel.levels[.microphone])
+                Text(loc("Индикаторы оживают, когда идёт захват: в режимах ответов и записи."))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
             Section(loc("Вывод звука")) {
                 LabeledContent(loc("Сейчас")) {
-                    Text(AnswerOverlayContentView.routeText(viewModel.currentOutputRoute))
+                    Text(AnswerOverlayContentView.routeText(viewModel.currentRoute))
                 }
                 Picker(loc("Что считать выводом"), selection: $viewModel.outputRoutePolicy) {
                     Text(loc("Определять автоматически")).tag(OutputRoutePolicy.auto)
                     Text(loc("Всегда наушники")).tag(OutputRoutePolicy.headphones)
                     Text(loc("Всегда динамики")).tag(OutputRoutePolicy.speakers)
                 }
-                if OutputRouteClassifier.echoRisk(viewModel.currentOutputRoute, policy: viewModel.outputRoutePolicy) {
+                if viewModel.echoRisk {
                     Text(loc("Динамики: голос собеседника может попасть в микрофон. Лучше использовать наушники."))
                         .font(.caption2)
                         .foregroundStyle(.orange)
                 }
-                Text(loc("Если USB- или Bluetooth-устройство на самом деле колонка, а не наушники, выберите «Всегда динамики»."))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
             }
             Section(loc("Микрофон")) {
-                Picker(loc("Микрофон"), selection: $viewModel.microphoneDeviceUID) {
+                Picker(loc("Микрофон"), selection: Binding(
+                    get: { viewModel.selectedMicrophoneUID },
+                    set: { uid in Task { await viewModel.selectMicrophone(uid: uid) } }
+                )) {
                     Text(loc("Системный по умолчанию (без iPhone)")).tag("")
-                    if !viewModel.microphoneDeviceUID.isEmpty,
-                       !viewModel.inputDevices.contains(where: { $0.uid == viewModel.microphoneDeviceUID }) {
-                        Text(loc("Выбранное устройство не подключено")).tag(viewModel.microphoneDeviceUID)
+                    if !viewModel.selectedMicrophoneUID.isEmpty,
+                       !viewModel.microphoneOptions.contains(where: { $0.uid == viewModel.selectedMicrophoneUID }) {
+                        Text(loc("Выбранное устройство не подключено")).tag(viewModel.selectedMicrophoneUID)
                     }
-                    ForEach(viewModel.inputDevices) { device in
-                        if device.transport.isContinuity {
-                            Text(device.name + " " + loc("(iPhone, не используется)")).tag(device.uid).disabled(true)
-                        } else {
-                            Text(device.name).tag(device.uid)
-                        }
+                    ForEach(viewModel.microphoneOptions) { option in
+                        Text(option.isEnabled ? option.name : option.name + " " + loc("(iPhone, не используется)"))
+                            .tag(option.uid)
+                            .disabled(!option.isEnabled)
                     }
                 }
-                .onChange(of: viewModel.microphoneDeviceUID) { viewModel.saveMicrophoneSelection() }
-                Button(loc("Обновить список")) { viewModel.refreshInputDevices() }
+                Button(loc("Обновить устройства")) { viewModel.refreshDevices() }
                 Text(loc("Микрофон iPhone через Continuity никогда не выбирается автоматически. Если выбранное устройство пропадёт, запись продолжится со встроенного микрофона."))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
+    }
+}
+
+struct LevelMeterRow: View {
+    let title: String
+    let level: AudioLevel?
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 0.25)) { context in
+            let fraction = AudioSettingsViewModel.meterFraction(level, now: context.date)
+            HStack {
+                Text(title)
+                    .frame(width: 110, alignment: .leading)
+                ProgressView(value: fraction)
+                    .tint(fraction > 0.85 ? .red : .green)
+                Text(fraction > 0 ? String(format: "%.0f dBFS", level?.rmsDBFS ?? -120) : "—")
+                    .font(.caption.monospacedDigit())
+                    .frame(width: 80, alignment: .trailing)
+            }
+            .accessibilityElement(children: .combine)
+        }
     }
 }
 

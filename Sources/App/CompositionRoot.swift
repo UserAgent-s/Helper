@@ -190,10 +190,14 @@ final class CompositionRoot {
         settingsViewModel = SettingsViewModel(
             settingsStore: settingsStore,
             secretStoring: secretStoring,
-            preferredAudioSource: preferredAudioSource,
+            audio: AudioSettingsViewModel(
+                store: preferredAudioSource,
+                catalog: audioDeviceCatalog,
+                settingsStore: settingsStore,
+                levels: captureHub.levels.subscribe("audioSettings", policy: .bufferingNewest(8))
+            ),
             permissionsChecking: permissionsChecking,
-            recordingsDirectory: recordingsDirectory,
-            audioDeviceCatalog: audioDeviceCatalog
+            recordingsDirectory: recordingsDirectory
         )
 
         let meetingRepository = self.meetingRepository
