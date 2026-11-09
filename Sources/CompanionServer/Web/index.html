@@ -67,7 +67,8 @@
 </section>
 <section>
 <h2>История</h2>
-<p class="muted">История ответов появится позже.</p>
+<p class="muted">Прошлые сессии: поиск, Q&amp;A, транскрипт, экспорт.</p>
+<button type="button" id="history-open" disabled>Открыть историю</button>
 </section>
 <section>
 <h2>Уведомления</h2>
@@ -75,5 +76,22 @@
 </section>
 </aside>
 </main>
+<aside id="history" class="history-drawer" aria-label="История сессий" hidden>
+<div class="history-head">
+<h2>История</h2>
+<button type="button" id="history-close" aria-label="Закрыть историю">×</button>
+</div>
+<input id="history-search" type="search" placeholder="Поиск по сессиям" maxlength="200" autocomplete="off">
+<p id="history-status" class="muted" aria-live="polite"></p>
+<ul id="history-items" class="history-items"></ul>
+<button type="button" id="history-more" hidden>Ещё</button>
+<div id="history-card" class="history-card" hidden>
+<div class="history-card-actions">
+<button type="button" id="history-back">← К списку</button>
+<button type="button" id="history-export" disabled aria-label="Скачать сессию в Markdown">.md</button>
+</div>
+<div id="history-detail"></div>
+</div>
+</aside>
 </body>
 </html>

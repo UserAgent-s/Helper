@@ -138,6 +138,12 @@ public actor CompanionHub {
                 return
             }
             await handleExport(request, cmdId: command.cmdId, deviceId: deviceId, from: id)
+        case .historyList, .historyGet:
+            guard let deviceId = clients[id]?.deviceId else {
+                fail(id, code: "unauthorized", closeCode: CompanionCloseCode.unauthorized)
+                return
+            }
+            await handleHistory(command.action, cmdId: command.cmdId, deviceId: deviceId, from: id)
         default:
             guard let deviceId = clients[id]?.deviceId else {
                 fail(id, code: "unauthorized", closeCode: CompanionCloseCode.unauthorized)
@@ -242,6 +248,22 @@ public actor CompanionHub {
         }
     }
 
+    private func handleHistory(_ action: ClientCommand.Action, cmdId: String, deviceId: String, from id: UUID) async {
+        performedCommandCount += 1
+        let outcome = await delegate.history(action)
+        guard clients[id]?.deviceId == deviceId else { return }
+        switch outcome {
+        case .rejected(let code):
+            send(.ack(.init(cmdId: cmdId, ok: false, code: code)), to: id)
+        case .page(let page):
+            let delivered = send(.historyPage(page), to: id)
+            send(.ack(.init(cmdId: cmdId, ok: delivered, code: delivered ? nil : "history_too_large")), to: id)
+        case .session(let session):
+            let delivered = send(.historySession(session), to: id)
+            send(.ack(.init(cmdId: cmdId, ok: delivered, code: delivered ? nil : "history_too_large")), to: id)
+        }
+    }
+
     private func perform(_ command: ClientCommand, deviceId: String) async -> ServerEvent.Ack {
         let key = deviceId + "\u{1F}" + command.cmdId
         if let existing = acks[key] {
@@ -308,9 +330,11 @@ public actor CompanionHub {
         client.outbound.close(code, reason)
     }
 
-    private func send(_ event: ServerEvent, to id: UUID) {
-        guard let client = clients[id], let envelope = makeEnvelope(event, sid: nil), let text = encode(envelope) else { return }
+    @discardableResult
+    private func send(_ event: ServerEvent, to id: UUID) -> Bool {
+        guard let client = clients[id], let envelope = makeEnvelope(event, sid: nil), let text = encode(envelope) else { return false }
         client.outbound.send(text)
+        return true
     }
 
     private func makeEnvelope(_ event: ServerEvent, sid: String?) -> ServerEnvelope? {

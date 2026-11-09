@@ -40,10 +40,12 @@ public actor CompanionBridge: CompanionHubDelegate {
     public static let baseCapabilities = ["answer_now", "set_mode", "reset_context"]
     public static let sessionCapabilities = ["session.start", "session.stop", "session.resume", "star_last", "mark_moment"]
     public static let exportCapabilities = ["export.request"]
+    public static let historyCapabilities = ["history.list", "history.get"]
 
     private let control: any CompanionDomainControlling
     private let sessions: (any SessionControlling)?
     private let exporter: (any SessionDocumentExporting)?
+    private let historyQueries: (any SessionHistoryQuerying)?
     public nonisolated let capabilities: [String]
     private var session: SessionInfo?
     private var announcedSessionId: String?
@@ -69,13 +71,15 @@ public actor CompanionBridge: CompanionHubDelegate {
         control: any CompanionDomainControlling,
         sessions: (any SessionControlling)? = nil,
         exporter: (any SessionDocumentExporting)? = nil,
+        history: (any SessionHistoryQuerying)? = nil,
         now: @escaping @Sendable () -> Date = { Date() },
         makeAnswerId: @escaping @Sendable () -> String = { UUID().uuidString }
     ) {
         self.control = control
         self.sessions = sessions
         self.exporter = exporter
-        capabilities = Self.baseCapabilities + (sessions == nil ? [] : Self.sessionCapabilities) + (exporter == nil ? [] : Self.exportCapabilities)
+        historyQueries = history
+        capabilities = Self.baseCapabilities + (sessions == nil ? [] : Self.sessionCapabilities) + (exporter == nil ? [] : Self.exportCapabilities) + (history == nil ? [] : Self.historyCapabilities)
         self.now = now
         self.makeAnswerId = makeAnswerId
         (outgoing, outgoingContinuation) = AsyncStream<ServerEvent>.makeStream()
@@ -162,7 +166,7 @@ public actor CompanionBridge: CompanionHubDelegate {
         case .sessionStart, .sessionStop, .sessionResume, .starLast, .markMoment:
             guard let sessions else { return .rejected(code: "not_available") }
             return await performSession(action, sessions: sessions)
-        case .expand, .captureScreen, .exportRequest:
+        case .expand, .captureScreen, .exportRequest, .historyList, .historyGet:
             return .rejected(code: "not_available")
         case .hello, .pair, .ping, .unknown:
             return .rejected(code: "unknown_command")
@@ -179,6 +183,36 @@ public actor CompanionBridge: CompanionHubDelegate {
             return .document(CompanionExportDocument(filename: document.filename, markdown: document.markdown))
         } catch {
             return .rejected(code: "export_failed")
+        }
+    }
+
+    public func history(_ action: ClientCommand.Action) async -> CompanionHistoryOutcome {
+        guard let historyQueries else { return .rejected(code: "not_available") }
+        do {
+            switch action {
+            case .historyList(let request):
+                let limit = request.limit ?? ClientCommand.HistoryList.defaultLimit
+                let query = request.q?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                if !query.isEmpty {
+                    let results = try await historyQueries.search(query: query, limit: limit)
+                    return .page(.init(q: query, items: results.map(CompanionHistoryMapping.item)))
+                }
+                var cursor: SessionCursor?
+                if let token = request.cursor {
+                    guard let parsed = SessionCursor(token: token) else { return .rejected(code: "invalid_cursor") }
+                    cursor = parsed
+                }
+                let page = try await historyQueries.list(limit: limit, after: cursor)
+                return .page(.init(cursor: request.cursor, items: page.headers.map(CompanionHistoryMapping.item), nextCursor: page.nextCursor?.token))
+            case .historyGet(let request):
+                guard let uuid = UUID(uuidString: request.sessionId) else { return .rejected(code: "unknown_session") }
+                guard let detail = try await historyQueries.detail(sessionID: SessionID(rawValue: uuid)) else { return .rejected(code: "unknown_session") }
+                return .session(CompanionHistoryMapping.fitted(CompanionHistoryMapping.session(detail)))
+            default:
+                return .rejected(code: "unknown_command")
+            }
+        } catch {
+            return .rejected(code: "history_failed")
         }
     }
 

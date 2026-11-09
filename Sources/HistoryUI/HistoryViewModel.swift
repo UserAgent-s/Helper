@@ -4,6 +4,7 @@ import Observation
 import Summary
 
 enum HistoryTab: Sendable {
+    case sessions
     case questionsAndAnswers
     case meetings
 }
@@ -15,8 +16,11 @@ final class HistoryViewModel {
     private let meetingRepository: any MeetingRepository
     private let summaryGenerating: any SummaryGenerating
     private let summaryRepository: any SummaryRepository
+    private let sessionHistory: (any SessionHistoryQuerying)?
 
-    var selectedTab: HistoryTab = .questionsAndAnswers
+    var selectedTab: HistoryTab
+    private(set) var sessions: [SessionHistoryRow] = []
+    var selectedSessionDetail: SessionDetailViewModel?
     var searchText: String = ""
     private(set) var qaEntries: [QuestionAnswerPair] = []
     private(set) var meetings: [Meeting] = []
@@ -28,12 +32,22 @@ final class HistoryViewModel {
         questionAnswerRepository: any QuestionAnswerRepository,
         meetingRepository: any MeetingRepository,
         summaryGenerating: any SummaryGenerating,
-        summaryRepository: any SummaryRepository
+        summaryRepository: any SummaryRepository,
+        sessionHistory: (any SessionHistoryQuerying)? = nil
     ) {
         self.questionAnswerRepository = questionAnswerRepository
         self.meetingRepository = meetingRepository
         self.summaryGenerating = summaryGenerating
         self.summaryRepository = summaryRepository
+        self.sessionHistory = sessionHistory
+        selectedTab = sessionHistory == nil ? .questionsAndAnswers : .sessions
+    }
+
+    var hasSessions: Bool { sessionHistory != nil }
+
+    func openSession(_ row: SessionHistoryRow) {
+        guard let sessionHistory else { return }
+        selectedSessionDetail = SessionDetailViewModel(sessionID: row.id, history: sessionHistory)
     }
 
     func openDetail(for meeting: Meeting) {
@@ -46,6 +60,11 @@ final class HistoryViewModel {
 
     func load() async {
         do {
+            if let sessionHistory {
+                sessions = searchText.isEmpty
+                    ? try await sessionHistory.list(limit: SessionHistoryService.maxPageSize, after: nil).headers.map(SessionHistoryRow.init(header:))
+                    : try await sessionHistory.search(query: searchText, limit: SessionHistoryService.maxPageSize).map(SessionHistoryRow.init(result:))
+            }
             qaEntries = searchText.isEmpty
                 ? try await questionAnswerRepository.history(limit: 200)
                 : try await questionAnswerRepository.search(query: searchText)
@@ -81,7 +100,7 @@ final class HistoryViewModel {
             switch selectedTab {
             case .questionsAndAnswers:
                 try await questionAnswerRepository.deleteAll()
-            case .meetings:
+            case .meetings, .sessions:
                 try await meetingRepository.deleteAll()
             }
             isConfirmingClearAll = false

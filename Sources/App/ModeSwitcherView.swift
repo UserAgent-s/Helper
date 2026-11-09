@@ -129,6 +129,7 @@ struct ModeSwitcherView: View {
                 Button(loc("Настройки")) { navigationState.isShowingSettings = true }
                     .accessibilityIdentifier("main.openSettings")
                 Button(loc("История")) { navigationState.isShowingHistory = true }
+                    .accessibilityIdentifier("main.openHistory")
             }
             Picker(loc("Режим"), selection: Binding(
                 get: { viewModel.currentMode },

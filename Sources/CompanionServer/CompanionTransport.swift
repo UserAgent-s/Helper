@@ -60,14 +60,25 @@ public enum CompanionCommandOutcome: Sendable, Equatable {
     case rejected(code: String, message: String? = nil)
 }
 
+public enum CompanionHistoryOutcome: Sendable, Equatable {
+    case page(ServerEvent.HistoryPage)
+    case session(ServerEvent.HistorySession)
+    case rejected(code: String)
+}
+
 public protocol CompanionHubDelegate: Sendable {
     func snapshot() async -> StateSnapshot
     func perform(_ action: ClientCommand.Action, deviceId: String) async -> CompanionCommandOutcome
     func exportDocument(sessionId: String) async -> CompanionExportOutcome
+    func history(_ action: ClientCommand.Action) async -> CompanionHistoryOutcome
 }
 
 extension CompanionHubDelegate {
     public func exportDocument(sessionId: String) async -> CompanionExportOutcome {
+        .rejected(code: "not_available")
+    }
+
+    public func history(_ action: ClientCommand.Action) async -> CompanionHistoryOutcome {
         .rejected(code: "not_available")
     }
 }

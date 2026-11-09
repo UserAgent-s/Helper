@@ -17,6 +17,7 @@ public enum CompanionLimits {
     public static let maxSessionTitleLength = 200
     public static let maxMomentNoteLength = 500
     public static let maxCommandNameLength = 64
+    public static let maxHistoryQueryLength = 200
 }
 
 public enum CompanionProtocolError: Error, Sendable, Equatable {

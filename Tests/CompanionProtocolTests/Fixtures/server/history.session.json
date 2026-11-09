@@ -1,0 +1,61 @@
+{
+  "data": {
+    "endedAt": 1762700000000,
+    "expansions": [],
+    "kind": "assistant",
+    "moments": [
+      {
+        "bookmarkId": "bm_1",
+        "kind": "star",
+        "markedAt": 1762696470000,
+        "qaId": "qa_1"
+      }
+    ],
+    "qa": [
+      {
+        "answer": "1. Лог против очереди",
+        "askedAt": 1762696460000,
+        "expansions": [
+          {
+            "expansionId": "d1",
+            "model": "claude-sonnet-5-5",
+            "requestedAt": 1762696500000,
+            "status": "completed",
+            "text": "Подробно про лог"
+          }
+        ],
+        "qaId": "qa_1",
+        "question": "Чем Kafka отличается от RabbitMQ?",
+        "starred": true,
+        "status": "completed"
+      }
+    ],
+    "screens": [
+      {
+        "application": "Xcode",
+        "capturedAt": 1762696480000,
+        "screenId": "s1",
+        "text": "struct Order"
+      }
+    ],
+    "sessionId": "8F0C6B2A-3D4E-4F50-9A1B-2C3D4E5F6A7B",
+    "startedAt": 1762696400000,
+    "status": "completed",
+    "summary": "## Итоги\n- обсудили Kafka",
+    "title": "09.11 · Чем Kafka отличается от RabbitMQ?",
+    "transcript": [
+      {
+        "at": 1762696450000,
+        "lineId": "u1",
+        "speaker": "them",
+        "text": "How does Kafka store offsets?",
+        "translation": "Как Kafka хранит офсеты?"
+      }
+    ],
+    "truncated": false
+  },
+  "seq": 25,
+  "ts": 1762700000025,
+  "type": "history.session",
+  "v": 1
+}

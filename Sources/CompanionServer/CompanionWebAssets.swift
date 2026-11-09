@@ -14,6 +14,7 @@ public enum CompanionWebAssets {
         "connection.js": "text/javascript; charset=utf-8",
         "store.js": "text/javascript; charset=utf-8",
         "ui.js": "text/javascript; charset=utf-8",
+        "history.js": "text/javascript; charset=utf-8",
     ]
 
     public static func fileName(forPath path: String) -> String? {

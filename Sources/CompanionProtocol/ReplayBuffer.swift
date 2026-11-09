@@ -6,7 +6,7 @@ extension ServerEvent {
         case .modeChanged, .notice, .transcriptDelta, .answerStarted, .answerDelta, .answerReplace, .answerDone,
              .sessionStarted, .sessionStopped, .bookmarkAdded, .bookmarkRemoved, .deepStarted, .deepDelta, .deepDone, .screenCaptured:
             true
-        case .helloOK, .pairOK, .stateSnapshot, .level, .exportReady, .ack, .error, .pong, .unknown:
+        case .helloOK, .pairOK, .stateSnapshot, .level, .exportReady, .historyPage, .historySession, .ack, .error, .pong, .unknown:
             false
         }
     }

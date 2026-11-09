@@ -1,6 +1,6 @@
 export const TRANSCRIPT_LIMIT = 40;
 export const NOTICE_LIMIT = 10;
-export const PER_CLIENT_TYPES = ["hello.ok", "pair.ok", "ack", "error", "pong", "export.ready"];
+export const PER_CLIENT_TYPES = ["hello.ok", "pair.ok", "ack", "error", "pong", "export.ready", "history.page", "history.session"];
 
 export function initialState() {
   return {

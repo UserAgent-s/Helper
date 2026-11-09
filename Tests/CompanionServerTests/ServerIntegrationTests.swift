@@ -25,6 +25,20 @@ actor FakeHubDelegate: CompanionHubDelegate {
         guard sessionId == "ses-ok" else { return .rejected(code: "unknown_session") }
         return .document(CompanionExportDocument(filename: "UserAgent057-2025-11-09-1500.md", markdown: "# Сессия\n"))
     }
+
+    func history(_ action: ClientCommand.Action) async -> CompanionHistoryOutcome {
+        switch action {
+        case .historyList(let list):
+            return .page(.init(q: list.q, items: [HistoryItem(sessionId: "ses-ok", kind: "assistant", title: "Звонок", startedAt: 1)]))
+        case .historyGet(let get) where get.sessionId == "ses-ok":
+            return .session(.init(sessionId: "ses-ok", kind: "assistant", title: nil, startedAt: 1, endedAt: nil, status: "completed", summary: nil, qa: [], expansions: [], transcript: [], moments: [], screens: [], truncated: false))
+        case .historyGet(let get) where get.sessionId == "ses-huge":
+            let line = HistoryLine(lineId: "u", speaker: .them, text: String(repeating: "x", count: 600_000))
+            return .session(.init(sessionId: "ses-huge", kind: "assistant", title: nil, startedAt: 1, endedAt: nil, status: "completed", summary: nil, qa: [], expansions: [], transcript: [line, line], moments: [], screens: [], truncated: false))
+        default:
+            return .rejected(code: "unknown_session")
+        }
+    }
 }
 
 struct TimedOut: Error {}

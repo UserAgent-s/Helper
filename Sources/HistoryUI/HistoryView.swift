@@ -15,6 +15,9 @@ struct HistoryView: View {
             .padding([.horizontal, .top])
 
             Picker(loc("Раздел"), selection: $viewModel.selectedTab) {
+                if viewModel.hasSessions {
+                    Text(loc("Сессии")).tag(HistoryTab.sessions)
+                }
                 Text(loc("Вопросы и ответы")).tag(HistoryTab.questionsAndAnswers)
                 Text(loc("Митинги")).tag(HistoryTab.meetings)
             }
@@ -36,6 +39,8 @@ struct HistoryView: View {
             }
 
             switch viewModel.selectedTab {
+            case .sessions:
+                sessionList
             case .questionsAndAnswers:
                 questionAnswerList
             case .meetings:
@@ -52,6 +57,9 @@ struct HistoryView: View {
         .sheet(item: $viewModel.selectedMeetingDetail) { detailViewModel in
             MeetingDetailView(viewModel: detailViewModel)
         }
+        .sheet(item: $viewModel.selectedSessionDetail) { detailViewModel in
+            SessionDetailView(viewModel: detailViewModel)
+        }
         .confirmationDialog(
             loc("Удалить всю историю без возможности восстановления?"),
             isPresented: $viewModel.isConfirmingClearAll,
@@ -61,6 +69,34 @@ struct HistoryView: View {
                 Task { await viewModel.confirmClearAll() }
             }
             Button(loc("Отмена"), role: .cancel) {}
+        }
+    }
+
+    private var sessionList: some View {
+        List {
+            ForEach(viewModel.sessions) { row in
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(row.startedAt.formatted(date: .abbreviated, time: .shortened))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Text(row.title ?? loc("Сессия"))
+                        .font(.subheadline.bold())
+                    if let questions = row.questionCount, let stars = row.starCount {
+                        Text(loc("Вопросов:") + " \(questions) · ★ \(stars)")
+                            .font(.caption)
+                    }
+                    ForEach(Array(row.snippets.enumerated()), id: \.offset) { _, snippet in
+                        Text(snippet)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .contentShape(Rectangle())
+                .onTapGesture { viewModel.openSession(row) }
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(.isButton)
+                .accessibilityIdentifier("history.sessionRow")
+            }
         }
     }
 

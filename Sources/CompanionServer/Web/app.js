@@ -1,4 +1,5 @@
 import { createSupervisor } from "./connection.js";
+import { applyHistory, createHistoryView, HISTORY_TYPES, historyListArgs, historyLocal, initialHistory } from "./history.js";
 import { describeClose, helloCommand, makeCommand, pairCommand, pairingCodeFromHash, parseEnvelope, pingCommand, socketURL } from "./protocol.js";
 import { applyEnvelope, applyLocal, hotkeyAction, initialState, pointText, shouldHandleHotkey } from "./store.js";
 import { copyText, createView, startDownload } from "./ui.js";
@@ -30,6 +31,8 @@ const storage = {
 };
 
 let state = initialState();
+let history = initialHistory();
+let searchTimer = null;
 let socket = null;
 let renderQueued = false;
 let pendingPair = null;
@@ -80,6 +83,59 @@ const render = createView(document, {
   }
 });
 
+const renderHistory = createHistoryView(document, {
+  open() {
+    history = historyLocal(history, { type: "open" });
+    if (history.items.length === 0) {
+      requestHistory(false);
+    }
+    scheduleRender();
+  },
+  close() {
+    history = historyLocal(history, { type: "close" });
+    scheduleRender();
+  },
+  query(text) {
+    history = historyLocal(history, { type: "query", text });
+    globalThis.clearTimeout(searchTimer);
+    searchTimer = globalThis.setTimeout(() => requestHistory(false), 250);
+    scheduleRender();
+  },
+  more() {
+    requestHistory(true);
+  },
+  select(sessionId) {
+    history = historyLocal(history, { type: "select", sessionId });
+    sendCommand("history.get", { sessionId });
+    scheduleRender();
+  },
+  back() {
+    history = historyLocal(history, { type: "back" });
+    scheduleRender();
+  },
+  exportSession(sessionId) {
+    sendCommand("export.request", { sessionId });
+  }
+});
+
+function resumeHistory() {
+  if (history.loading) {
+    requestHistory(false);
+  }
+  if (history.loadingDetail && history.selected) {
+    sendCommand("history.get", { sessionId: history.selected });
+  }
+}
+
+function requestHistory(more) {
+  if (state.connection !== "online") {
+    return;
+  }
+  history = historyLocal(history, { type: "requestList", more });
+  sendCommand("history.list", historyListArgs(history));
+  scheduleRender();
+}
+
 globalThis.setInterval(() => {
   if (state.session) {
     scheduleRender();
@@ -95,6 +151,8 @@ function scheduleRender() {
     renderQueued = false;
     view.showPairing = !currentToken() && state.connection !== "online";
     render(state, view);
+    const can = (name) => state.connection === "online" && state.capabilities.indexOf(name) >= 0;
+    renderHistory(history, { canList: can("history.list"), canExport: can("export.request") });
   });
 }
 
@@ -127,6 +185,15 @@ function sendCommand(name, args) {
 }
 
 function handleEnvelope(envelope) {
+  if (HISTORY_TYPES.indexOf(envelope.type) >= 0) {
+    history = applyHistory(history, envelope);
+  }
+  if (envelope.type === "ack" && envelope.data && envelope.data.ok === false) {
+    const command = state.pending[envelope.data.cmdId];
+    if (command === "history.list" || command === "history.get") {
+      history = historyLocal(history, { type: "failed", command });
+    }
+  }
   let next = applyEnvelope(state, envelope);
   if (next.pairedToken) {
     memoryToken = next.pairedToken;
@@ -137,6 +204,7 @@ function handleEnvelope(envelope) {
   }
   if (envelope.type === "hello.ok") {
     supervisor.authenticated();
+    globalThis.setTimeout(resumeHistory, 0);
   }
   if (next.lastError && next.lastError.command === "pair" && !currentToken()) {
     detachSocket("pair_failed");

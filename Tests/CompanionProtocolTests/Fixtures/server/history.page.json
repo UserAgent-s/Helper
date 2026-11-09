@@ -1,0 +1,36 @@
+{
+  "data": {
+    "cursor": "1762700000000_8F0C6B2A-3D4E-4F50-9A1B-2C3D4E5F6A7B",
+    "items": [
+      {
+        "endedAt": 1762700000000,
+        "kind": "assistant",
+        "pinned": false,
+        "qaCount": 3,
+        "sessionId": "8F0C6B2A-3D4E-4F50-9A1B-2C3D4E5F6A7B",
+        "starCount": 1,
+        "startedAt": 1762696400000,
+        "status": "completed",
+        "title": "09.11 · Чем Kafka отличается от RabbitMQ?"
+      },
+      {
+        "hits": [
+          {
+            "at": 1762600060000,
+            "itemId": "u1",
+            "snippet": "…про «Kafka» и консьюмеры…",
+            "source": "utterance"
+          }
+        ],
+        "kind": "recording",
+        "sessionId": "1A2B3C4D-5E6F-4A1B-8C2D-3E4F5A6B7C8D",
+        "startedAt": 1762600000000
+      }
+    ],
+    "nextCursor": "1762600000000_1A2B3C4D-5E6F-4A1B-8C2D-3E4F5A6B7C8D"
+  },
+  "seq": 24,
+  "ts": 1762700000024,
+  "type": "history.page",
+  "v": 1
+}

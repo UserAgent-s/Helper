@@ -245,10 +245,16 @@ final class CompositionRoot {
             manualAnswerTrigger: manualAnswerTrigger
         )
         recordingTranscriptViewModel = RecordingTranscriptViewModel(recordingController: recordingController)
+        let sessionHistory = SessionHistoryService(
+            repository: sessionRepository,
+            searcher: SQLiteSessionSearchRepository(database: database),
+            summaries: summaryRepository
+        )
         let companionBridge = CompanionBridge(
             control: LiveCompanionDomain(modeCoordinator: modeCoordinator, answers: answersController, trigger: manualAnswerTrigger),
             sessions: sessionCoordinator,
-            exporter: SessionMarkdownExporter(repository: sessionRepository, summaries: summaryRepository)
+            exporter: SessionMarkdownExporter(repository: sessionRepository, summaries: summaryRepository),
+            history: sessionHistory
         )
         let companionFeeds = LiveCompanionDomain.feeds(modeCoordinator: modeCoordinator, answers: answersController, captureHub: captureHub)
         let companionService = CompanionService(
@@ -281,7 +287,8 @@ final class CompositionRoot {
             questionAnswerRepository: questionAnswerRepository,
             meetingRepository: meetingRepository,
             summaryGenerating: summaryGenerating,
-            summaryRepository: summaryRepository
+            summaryRepository: summaryRepository,
+            sessionHistory: sessionHistory
         )
         let exportsDirectory = AppFileLocations.exportsDirectory(documents: AppFileLocations.userDirectory(.documentDirectory))
         self.exportsDirectory = exportsDirectory
@@ -330,6 +337,11 @@ final class CompositionRoot {
     }
 
     private static func databaseFilePath() -> String {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-UA057InMemoryStore") {
+            return ":memory:"
+        }
+        #endif
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
         let directory = appSupport?.appendingPathComponent("UserAgent057", isDirectory: true)
         if let directory {

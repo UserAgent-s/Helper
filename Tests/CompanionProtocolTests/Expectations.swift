@@ -44,6 +44,29 @@ enum Expectations {
         "deep.delta": envelope(15, .deepDelta(.init(requestId: "deep_1", offset: 0, text: "Step one"))),
         "deep.done": envelope(16, .deepDone(.init(requestId: "deep_1", status: .failed, errorCode: "rate_limited"))),
         "export.ready": envelope(23, .exportReady(.init(sessionId: "8F0C6B2A-3D4E-4F50-9A1B-2C3D4E5F6A7B", url: "/export/8F0C6B2A-3D4E-4F50-9A1B-2C3D4E5F6A7B.md?t=tkt_base64url_value", filename: "UserAgent057-2025-11-09-1500.md", expiresAt: 1_762_700_120_023))),
+        "history.page": envelope(24, .historyPage(.init(
+            cursor: "1762700000000_8F0C6B2A-3D4E-4F50-9A1B-2C3D4E5F6A7B",
+            items: [
+                HistoryItem(sessionId: "8F0C6B2A-3D4E-4F50-9A1B-2C3D4E5F6A7B", kind: "assistant", title: "09.11 · Чем Kafka отличается от RabbitMQ?", startedAt: 1_762_696_400_000, endedAt: 1_762_700_000_000, status: "completed", pinned: false, qaCount: 3, starCount: 1),
+                HistoryItem(sessionId: "1A2B3C4D-5E6F-4A1B-8C2D-3E4F5A6B7C8D", kind: "recording", title: nil, startedAt: 1_762_600_000_000, hits: [HistoryHit(source: "utterance", itemId: "u1", snippet: "…про «Kafka» и консьюмеры…", at: 1_762_600_060_000)]),
+            ],
+            nextCursor: "1762600000000_1A2B3C4D-5E6F-4A1B-8C2D-3E4F5A6B7C8D"
+        ))),
+        "history.session": envelope(25, .historySession(.init(
+            sessionId: "8F0C6B2A-3D4E-4F50-9A1B-2C3D4E5F6A7B",
+            kind: "assistant",
+            title: "09.11 · Чем Kafka отличается от RabbitMQ?",
+            startedAt: 1_762_696_400_000,
+            endedAt: 1_762_700_000_000,
+            status: "completed",
+            summary: "## Итоги\n- обсудили Kafka",
+            qa: [HistoryQuestion(qaId: "qa_1", askedAt: 1_762_696_460_000, question: "Чем Kafka отличается от RabbitMQ?", answer: "1. Лог против очереди", status: "completed", starred: true, expansions: [HistoryExpansion(expansionId: "d1", requestedAt: 1_762_696_500_000, model: "claude-sonnet-5-5", status: "completed", text: "Подробно про лог")])],
+            expansions: [],
+            transcript: [HistoryLine(lineId: "u1", speaker: .them, text: "How does Kafka store offsets?", translation: "Как Kafka хранит офсеты?", at: 1_762_696_450_000)],
+            moments: [HistoryMoment(bookmarkId: "bm_1", kind: .star, markedAt: 1_762_696_470_000, qaId: "qa_1")],
+            screens: [HistoryScreen(screenId: "s1", capturedAt: 1_762_696_480_000, application: "Xcode", text: "struct Order")],
+            truncated: false
+        ))),
         "screen.captured": envelope(17, .screenCaptured(.init(captureId: "cap_1", capturedAt: 1_762_700_000_017, charCount: 512, preview: "func solve("))),
         "ack": envelope(18, .ack(.init(cmdId: "c-01", ok: false, code: "not_available", message: "expand is not available yet"))),
         "error": envelope(19, .error(.init(code: "unauthorized", fatal: true))),
@@ -64,6 +87,8 @@ enum Expectations {
         "session.resume": ClientCommand(cmdId: "c-ses-resume", action: .sessionResume(.init(sessionId: "8F0C6B2A-3D4E-4F50-9A1B-2C3D4E5F6A7B"))),
         "star_last": ClientCommand(cmdId: "c-star", action: .starLast),
         "export.request": ClientCommand(cmdId: "c-export", action: .exportRequest(.init(sessionId: "8F0C6B2A-3D4E-4F50-9A1B-2C3D4E5F6A7B"))),
+        "history.list": ClientCommand(cmdId: "c-history-list", action: .historyList(.init(cursor: "1762700000000_8F0C6B2A-3D4E-4F50-9A1B-2C3D4E5F6A7B", q: "kafka", limit: 50))),
+        "history.get": ClientCommand(cmdId: "c-history-get", action: .historyGet(.init(sessionId: "8F0C6B2A-3D4E-4F50-9A1B-2C3D4E5F6A7B"))),
         "mark_moment": ClientCommand(cmdId: "c-moment", action: .markMoment(.init(note: "вопрос про шардирование"))),
     ]
 }

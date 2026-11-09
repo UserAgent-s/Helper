@@ -21,6 +21,8 @@ public enum ServerEvent: Sendable, Equatable {
     case deepDone(DeepDone)
     case screenCaptured(ScreenCaptured)
     case exportReady(ExportReady)
+    case historyPage(HistoryPage)
+    case historySession(HistorySession)
     case ack(Ack)
     case error(ServerError)
     case pong(Pong)
@@ -30,7 +32,7 @@ public enum ServerEvent: Sendable, Equatable {
         "hello.ok", "pair.ok", "state.snapshot", "mode.changed", "notice", "level",
         "transcript.delta", "answer.started", "answer.delta", "answer.replace", "answer.done",
         "session.started", "session.stopped", "bookmark.added", "bookmark.removed", "deep.started", "deep.delta", "deep.done",
-        "screen.captured", "export.ready", "ack", "error", "pong",
+        "screen.captured", "export.ready", "history.page", "history.session", "ack", "error", "pong",
     ]
 
     public var type: String {
@@ -55,6 +57,8 @@ public enum ServerEvent: Sendable, Equatable {
         case .deepDone: "deep.done"
         case .screenCaptured: "screen.captured"
         case .exportReady: "export.ready"
+        case .historyPage: "history.page"
+        case .historySession: "history.session"
         case .ack: "ack"
         case .error: "error"
         case .pong: "pong"
@@ -87,6 +91,8 @@ public enum ServerEvent: Sendable, Equatable {
         case "deep.done": return .deepDone(try data(DeepDone.self))
         case "screen.captured": return .screenCaptured(try data(ScreenCaptured.self))
         case "export.ready": return .exportReady(try data(ExportReady.self))
+        case "history.page": return .historyPage(try data(HistoryPage.self))
+        case "history.session": return .historySession(try data(HistorySession.self))
         case "ack": return .ack(try data(Ack.self))
         case "error": return .error(try data(ServerError.self))
         case "pong": return .pong(try container.decodeIfPresent(Pong.self, forKey: key) ?? Pong())
@@ -116,6 +122,8 @@ public enum ServerEvent: Sendable, Equatable {
         case .deepDone(let p): try container.encode(p, forKey: key)
         case .screenCaptured(let p): try container.encode(p, forKey: key)
         case .exportReady(let p): try container.encode(p, forKey: key)
+        case .historyPage(let p): try container.encode(p, forKey: key)
+        case .historySession(let p): try container.encode(p, forKey: key)
         case .ack(let p): try container.encode(p, forKey: key)
         case .error(let p): try container.encode(p, forKey: key)
         case .pong(let p): try container.encode(p, forKey: key)
