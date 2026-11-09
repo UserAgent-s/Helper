@@ -70,3 +70,19 @@ export function pairingCodeFromHash(hash) {
 export function describeClose(code) {
   return CLOSE_REASONS[code] || { key: "closed", forgetToken: false, retry: true, text: "Соединение закрыто." };
 }
+
+export const BACKOFF_STEPS_MS = [500, 1000, 2000, 4000, 5000];
+export const BACKOFF_JITTER = 0.2;
+export const PING_INTERVAL_MS = 10000;
+export const SILENCE_LIMIT_MS = 20000;
+
+export function backoffDelay(attempt, random) {
+  const index = Math.min(Math.max(0, attempt), BACKOFF_STEPS_MS.length - 1);
+  const base = BACKOFF_STEPS_MS[index];
+  const factor = 1 - BACKOFF_JITTER + 2 * BACKOFF_JITTER * random;
+  return Math.round(base * factor);
+}
+
+export function pingCommand() {
+  return makeCommand("ping", { nonce: randomId("n") });
+}

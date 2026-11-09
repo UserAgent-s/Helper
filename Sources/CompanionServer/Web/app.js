@@ -1,9 +1,9 @@
-import { describeClose, helloCommand, makeCommand, pairCommand, pairingCodeFromHash, parseEnvelope, socketURL } from "./protocol.js";
+import { createSupervisor } from "./connection.js";
+import { describeClose, helloCommand, makeCommand, pairCommand, pairingCodeFromHash, parseEnvelope, pingCommand, socketURL } from "./protocol.js";
 import { applyEnvelope, applyLocal, hotkeyAction, initialState, pointText, shouldHandleHotkey } from "./store.js";
 import { copyText, createView } from "./ui.js";
 
 const TOKEN_KEY = "ua057.deviceToken";
-const RETRY_DELAY_MS = 2000;
 
 const storage = {
   get(key) {
@@ -31,11 +31,10 @@ const storage = {
 
 let state = initialState();
 let socket = null;
-let retryTimer = null;
 let renderQueued = false;
 let pendingPair = null;
 let memoryToken = null;
-const view = { showPairing: false, pairingCode: pairingCodeFromHash(globalThis.location.hash), bannerText: null };
+const view = { showPairing: false, pairingCode: pairingCodeFromHash(globalThis.location.hash), bannerText: null, silent: false };
 
 if (view.pairingCode) {
   globalThis.history.replaceState(null, "", globalThis.location.pathname);
@@ -44,6 +43,27 @@ if (view.pairingCode) {
 function currentToken() {
   return storage.get(TOKEN_KEY) || memoryToken;
 }
+
+const supervisor = createSupervisor({
+  timers: {
+    setTimeout: (callback, delay) => globalThis.setTimeout(callback, delay),
+    clearTimeout: (handle) => globalThis.clearTimeout(handle)
+  },
+  random: () => Math.random(),
+  connect: openSocket,
+  ping() {
+    send(pingCommand());
+  },
+  drop() {
+    detachSocket("silence");
+    update(applyLocal(state, { type: "connection", status: "offline" }));
+    supervisor.closed(true);
+  },
+  onSilence(silent) {
+    view.silent = silent;
+    scheduleRender();
+  }
+});
 
 const render = createView(document, {
   command: sendCommand,
@@ -104,12 +124,12 @@ function handleEnvelope(envelope) {
     view.bannerText = null;
     send(helloCommand(memoryToken, null));
   }
+  if (envelope.type === "hello.ok") {
+    supervisor.authenticated();
+  }
   if (next.lastError && next.lastError.command === "pair" && !currentToken()) {
-    const previous = socket;
-    socket = null;
-    if (previous) {
-      previous.close(1000, "pair_failed");
-    }
+    detachSocket("pair_failed");
+    supervisor.stop();
     update(applyLocal(next, { type: "connection", status: "pairing" }));
     return;
   }
@@ -122,23 +142,16 @@ function handleEnvelope(envelope) {
   update(next);
 }
 
-function clearRetry() {
-  if (retryTimer !== null) {
-    globalThis.clearTimeout(retryTimer);
-    retryTimer = null;
+function detachSocket(reason) {
+  const previous = socket;
+  socket = null;
+  if (previous) {
+    previous.close(1000, reason);
   }
 }
 
-function scheduleRetry() {
-  clearRetry();
-  retryTimer = globalThis.setTimeout(() => {
-    retryTimer = null;
-    connect();
-  }, RETRY_DELAY_MS);
-}
-
-function connect() {
-  clearRetry();
+function openSocket() {
+  detachSocket("reconnect");
   const token = currentToken();
   if (!token && !pendingPair) {
     update(applyLocal(state, { type: "connection", status: "pairing" }));
@@ -165,6 +178,7 @@ function connect() {
     if (socket !== ws || typeof event.data !== "string") {
       return;
     }
+    supervisor.heard();
     const envelope = parseEnvelope(event.data);
     if (envelope) {
       handleEnvelope(envelope);
@@ -179,6 +193,7 @@ function connect() {
     if (reason.forgetToken) {
       storage.remove(TOKEN_KEY);
       memoryToken = null;
+      supervisor.stop();
       update(applyLocal(applyLocal(state, { type: "forgetSeq" }), { type: "connection", status: "pairing" }));
       view.bannerText = reason.text;
       scheduleRender();
@@ -187,21 +202,19 @@ function connect() {
     if (event.code >= 4000) {
       view.bannerText = reason.text;
     }
-    const canRetry = reason.retry && currentToken();
+    const canRetry = Boolean(reason.retry && currentToken());
     update(applyLocal(state, { type: "connection", status: canRetry ? "offline" : "closed" }));
     if (canRetry) {
-      scheduleRetry();
+      supervisor.closed(true);
+    } else {
+      supervisor.stop();
     }
   });
 }
 
 function restart() {
-  const previous = socket;
-  socket = null;
-  if (previous) {
-    previous.close(1000, "resync");
-  }
-  connect();
+  detachSocket("resync");
+  supervisor.start();
 }
 
 function startPairing(code, name) {
@@ -236,5 +249,12 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-connect();
+globalThis.addEventListener("online", () => supervisor.wake());
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    supervisor.wake();
+  }
+});
+
+supervisor.start();
 scheduleRender();

@@ -19,6 +19,8 @@ final class SettingsViewModel {
     private let companionService: CompanionService?
     private(set) var companionPort: UInt16?
     private(set) var companionStartFailed = false
+    private(set) var companionURLs: [String] = []
+    private var companionURLTask: Task<Void, Never>?
     var companionServerEnabled: Bool {
         didSet {
             guard companionServerEnabled != oldValue else { return }
@@ -132,6 +134,7 @@ final class SettingsViewModel {
         refreshAPIKeyStatus()
         await audio.load()
         companionPort = await companionService?.port
+        await refreshCompanionURLs()
         screenRecordingStatus = await permissionsChecking.status(for: .screenRecording)
         microphoneStatus = await permissionsChecking.status(for: .microphone)
     }
@@ -150,6 +153,25 @@ final class SettingsViewModel {
             await companionService.stop()
             companionPort = nil
             companionStartFailed = false
+        }
+        await refreshCompanionURLs()
+    }
+
+    func refreshCompanionURLs() async {
+        guard let companionService, companionPort != nil else {
+            companionURLTask?.cancel()
+            companionURLTask = nil
+            companionURLs = []
+            return
+        }
+        companionURLs = await companionService.panelURLs()
+        guard companionURLTask == nil else { return }
+        let updates = companionService.panelURLUpdates()
+        companionURLTask = Task { [weak self] in
+            for await urls in updates {
+                guard let self else { return }
+                self.companionURLs = urls
+            }
         }
     }
 

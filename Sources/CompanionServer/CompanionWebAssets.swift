@@ -11,6 +11,7 @@ public enum CompanionWebAssets {
         "app.css": "text/css; charset=utf-8",
         "app.js": "text/javascript; charset=utf-8",
         "protocol.js": "text/javascript; charset=utf-8",
+        "connection.js": "text/javascript; charset=utf-8",
         "store.js": "text/javascript; charset=utf-8",
         "ui.js": "text/javascript; charset=utf-8",
     ]

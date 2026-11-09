@@ -54,6 +54,7 @@ final class CompositionRoot {
     let navigationState = AppNavigationState()
     let companionBridge: CompanionBridge
     let companionService: CompanionService
+    let modeActivityGuard = ModeActivityGuard()
 
     init() {
         let permissionsChecking = SystemPermissionsChecker()
@@ -192,6 +193,9 @@ final class CompositionRoot {
         )
         self.companionBridge = companionBridge
         self.companionService = companionService
+        let sleepStates = modeCoordinator.stateUpdates(subscriber: "modeActivityGuard")
+        let modeActivityGuard = self.modeActivityGuard
+        Task { await modeActivityGuard.start(states: sleepStates) }
         Task {
             await companionBridge.start(feeds: companionFeeds)
             if settingsStore.companionServerEnabled {

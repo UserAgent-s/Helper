@@ -99,6 +99,7 @@ kbd {
   background: var(--selected);
 }
 
+.banner[data-kind="silence"] { background: var(--bad); color: #ffffff; }
 .banner[hidden], .pairing[hidden] { display: none; }
 
 .pairing {

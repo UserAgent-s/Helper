@@ -21,7 +21,7 @@ public actor CompanionHub {
 
     private var clients: [UUID: Client] = [:]
     private var seq = 0
-    private var replay = ReplayBuffer()
+    private var replay: ReplayBuffer
     private var throttle = FailureThrottle()
     private var acks: [String: Task<ServerEvent.Ack, Never>] = [:]
     private var ackOrder: [String] = []
@@ -33,8 +33,10 @@ public actor CompanionHub {
         delegate: any CompanionHubDelegate,
         serverVersion: String,
         helloTimeout: Duration = .seconds(10),
+        replayCapacity: Int = 2000,
         now: @escaping @Sendable () -> Date = { Date() }
     ) {
+        self.replay = ReplayBuffer(capacity: replayCapacity)
         self.pairing = pairing
         self.delegate = delegate
         self.serverVersion = serverVersion

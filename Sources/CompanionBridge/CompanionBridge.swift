@@ -272,6 +272,8 @@ public actor CompanionService {
     private let transport: any CompanionTransport
     private let configuration: CompanionServerConfiguration
     private let serverVersion: String
+    private let addresses: @Sendable () -> [String]
+    private let networkMonitor: any CompanionNetworkMonitoring
     private var hub: CompanionHub?
     private(set) public var port: UInt16?
 
@@ -280,13 +282,36 @@ public actor CompanionService {
         bridge: CompanionBridge,
         transport: any CompanionTransport = FlyingFoxCompanionTransport(),
         configuration: CompanionServerConfiguration = CompanionServerConfiguration(),
-        serverVersion: String
+        serverVersion: String,
+        addresses: @escaping @Sendable () -> [String] = LocalInterfaceAddresses.current,
+        networkMonitor: any CompanionNetworkMonitoring = CompanionNetworkMonitor()
     ) {
         self.pairing = pairing
         self.bridge = bridge
         self.transport = transport
         self.configuration = configuration
         self.serverVersion = serverVersion
+        self.addresses = addresses
+        self.networkMonitor = networkMonitor
+    }
+
+    public func panelURLs() -> [String] {
+        guard let port else { return [] }
+        return CompanionPanelURL.urls(addresses: addresses(), port: port)
+    }
+
+    public nonisolated func panelURLUpdates() -> AsyncStream<[String]> {
+        let changes = networkMonitor.addressChanges()
+        return AsyncStream(bufferingPolicy: .bufferingNewest(1)) { continuation in
+            let task = Task { [weak self] in
+                for await _ in changes {
+                    guard let self else { break }
+                    continuation.yield(await self.panelURLs())
+                }
+                continuation.finish()
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
     }
 
     public var isRunning: Bool {

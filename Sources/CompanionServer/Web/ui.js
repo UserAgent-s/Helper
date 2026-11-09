@@ -5,6 +5,7 @@ const PHASE_LABELS = { idle: "ожидание", starting: "запуск", activ
 const CONNECTION_LABELS = { idle: "не подключено", connecting: "подключение", pairing: "сопряжение", online: "на связи", offline: "нет связи", closed: "отключено" };
 const STATUS_LABELS = { streaming: "печатается", completed: "готово", cancelled: "прерван", failed: "ошибка" };
 const SPEAKER_LABELS = { them: "Они", me: "Я" };
+const SILENCE_TEXT = "Нет связи с Mac больше 20 секунд. Переподключаемся…";
 const ERROR_TEXT = {
   pair_invalid_code: "Код неверный или истёк. Получите новый в приложении на Mac.",
   not_in_answers_mode: "Команда доступна только в режиме «Ответы».",
@@ -170,8 +171,9 @@ export function createView(doc, handlers) {
     if (view.pairingCode && !elements.pairingCode.value) {
       elements.pairingCode.value = view.pairingCode;
     }
-    const message = view.bannerText || (state.lastError ? errorText(state.lastError) : null);
+    const message = (view.silent ? SILENCE_TEXT : null) || view.bannerText || (state.lastError ? errorText(state.lastError) : null);
     elements.banner.hidden = !message;
+    elements.banner.dataset.kind = view.silent ? "silence" : "info";
     elements.bannerText.textContent = message || "";
     renderAnswer(state);
     renderTranscript(state);

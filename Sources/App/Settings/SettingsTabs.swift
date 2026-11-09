@@ -223,6 +223,11 @@ struct DeviceRoleSettingsTab: View {
                 Text(companionStatus)
                     .font(.caption)
                     .foregroundStyle(viewModel.companionStartFailed ? .red : .secondary)
+                ForEach(viewModel.companionURLs, id: \.self) { url in
+                    Text(url)
+                        .font(.caption.monospaced())
+                        .textSelection(.enabled)
+                }
                 Text(loc("Сервер принимает только устройства, сопряжённые по коду. Экран сопряжения появится на шаге S2.8."))
                     .font(.caption2)
                     .foregroundStyle(.secondary)

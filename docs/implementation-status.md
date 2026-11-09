@@ -837,3 +837,15 @@ M1 по коду закрыт (S1.1–S1.7). Ручной чек-лист M1 в 
 - Тесты: `WebReducerJSCTests` (11). `store.js` и `protocol.js` грузятся в `JSContext` без `window`, `crypto`, `localStorage` (строки `export`/`import` снимаются при загрузке). Golden-события из `Tests/CompanionProtocolTests/Fixtures/server` в порядке seq, append и дедуп по seq и offset, UTF-16 offset с эмодзи, replace и resync, snapshot после потока равен свежему snapshot, replay после `hello.ok`, стенограмма, пункты и горячие клавиши, гигиена бандла. В `staticRoutesCarrySecurityHeaders` добавлены модули, 404 и `/../`.
 - Ручной стенд: `UA057_WEB_DEMO=1 UA057_WEB_DEMO_SECONDS=300 swift test --filter WebPanelDemo` поднимает сервер на всех интерфейсах (порт 47057) с фейковым доменом. Он печатает код и URL `http://<LAN-IP>:47057/#pair=<код>` и в цикле стримит стенограмму, ответ, уровни и уведомление. Без переменной тест пропускается.
 - Проверено в Chrome: по LAN-IP (`isSecureContext=false`) модули грузятся, `getRandomValues` работает, консоль пустая. На 127.0.0.1 сопряжение по `#pair=`, hello, snapshot, стрим ответа, стенограмма, уровни и уведомления, клавиша выбора пункта и повторный вход по сохранённому токену после перезагрузки. Одна колонка проверена headless-скриншотом на 500 px: это минимальная ширина окна headless Chrome. Ручной прогон на телефоне — за владельцем, через стенд выше.
+
+### S2.7 Реконнект и живучесть
+
+- Web: `connection.js` (супервизор: backoff, ping, сторож тишины, `wake`), в `protocol.js` добавлены `backoffDelay`, `pingCommand` и константы. `app.js` переведён на супервизор, фиксированный повтор через 2 с убран; `ui.js` и `app.css` получили красный баннер «Нет связи». `connection.js` добавлен в `CompanionWebAssets`.
+- Server: `CompanionHub(replayCapacity:)`; `CompanionNetworkMonitor` и `CompanionPanelURL` (только RFC1918 IPv4, без дублей).
+- Bridge/App: в `CompanionService` добавлены `panelURLs()` и `panelURLUpdates()`, вкладка «Роль» показывает URL панели и обновляет их при смене сети. `CompositionRoot` запускает `ModeActivityGuard` на `stateUpdates`.
+- Тесты:
+  - `WebConnectionJSCTests` (5) на детерминированных часах: расписание 500/1000/2000/4000/5000/5000 при random 0,5 и границы джиттера; сброс счётчика после hello; ping в 10 и 20 с; баннер и drop ровно через 20 с тишины; баннер во время серии неудачных попыток; `wake` и `stop`.
+  - `ServerIntegrationTests.reconnectReplay`: delta → обрыв → delta и done → hello с `lastSeq` на один раньше; все полученные конверты прогоняются через `store.js`, текст и оба пункта на месте, дублей нет.
+  - `snapshotWhenEvicted`: буфер на 3 события, плюс случай `lastSeq` из будущего.
+  - `ModeActivityGuardTests` (3), `CompanionServiceURLTests` (2).
+- Проверено в Chrome на демо-стенде: старый токен даёт 4401 и возвращает форму, сопряжение по `#pair=` проходит. После остановки сервера статус «нет связи» и баннер примерно через 20 с, при этом переподключения идут по backoff. Плановая проверка «обрыв 10 с без дублей» сделана тестом `reconnectReplay`; живой обрыв Wi-Fi на телефоне — в ручной чек-лист владельца.

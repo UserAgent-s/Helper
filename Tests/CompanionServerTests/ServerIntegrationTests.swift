@@ -122,10 +122,10 @@ struct ServerFixture {
     let delegate: FakeHubDelegate
     let port: UInt16
 
-    static func start(preferredPort: UInt16 = 0, helloTimeout: Duration = .seconds(10)) async throws -> ServerFixture {
+    static func start(preferredPort: UInt16 = 0, helloTimeout: Duration = .seconds(10), replayCapacity: Int = 2000) async throws -> ServerFixture {
         let pairing = PairingStore(storage: InMemoryPairedDeviceStore())
         let delegate = FakeHubDelegate()
-        let hub = CompanionHub(pairing: pairing, delegate: delegate, serverVersion: "test", helloTimeout: helloTimeout)
+        let hub = CompanionHub(pairing: pairing, delegate: delegate, serverVersion: "test", helloTimeout: helloTimeout, replayCapacity: replayCapacity)
         let transport = FlyingFoxCompanionTransport(localAddresses: { [] })
         let port = try await transport.start(
             configuration: CompanionServerConfiguration(preferredPort: preferredPort, bind: .loopback),
