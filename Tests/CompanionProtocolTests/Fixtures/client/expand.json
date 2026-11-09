@@ -1,0 +1,12 @@
+{
+  "args": {
+    "format": "code",
+    "freeText": "Покажи на примере",
+    "language": "ru",
+    "model": "opus",
+    "pointId": "resp_2.0"
+  },
+  "cmdId": "c-expand",
+  "name": "expand",
+  "v": 1
+}

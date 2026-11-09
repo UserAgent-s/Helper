@@ -14,6 +14,7 @@ let package = Package(
         .library(name: "Diagnostics", targets: ["Diagnostics"]),
         .library(name: "Summary", targets: ["Summary"]),
         .library(name: "OverlayReducer", targets: ["OverlayReducer"]),
+        .library(name: "CompanionProtocol", targets: ["CompanionProtocol"]),
     ],
     dependencies: [
         .package(url: "https://github.com/argmaxinc/argmax-oss-swift.git", exact: "1.1.0"),
@@ -65,6 +66,16 @@ let package = Package(
         .target(
             name: "OverlayReducer",
             dependencies: ["Domain"],
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .target(
+            name: "CompanionProtocol",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .testTarget(
+            name: "CompanionProtocolTests",
+            dependencies: ["CompanionProtocol"],
+            resources: [.copy("Fixtures")],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
         .testTarget(

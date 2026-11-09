@@ -1,0 +1,11 @@
+{
+  "data": {
+    "offset": 0,
+    "requestId": "deep_1",
+    "text": "Step one"
+  },
+  "seq": 15,
+  "ts": 1762700000015,
+  "type": "deep.delta",
+  "v": 1
+}

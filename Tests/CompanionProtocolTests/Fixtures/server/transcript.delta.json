@@ -1,0 +1,12 @@
+{
+  "data": {
+    "isFinal": false,
+    "itemId": "item_2",
+    "speaker": "them",
+    "text": "What was the hardest"
+  },
+  "seq": 7,
+  "ts": 1762700000007,
+  "type": "transcript.delta",
+  "v": 1
+}

@@ -766,3 +766,15 @@ Reset больше не перезапускает режим в обход `Mod
 Тесты: 14 в `RealtimeTranscriptAndCarryOverTests` (session.update с транскрипцией, committed → delta → completed, `questionContext` до `responseStarted`, первая дельта не ждёт расшифровку, failed не блокирует очистку, перенос с текстом вопроса, поздняя расшифровка, только 2 последних, вытеснение переноса и окна по таймеру, нет вытеснения во время ответа, `reconnectRestoresCarryOver`, сброс удаляет перенос, перенос не считается контекстом), 4 в `RealtimeTranscriptionDecodingTests`, `QuestionAnswerLoggerTests` переписаны (16), обновлены сценарные тесты answers. Итого swift 319 + AppTests.
 
 M1 по коду закрыт (S1.1–S1.7). Ручной чек-лист M1 в `docs/troubleshooting.md` ждёт владельца.
+
+## M2. Веб-панель
+
+**S2.1. Таргет CompanionProtocol.** Новая библиотека `CompanionProtocol` (только Foundation): `Envelope.swift` (`ServerEnvelope`, `CompanionCodec`, `CompanionLimits`, `CompanionProtocolError`, `CompanionProtocolVersion`), `ServerEvent.swift` (20 типов плюс `.unknown`, payload вложены в `ServerEvent`, чтобы не конфликтовать с именами Domain), `ClientCommand.swift` (10 команд плюс `.unknown(name:)`, `validate()`), `StateSnapshot.swift` и `WireTypes.swift`. В протоколе свои wire-enum: `WireMode`, `WirePhase`, `WireSpeaker` и другие. Domain в зависимости не попадает, маппинг будет в `CompanionBridge` (S2.5). Решения о форме кадров, совместимости, единицах UTF-16 и лимитах записаны в ADR 0005, раздел «Протокол v1». Отступления от плана v2: добавлены `pair` и `pair.ok`, потому что сопряжение идёт по WS. `session.*` и `deep.*` раскрыты в `session.started|stopped` и `deep.started|delta|done`. В `hello.ok` есть `minClientVersion` по поправке v3.
+
+Тесты: 27 в `CompanionProtocolTests` (63 случая с учётом параметров).
+- `GoldenFixtureTests`: каждый тип декодируется из фикстуры в ожидаемое значение и кодируется в тот же JSON. Отдельно проверено, что набор фикстур совпадает с `knownTypes` и `knownNames`.
+- `CodecRoundTripTests`.
+- `UnknownTypeToleranceTests`: неизвестный type или name, лишние поля, `v=2` и `v=0`, битый JSON, известный тип с битым data.
+- `ClientCommandValidationTests`: `freeText` 4000 проходит, 4001 отклоняется, эмодзи считаются по UTF-16; `cmdId`, токен, `lastSeq`, имя устройства, кадр больше 64 КБ.
+
+Попутно исправлены три теста из S1.7, которые падали под нагрузкой полного прогона: `transcriptTimeoutKeepsPartialTextOrFails`, `transcriptRetentionIsBounded` и `noContextEmittedWhenManualTriggerRejected`. Фиксированные `sleep` заменены ожиданием условия с потолком 2 с. Для этого `waitUntil` вынесен из `CaptureHubTests` в `Tests/DomainTests/WaitUntil.swift`. Итого swift 346 + AppTests.

@@ -1,0 +1,13 @@
+{
+  "data": {
+    "format": "steps",
+    "language": "both",
+    "model": "sonnet",
+    "pointId": "resp_2.0",
+    "requestId": "deep_1"
+  },
+  "seq": 14,
+  "ts": 1762700000014,
+  "type": "deep.started",
+  "v": 1
+}

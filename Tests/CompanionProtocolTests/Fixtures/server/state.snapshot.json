@@ -1,0 +1,72 @@
+{
+  "data": {
+    "answer": {
+      "answerId": "resp_1",
+      "points": [
+        {
+          "end": 27,
+          "index": 0,
+          "open": false,
+          "pointId": "resp_1.0",
+          "start": 0
+        },
+        {
+          "end": 44,
+          "index": 1,
+          "open": true,
+          "pointId": "resp_1.1",
+          "start": 28
+        }
+      ],
+      "status": "streaming",
+      "text": "1. Начну с контекста задачи\n2. Затем метрики",
+      "trigger": "manual"
+    },
+    "capabilities": [
+      "answer_now",
+      "reset_context",
+      "set_mode"
+    ],
+    "levels": [
+      {
+        "peakDBFS": -12.25,
+        "rmsDBFS": -32.5,
+        "source": "system"
+      }
+    ],
+    "mode": {
+      "mode": "answers",
+      "phase": "active",
+      "startedAt": 1762699990000
+    },
+    "notices": [
+      {
+        "args": {
+          "route": "speakers"
+        },
+        "code": "output_route_speakers",
+        "severity": "warning"
+      }
+    ],
+    "overlayEnabled": false,
+    "session": {
+      "sessionId": "ses_1",
+      "startedAt": 1762699000000,
+      "title": "Interview"
+    },
+    "transcript": [
+      {
+        "isFinal": true,
+        "itemId": "item_1",
+        "language": "ru",
+        "speaker": "them",
+        "text": "Расскажите про проект"
+      }
+    ]
+  },
+  "seq": 3,
+  "sid": "ses_1",
+  "ts": 1762700000003,
+  "type": "state.snapshot",
+  "v": 1
+}

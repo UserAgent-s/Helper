@@ -1,0 +1,11 @@
+{
+  "data": {
+    "answerId": "resp_2",
+    "startedAt": 1762700000008,
+    "trigger": "auto"
+  },
+  "seq": 8,
+  "ts": 1762700000008,
+  "type": "answer.started",
+  "v": 1
+}

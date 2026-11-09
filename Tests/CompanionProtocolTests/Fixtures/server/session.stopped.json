@@ -1,0 +1,11 @@
+{
+  "data": {
+    "endedAt": 1762700000013,
+    "sessionId": "ses_2"
+  },
+  "seq": 13,
+  "sid": "ses_2",
+  "ts": 1762700000013,
+  "type": "session.stopped",
+  "v": 1
+}

@@ -1,0 +1,10 @@
+{
+  "args": {
+    "clientVersion": 1,
+    "lastSeq": 42,
+    "token": "tok_base64url_value"
+  },
+  "cmdId": "c-hello",
+  "name": "hello",
+  "v": 1
+}

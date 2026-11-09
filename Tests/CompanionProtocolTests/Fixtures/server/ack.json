@@ -1,0 +1,12 @@
+{
+  "data": {
+    "cmdId": "c-01",
+    "code": "not_available",
+    "message": "expand is not available yet",
+    "ok": false
+  },
+  "seq": 18,
+  "ts": 1762700000018,
+  "type": "ack",
+  "v": 1
+}

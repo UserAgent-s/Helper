@@ -1,0 +1,14 @@
+{
+  "data": {
+    "args": {
+      "bundleId": "com.google.Chrome"
+    },
+    "code": "fell_back_to_whole_system",
+    "message": "Chrome is not running",
+    "severity": "info"
+  },
+  "seq": 5,
+  "ts": 1762700000005,
+  "type": "notice",
+  "v": 1
+}

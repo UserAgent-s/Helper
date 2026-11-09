@@ -1,0 +1,11 @@
+{
+  "data": {
+    "peakDBFS": -30.5,
+    "rmsDBFS": -48.0,
+    "source": "me"
+  },
+  "seq": 6,
+  "ts": 1762700000006,
+  "type": "level",
+  "v": 1
+}

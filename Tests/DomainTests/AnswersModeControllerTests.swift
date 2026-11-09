@@ -249,7 +249,7 @@ import Testing
 
         try await controller.start()
         await trigger.fire()
-        try await Task.sleep(for: .milliseconds(30))
+        await waitUntil { await collector.events.contains(.noContext) }
 
         let events = await collector.events
         #expect(events.contains(.manualResponsePending))

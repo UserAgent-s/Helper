@@ -1,0 +1,20 @@
+{
+  "data": {
+    "answerId": "resp_2",
+    "offset": 0,
+    "points": [
+      {
+        "end": 16,
+        "index": 0,
+        "open": true,
+        "pointId": "resp_2.0",
+        "start": 0
+      }
+    ],
+    "text": "1. Ключевой риск"
+  },
+  "seq": 9,
+  "ts": 1762700000009,
+  "type": "answer.delta",
+  "v": 1
+}

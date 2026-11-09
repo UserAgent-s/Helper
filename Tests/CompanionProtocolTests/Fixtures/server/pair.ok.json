@@ -1,0 +1,10 @@
+{
+  "data": {
+    "deviceId": "dev_a1",
+    "deviceToken": "tok_base64url_value"
+  },
+  "seq": 2,
+  "ts": 1762700000002,
+  "type": "pair.ok",
+  "v": 1
+}

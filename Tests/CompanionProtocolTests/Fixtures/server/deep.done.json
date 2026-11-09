@@ -1,0 +1,11 @@
+{
+  "data": {
+    "errorCode": "rate_limited",
+    "requestId": "deep_1",
+    "status": "failed"
+  },
+  "seq": 16,
+  "ts": 1762700000016,
+  "type": "deep.done",
+  "v": 1
+}

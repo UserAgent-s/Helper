@@ -1,0 +1,8 @@
+{
+  "args": {
+    "mode": "passive"
+  },
+  "cmdId": "c-mode",
+  "name": "set_mode",
+  "v": 1
+}

@@ -110,7 +110,12 @@ import Testing
         await begin(logger, "partial", items: ["u1", "u2"])
         await logger.recordTranscript(final("u1", "Только начало"))
         await begin(logger, "none", items: ["u9"])
-        try await Task.sleep(for: .milliseconds(80))
+        await waitUntil {
+            await logger.flush()
+            let partial = await repository.latest(responseID: "partial")?.questionTranscriptionStatus
+            let none = await repository.latest(responseID: "none")?.questionTranscriptionStatus
+            return partial != .pending && none != .pending
+        }
         await logger.flush()
 
         #expect(await repository.latest(responseID: "partial")?.questionText == "Только начало")
@@ -237,7 +242,10 @@ import Testing
         await logger.recordTranscript(final("x", "x"))
         await logger.recordTranscript(final("y", "y"))
         await begin(logger, "r1", items: ["old"])
-        try await Task.sleep(for: .milliseconds(60))
+        await waitUntil {
+            await logger.flush()
+            return await repository.latest(responseID: "r1")?.questionTranscriptionStatus != .pending
+        }
         await logger.flush()
 
         #expect(await repository.latest(responseID: "r1")?.questionTranscriptionStatus == .failed)

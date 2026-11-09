@@ -1,0 +1,13 @@
+{
+  "data": {
+    "deviceId": "dev_a1",
+    "minClientVersion": 1,
+    "protocolVersion": 1,
+    "replayed": false,
+    "serverVersion": "0.2.0"
+  },
+  "seq": 1,
+  "ts": 1762700000001,
+  "type": "hello.ok",
+  "v": 1
+}

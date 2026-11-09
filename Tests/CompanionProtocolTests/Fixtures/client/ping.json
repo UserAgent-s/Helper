@@ -1,0 +1,8 @@
+{
+  "args": {
+    "nonce": "n1"
+  },
+  "cmdId": "c-ping",
+  "name": "ping",
+  "v": 1
+}

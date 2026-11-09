@@ -1,0 +1,10 @@
+{
+  "data": {
+    "code": "unauthorized",
+    "fatal": true
+  },
+  "seq": 19,
+  "ts": 1762700000019,
+  "type": "error",
+  "v": 1
+}

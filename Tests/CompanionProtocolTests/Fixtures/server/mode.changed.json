@@ -1,0 +1,10 @@
+{
+  "data": {
+    "mode": "recording",
+    "phase": "starting"
+  },
+  "seq": 4,
+  "ts": 1762700000004,
+  "type": "mode.changed",
+  "v": 1
+}

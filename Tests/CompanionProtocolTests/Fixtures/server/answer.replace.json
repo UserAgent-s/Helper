@@ -1,0 +1,10 @@
+{
+  "data": {
+    "answerId": "resp_2",
+    "text": "1. Главный риск"
+  },
+  "seq": 10,
+  "ts": 1762700000010,
+  "type": "answer.replace",
+  "v": 1
+}
