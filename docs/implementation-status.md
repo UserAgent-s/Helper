@@ -798,3 +798,13 @@ M1 по коду закрыт (S1.1–S1.7). Ручной чек-лист M1 в 
 
 Оба счётчика внутренние (internal), доступны только через `@testable`. Попутно найдено поведение в коде: `RecordingModeController.stop()` отменяет producer до того, как кадры в полёте дойдут до конвейера. Последние миллисекунды звука при остановке записи могут теряться. Для стенограммы это допустимо, оставлено как есть.
 Итого swift 374 + AppTests.
+
+### S2.3 Сопряжение, токены и RequestGuard
+
+- `Sources/CompanionProtocol/PairingPrimitives.swift`: `CompanionRandomSource` и `SystemCompanionRandom` (`SecRandomCopyBytes`), `CompanionSecrets` (base64url, SHA-256 hex, сравнение за постоянное время, 6-значный код с отбраковкой), `PairingCodeKind {qr128, numeric6}` с лимитами 20 и 5, `PairedDevice`, `PairedDeviceStoring`, `InMemoryPairedDeviceStore`.
+- `Sources/CompanionProtocol/PairingStore.swift`: actor с `issueCode`, `redeem(code:deviceName:)` → `PairingGrant {deviceId, deviceToken}`, `authenticate(token:)` (обновляет lastSeen), `revoke`, `revokeAll`, поток `revocations`. Ошибки `pair_invalid_code`, `pair_code_expired`, `pair_attempts_exhausted`.
+- `Sources/CompanionProtocol/RequestGuard.swift`: `IPAddressLiteral` (inet_pton, IPv4-mapped, зона IPv6), `RequestGuard.evaluate` → `source_not_local | host_mismatch | origin_mismatch`, `FailureThrottle` (5 бесплатных, потом 2^n до 60 с, забывание через 15 мин).
+- `Sources/Persistence/SQLitePairedDeviceStore.swift` и миграция v3 `paired_devices`. Решение «SQLite, не Keychain» и все правила описаны в ADR 0005, раздел S2.3. Файла `KeychainPairedDeviceStore` из плана нет.
+- Отклонение от плана: «Revoke закрывает соединения» здесь проверяется только как событие в `revocations`. Закрытие сокета появится в S2.4.
+- Тесты: `PairingStoreTests` (17), `RequestGuardTests` (12), `SQLitePairedDeviceStoreTests` (3). Тесты версий миграций теперь ждут `[1, 2, 3]`.
+

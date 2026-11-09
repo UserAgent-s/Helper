@@ -44,7 +44,7 @@ let package = Package(
         ),
         .target(
             name: "Persistence",
-            dependencies: ["Domain"],
+            dependencies: ["Domain", "CompanionProtocol"],
             swiftSettings: [.swiftLanguageMode(.v6)],
             linkerSettings: [.linkedLibrary("sqlite3")]
         ),
@@ -105,7 +105,7 @@ let package = Package(
         ),
         .testTarget(
             name: "PersistenceTests",
-            dependencies: ["Persistence"],
+            dependencies: ["Persistence", "CompanionProtocol"],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
         .testTarget(

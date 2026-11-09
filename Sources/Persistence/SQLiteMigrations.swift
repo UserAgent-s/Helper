@@ -121,5 +121,16 @@ enum SQLiteMigrations {
             WHERE model_id NOT LIKE 'gpt-realtime%'
             """,
         ], backsUpExistingDatabase: true),
+        SQLiteMigration(version: 3, statements: [
+            """
+            CREATE TABLE paired_devices (
+                device_id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                token_hash TEXT NOT NULL UNIQUE,
+                created_at TEXT NOT NULL,
+                last_seen_at TEXT
+            )
+            """,
+        ]),
     ]
 }
