@@ -10,7 +10,7 @@ final class AnswerOverlayWindowController: NSObject {
     private let viewModel: AnswerOverlayViewModel
     private let preferences: OverlayPreferencesStore
     private let overlaySwitch: OverlaySwitch
-    private let hotKeyManager = GlobalHotKeyManager()
+    private let hotKeyManager: GlobalHotKeyManager
     private var manuallyHidden = false
     private var appliedStyle: OverlayStyle
     private var appliedFontFamily: OverlayFontFamily
@@ -23,8 +23,10 @@ final class AnswerOverlayWindowController: NSObject {
         viewModel: AnswerOverlayViewModel,
         preferences: OverlayPreferencesStore = OverlayPreferencesStore(),
         overlaySwitch: OverlaySwitch? = nil,
-        registersHotKeys: Bool = true
+        registersHotKeys: Bool = true,
+        hotKeyBackend: HotKeyBackend? = nil
     ) {
+        hotKeyManager = GlobalHotKeyManager(backend: hotKeyBackend)
         self.viewModel = viewModel
         self.preferences = preferences
         self.overlaySwitch = overlaySwitch ?? OverlaySwitch(preferences: preferences)

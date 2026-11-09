@@ -876,3 +876,22 @@ M1 по коду закрыт (S1.1–S1.7). Ручной чек-лист M1 в 
   - `OverlayToggleBridgeTests` (1): snapshot отражает выключение, ответ при этом доходит до веб-панели, повторная установка того же значения ничего не рассылает.
 - XCUITest `OverlaySettingUITests` (переключатель во «Внешнем виде») собирается в `make ui-test`; запуск ждёт разрешения режима автоматизации от владельца, как и в S2.8.
 - Под полной нагрузкой verify-fast один раз упали `OpenAIRealtimeAnswerClientTests.contextFullyClearedAfterVisibleAnswerCompletes` и `AnswerOverlayViewModelTests.resettingWhileCollectingContext…`. Модули этим шагом не затронуты, отдельно оба прошли 5 из 5, повторный verify-fast зелёный. Это гонки по времени, как и с `CaptureHubTests` в S2.8.
+
+### S2.10 Глобальные хоткеи на Carbon `RegisterEventHotKey`
+
+- `GlobalHotKeyManager` больше не использует мониторы `NSEvent`. Глобальный монитор `keyDown` без разрешения Accessibility не получал событий и не поглощал нажатие, поэтому символ попадал в активное окно. Теперь регистрация идёт через `RegisterEventHotKey` с обработчиком `kEventHotKeyPressed` на `GetApplicationEventTarget()` (бэкенд `CarbonHotKeyBackend`, сигнатура `UA57`). Accessibility и Input Monitoring не нужны, нажатие поглощается системой и в активное окно не печатается. Хоткей работает и при фокусе в приложении, поэтому локальный монитор больше не нужен.
+- API: в SDK macOS 27 объявлений `RegisterEventHotKey`, `EventHotKeyID` и `kEventHotKeyPressed` нет в просматриваемых заголовках HIToolbox, но символы экспортируются в `HIToolbox.tbd`, и модуль `Carbon.HIToolbox` их отдаёт. Это проверено отдельной пробой в scratchpad: регистрация вернула `noErr`, повторная регистрация той же комбинации — `eventHotKeyExistsErr` (-9878).
+- Колбэк Carbon — C-функция без захвата. Бэкенд передаётся через `userData` (`Unmanaged.passUnretained`), а вызов идёт в `MainActor.assumeIsolated`, потому что события application target доставляются на главном потоке. Бэкенд за протоколом `HotKeyBackend` подменяется в тестах. `isolated deinit` снимает регистрации, если `removeAll()` не был вызван.
+- Комбинации: ⌥↩ («Ответить сейчас») и ⌥⌘H (показать или скрыть оверлей) сохранены. В `HotKeyAction` добавлены заготовки `toggleSession` и `toggleScreen` без комбинаций по умолчанию: регистрировать нечего, пока нет пользовательской настройки. `HotKeyCombo` отбрасывает нерелевантные флаги (Caps Lock, Fn) и переводит модификаторы в маску Carbon.
+- Конфликты: повтор комбинации внутри приложения отклоняется до вызова Carbon (`.duplicate`), первая привязка сохраняется. Если комбинацию уже занял другой процесс или регистратор, возвращается `.unavailable(status)`, и запись не сохраняется.
+- Тесты `HotKeyTests` в AppTests (10):
+  - комбинации по умолчанию и их уникальность;
+  - перевод модификаторов в маску Carbon;
+  - регистрация и снятие через бэкенд;
+  - отказ повторной комбинации;
+  - одно нажатие вызывает ровно одно действие;
+  - ошибка бэкенда не сохраняется;
+  - `removeAll` снимает регистрации и обработчик;
+  - настоящий Carbon: регистрация без Accessibility, обнаружение занятой комбинации и освобождение после снятия;
+  - интеграционный: нажатие ⌥↩ через `AnswerOverlayWindowController` с поддельным бэкендом дважды даёт ровно один `forceResponse` у поддельного `LiveResponder`.
+- XCUITest «хоткей Answer now даёт ровно один ответ» не добавлен. В приложении нет режима запуска с поддельным Realtime-транспортом, а добавлять такой переключатель в поставляемую сборку ради UI-теста я не стал. Тот же путь (хоткей → `AnswerOverlayViewModel.forceAnswerNow` → `ManualAnswerTrigger` → `AnswersModeController` → `forceResponse`) покрыт интеграционным тестом выше. Владельцу остаётся ручная проверка: ⌥↩ в другом приложении (например, в TextEdit) при выключенном Accessibility для UserAgent057 даёт один ответ, а перевод строки в документ не вставляется.
