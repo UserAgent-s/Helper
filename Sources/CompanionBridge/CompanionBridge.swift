@@ -270,7 +270,7 @@ public actor CompanionService {
     private let pairing: PairingStore
     private let bridge: CompanionBridge
     private let transport: any CompanionTransport
-    private let configuration: CompanionServerConfiguration
+    private(set) public var configuration: CompanionServerConfiguration
     private let serverVersion: String
     private let addresses: @Sendable () -> [String]
     private let networkMonitor: any CompanionNetworkMonitoring
@@ -336,6 +336,15 @@ public actor CompanionService {
             await bridge.setPublisher(nil)
             throw error
         }
+    }
+
+    @discardableResult
+    public func update(configuration newValue: CompanionServerConfiguration) async throws -> UInt16? {
+        guard newValue != configuration else { return port }
+        configuration = newValue
+        guard port != nil else { return nil }
+        await stop()
+        return try await start()
     }
 
     public func stop() async {

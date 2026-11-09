@@ -42,6 +42,7 @@ public actor PairingStore {
     private var codes: [PairingCodeKind: ActiveCode] = [:]
     private var devices: [String: PairedDevice] = [:]
     private var loaded = false
+    private var pairingObservers: [UUID: AsyncStream<PairedDevice>.Continuation] = [:]
 
     public nonisolated let revocations: AsyncStream<PairingRevocation>
     private let revocationContinuation: AsyncStream<PairingRevocation>.Continuation
@@ -68,6 +69,24 @@ public actor PairingStore {
         let code = PairingCode(kind: kind, value: value, expiresAt: now().addingTimeInterval(codeLifetime))
         codes[kind] = ActiveCode(code: code)
         return code
+    }
+
+    public func pairingEvents() -> AsyncStream<PairedDevice> {
+        let (stream, continuation) = AsyncStream<PairedDevice>.makeStream(bufferingPolicy: .bufferingNewest(8))
+        let id = UUID()
+        pairingObservers[id] = continuation
+        continuation.onTermination = { [weak self] _ in
+            Task { await self?.removePairingObserver(id) }
+        }
+        return stream
+    }
+
+    public var pairingObserverCount: Int {
+        pairingObservers.count
+    }
+
+    private func removePairingObserver(_ id: UUID) {
+        pairingObservers[id] = nil
     }
 
     public func cancelCode(_ kind: PairingCodeKind) {
@@ -108,6 +127,9 @@ public actor PairingStore {
         )
         try await storage.insert(device)
         devices[device.deviceId] = device
+        for observer in pairingObservers.values {
+            observer.yield(device)
+        }
         return PairingGrant(deviceId: device.deviceId, deviceToken: token)
     }
 

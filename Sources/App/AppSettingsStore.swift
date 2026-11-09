@@ -1,3 +1,4 @@
+import CompanionServer
 import Foundation
 import Domain
 import RealtimeClient
@@ -29,6 +30,8 @@ final class AppSettingsStore: @unchecked Sendable {
         static let outputRoutePolicy = "com.local.UserAgent057.settings.audio.outputRoutePolicy"
         static let systemAudioBackend = "com.local.UserAgent057.settings.developer.systemAudioBackend"
         static let companionServerEnabled = "com.local.UserAgent057.settings.companion.serverEnabled"
+        static let companionPort = "com.local.UserAgent057.settings.companion.port"
+        static let companionLoopbackOnly = "com.local.UserAgent057.settings.companion.loopbackOnly"
     }
 
     init(defaults: UserDefaults = .standard) {
@@ -119,5 +122,22 @@ final class AppSettingsStore: @unchecked Sendable {
     var companionServerEnabled: Bool {
         get { defaults.bool(forKey: Keys.companionServerEnabled) }
         set { defaults.set(newValue, forKey: Keys.companionServerEnabled) }
+    }
+
+    var companionPort: UInt16 {
+        get {
+            let stored = defaults.integer(forKey: Keys.companionPort)
+            return (1024...65535).contains(stored) ? UInt16(stored) : CompanionServerConfiguration.defaultPort
+        }
+        set { defaults.set(Int(newValue), forKey: Keys.companionPort) }
+    }
+
+    var companionLoopbackOnly: Bool {
+        get { defaults.bool(forKey: Keys.companionLoopbackOnly) }
+        set { defaults.set(newValue, forKey: Keys.companionLoopbackOnly) }
+    }
+
+    var companionConfiguration: CompanionServerConfiguration {
+        CompanionServerConfiguration(preferredPort: companionPort, bind: companionLoopbackOnly ? .loopback : .anyInterface)
     }
 }

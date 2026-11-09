@@ -17,6 +17,7 @@ final class MenuBarController: NSObject {
     private let forceAnswerItem: NSMenuItem
     private let historyItem: NSMenuItem
     private let settingsItem: NSMenuItem
+    private let pairingItem: NSMenuItem
     private let languageMenuItem: NSMenuItem
     private let quitItem: NSMenuItem
     private var languageOptionItems: [AppLanguage: NSMenuItem] = [:]
@@ -34,12 +35,13 @@ final class MenuBarController: NSObject {
         forceAnswerItem = NSMenuItem(title: "", action: #selector(Self.forceAnswerNowTapped), keyEquivalent: "")
         historyItem = NSMenuItem(title: "", action: #selector(Self.openHistoryTapped), keyEquivalent: "")
         settingsItem = NSMenuItem(title: "", action: #selector(Self.openSettingsTapped), keyEquivalent: "")
+        pairingItem = NSMenuItem(title: "", action: #selector(Self.openPairingTapped), keyEquivalent: "")
         languageMenuItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
         quitItem = NSMenuItem(title: "", action: #selector(Self.quitTapped), keyEquivalent: "q")
         super.init()
 
         statusLabelItem.isEnabled = false
-        [passiveItem, answersItem, recordingItem, forceAnswerItem, historyItem, settingsItem, quitItem].forEach { $0.target = self }
+        [passiveItem, answersItem, recordingItem, forceAnswerItem, historyItem, settingsItem, pairingItem, quitItem].forEach { $0.target = self }
 
         let languageSubmenu = NSMenu()
         for language in AppLanguage.allCases {
@@ -62,6 +64,7 @@ final class MenuBarController: NSObject {
         menu.addItem(.separator())
         menu.addItem(historyItem)
         menu.addItem(settingsItem)
+        menu.addItem(pairingItem)
         menu.addItem(languageMenuItem)
         menu.addItem(.separator())
         menu.addItem(quitItem)
@@ -78,6 +81,7 @@ final class MenuBarController: NSObject {
     @objc private func forceAnswerNowTapped() { overlayViewModel.forceAnswerNow() }
     @objc private func openHistoryTapped() { navigationState.isShowingHistory = true }
     @objc private func openSettingsTapped() { navigationState.isShowingSettings = true }
+    @objc private func openPairingTapped() { navigationState.requestPairing() }
     @objc private func quitTapped() { modeViewModel.terminate() }
 
     @objc private func languageTapped(_ sender: NSMenuItem) {
@@ -105,6 +109,7 @@ final class MenuBarController: NSObject {
         forceAnswerItem.title = loc("Ответить сейчас")
         historyItem.title = loc("Открыть историю")
         settingsItem.title = loc("Настройки")
+        pairingItem.title = loc("Подключить устройство…")
         languageMenuItem.title = loc("Язык")
         quitItem.title = loc("Завершить UserAgent057")
         syncModeState()

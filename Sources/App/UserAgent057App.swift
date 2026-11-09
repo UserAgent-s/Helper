@@ -33,15 +33,39 @@ struct UserAgent057App: App {
         }
         .windowResizability(.contentSize)
 
+        .commands {
+            PairingCommands(navigationState: root.navigationState)
+        }
+
         Window(loc("Настройки"), id: SettingsWindow.id) {
-            SettingsRootView(viewModel: root.settingsViewModel)
+            SettingsRootView(viewModel: root.settingsViewModel, navigationState: root.navigationState)
         }
         .windowResizability(.contentMinSize)
+
+        Window(loc("Подключить устройство"), id: PairingWindow.id) {
+            CompanionPairingView(viewModel: root.companionPairingViewModel, navigationState: root.navigationState)
+        }
+        .windowResizability(.contentSize)
     }
 }
 
 enum SettingsWindow {
     static let id = "settings"
+}
+
+struct PairingCommands: Commands {
+    var navigationState: AppNavigationState
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some Commands {
+        CommandGroup(after: .appSettings) {
+            Button(loc("Подключить устройство…")) {
+                navigationState.markPairingRequested()
+                openWindow(id: PairingWindow.id)
+            }
+            .keyboardShortcut("p", modifiers: [.command, .shift])
+        }
+    }
 }
 
 @MainActor

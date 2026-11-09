@@ -849,3 +849,17 @@ M1 по коду закрыт (S1.1–S1.7). Ручной чек-лист M1 в 
   - `snapshotWhenEvicted`: буфер на 3 события, плюс случай `lastSeq` из будущего.
   - `ModeActivityGuardTests` (3), `CompanionServiceURLTests` (2).
 - Проверено в Chrome на демо-стенде: старый токен даёт 4401 и возвращает форму, сопряжение по `#pair=` проходит. После остановки сервера статус «нет связи» и баннер примерно через 20 с, при этом переподключения идут по backoff. Плановая проверка «обрыв 10 с без дублей» сделана тестом `reconnectReplay`; живой обрыв Wi-Fi на телефоне — в ручной чек-лист владельца.
+
+### S2.8 Сопряжение на Mac и управление устройствами
+
+- App:
+  - `CompanionPairingViewModel` (фазы idle, serverOff, noNetworkAddress, ready, expired, paired; маска до `reveal()`; часы внедряются через `now`; `tick()` раз в секунду; автозакрытие через `closeDelay` после события сопряжения);
+  - протокол `CompanionPairingServicing` с реализацией в расширении `CompanionService`; `QRCodeRenderer` (`CIFilter.qrCodeGenerator`, уровень коррекции M, целочисленный масштаб, программный рендер);
+  - `CompanionPairingView` (Esc и «Закрыть» через `.cancelAction`), сцена `Window` с id `companion-pairing`, `PairingCommands` (⇧⌘P), пункт в `MenuBarController`;
+  - вкладка «Устройства»: порт, loopback, URL, список устройств, отзыв.
+- Ядро: `PairingStore.pairingEvents()` и `pairingObserverCount`, публичный `PairingCode.init`, `CompanionServerConfiguration: Equatable`, `CompanionService.update(configuration:)`, настройки `companion.port` и `companion.loopbackOnly`.
+- Тесты:
+  - `PairingEventsTests` (2);
+  - `CompanionPairingViewModelTests` в AppTests (7): маска и QR, истечение и новый код, автозакрытие после первого сопряжения, предложение включить сервер, отсутствие LAN-адреса, флаг явного открытия, порт по умолчанию и loopback.
+- XCUITest: новый таргет `UserAgent057UITests` (`Tests/UITests`) и `make ui-test`, в verify-fast не входит. Тесты: окно не появляется при запуске; ⇧⌘P открывает окно, Esc закрывает. На этом Mac запуск упёрся в «Timed out while enabling automation mode»: режим автоматизации macOS требует подтверждения владельца, сам я его не включал. Владелец запускает `make ui-test` и подтверждает запрос.
+- Ручная проверка критерия «меньше 30 с от нажатия до живой панели» — в чек-листе владельца.

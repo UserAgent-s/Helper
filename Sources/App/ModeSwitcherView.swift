@@ -184,6 +184,12 @@ struct ModeSwitcherView: View {
             NSApp.activate()
             navigationState.isShowingSettings = false
         }
+        .onChange(of: navigationState.isShowingPairing) { _, isShowing in
+            guard isShowing else { return }
+            openWindow(id: PairingWindow.id)
+            NSApp.activate()
+            navigationState.isShowingPairing = false
+        }
         .sheet(isPresented: Binding(get: { navigationState.isShowingOnboarding }, set: { navigationState.isShowingOnboarding = $0 })) {
             OnboardingView(secretStoring: secretStoring, whisperKitTranscribing: whisperKitTranscribing, permissionsChecking: permissionsChecking) {
                 settingsStore.onboardingCompleted = true

@@ -55,6 +55,7 @@ final class CompositionRoot {
     let companionBridge: CompanionBridge
     let companionService: CompanionService
     let modeActivityGuard = ModeActivityGuard()
+    let companionPairingViewModel: CompanionPairingViewModel
 
     init() {
         let permissionsChecking = SystemPermissionsChecker()
@@ -189,6 +190,7 @@ final class CompositionRoot {
         let companionService = CompanionService(
             pairing: PairingStore(storage: SQLitePairedDeviceStore(database: database)),
             bridge: companionBridge,
+            configuration: settingsStore.companionConfiguration,
             serverVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev"
         )
         self.companionBridge = companionBridge
@@ -208,7 +210,7 @@ final class CompositionRoot {
             summaryGenerating: summaryGenerating,
             summaryRepository: summaryRepository
         )
-        settingsViewModel = SettingsViewModel(
+        let settingsViewModel = SettingsViewModel(
             settingsStore: settingsStore,
             secretStoring: secretStoring,
             audio: AudioSettingsViewModel(
@@ -220,6 +222,11 @@ final class CompositionRoot {
             permissionsChecking: permissionsChecking,
             recordingsDirectory: recordingsDirectory,
             companionService: companionService
+        )
+        self.settingsViewModel = settingsViewModel
+        companionPairingViewModel = CompanionPairingViewModel(
+            service: companionService,
+            enableServer: { await settingsViewModel.enableCompanionServer() }
         )
 
         let meetingRepository = self.meetingRepository

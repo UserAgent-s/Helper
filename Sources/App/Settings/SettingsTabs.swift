@@ -204,6 +204,9 @@ struct ProfileSettingsTab: View {
 
 struct DeviceRoleSettingsTab: View {
     @Bindable var viewModel: SettingsViewModel
+    var navigationState: AppNavigationState? = nil
+    @Environment(\.openWindow) private var openWindow
+    @State private var isConfirmingRevokeAll = false
 
     var body: some View {
         Form {
@@ -228,12 +231,58 @@ struct DeviceRoleSettingsTab: View {
                         .font(.caption.monospaced())
                         .textSelection(.enabled)
                 }
-                Text(loc("Сервер принимает только устройства, сопряжённые по коду. Экран сопряжения появится на шаге S2.8."))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                HStack {
+                    TextField(loc("Порт"), text: $viewModel.companionPortText)
+                        .frame(width: 120)
+                        .onSubmit { Task { await viewModel.commitCompanionPort() } }
+                    Button(loc("Применить")) { Task { await viewModel.commitCompanionPort() } }
+                        .disabled(!viewModel.isCompanionPortValid)
+                }
+                Toggle(loc("Только этот Mac (127.0.0.1), без доступа из сети"), isOn: $viewModel.companionLoopbackOnly)
+                Button(loc("Подключить устройство…")) {
+                    navigationState?.markPairingRequested()
+                    openWindow(id: PairingWindow.id)
+                }
+                .disabled(navigationState == nil)
+            }
+            Section(loc("Сопряжённые устройства")) {
+                if viewModel.companionDevices.isEmpty {
+                    Text(loc("Нет сопряжённых устройств"))
+                        .foregroundStyle(.secondary)
+                }
+                ForEach(viewModel.companionDevices) { device in
+                    HStack {
+                        Image(systemName: device.isConnected ? "dot.radiowaves.left.and.right" : "laptopcomputer")
+                            .foregroundStyle(device.isConnected ? .green : .secondary)
+                        VStack(alignment: .leading) {
+                            Text(device.name)
+                            Text(deviceSubtitle(device))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Button(loc("Отозвать"), role: .destructive) {
+                            Task { await viewModel.revokeCompanionDevice(device.id) }
+                        }
+                    }
+                }
+                HStack {
+                    Button(loc("Обновить")) { Task { await viewModel.loadCompanionDevices() } }
+                    Spacer()
+                    Button(loc("Отозвать всё"), role: .destructive) { isConfirmingRevokeAll = true }
+                        .disabled(viewModel.companionDevices.isEmpty)
+                }
             }
         }
         .formStyle(.grouped)
+        .confirmationDialog(loc("Отозвать все устройства?"), isPresented: $isConfirmingRevokeAll) {
+            Button(loc("Отозвать всё"), role: .destructive) {
+                Task { await viewModel.revokeAllCompanionDevices() }
+            }
+            Button(loc("Отмена"), role: .cancel) {}
+        } message: {
+            Text(loc("Все подключённые панели будут сразу отключены, для нового подключения понадобится сопряжение."))
+        }
     }
 }
 
@@ -246,6 +295,13 @@ extension DeviceRoleSettingsTab {
             return loc("Сервер выключен")
         }
         return loc("Сервер работает, порт") + " \(port)"
+    }
+
+    func deviceSubtitle(_ device: CompanionDeviceRow) -> String {
+        let added = device.createdAt.formatted(date: .abbreviated, time: .shortened)
+        guard let seen = device.lastSeenAt else { return loc("Добавлено") + " " + added }
+        let status = device.isConnected ? loc("на связи") : loc("был") + " " + seen.formatted(date: .abbreviated, time: .shortened)
+        return status
     }
 }
 

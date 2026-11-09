@@ -29,7 +29,7 @@ public enum CompanionBindAddress: Sendable, Equatable {
     case loopback
 }
 
-public struct CompanionServerConfiguration: Sendable {
+public struct CompanionServerConfiguration: Sendable, Equatable {
     public static let defaultPort: UInt16 = 47057
 
     public var preferredPort: UInt16

@@ -37,6 +37,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
 
 struct SettingsRootView: View {
     @Bindable var viewModel: SettingsViewModel
+    var navigationState: AppNavigationState? = nil
     @State private var selection: SettingsTab = .general
 
     var body: some View {
@@ -61,7 +62,7 @@ struct SettingsRootView: View {
         case .audio: AudioSettingsTab(viewModel: viewModel.audio)
         case .answers: AnswersSettingsTab(viewModel: viewModel)
         case .profile: ProfileSettingsTab(viewModel: viewModel)
-        case .devices: DeviceRoleSettingsTab(viewModel: viewModel)
+        case .devices: DeviceRoleSettingsTab(viewModel: viewModel, navigationState: navigationState)
         case .sessions: SessionsDataSettingsTab(viewModel: viewModel)
         case .accounts: AccountsSettingsTab(viewModel: viewModel)
         case .appearance: AppearanceSettingsTab(viewModel: viewModel)

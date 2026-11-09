@@ -20,11 +20,23 @@ final class SettingsViewModel {
     private(set) var companionPort: UInt16?
     private(set) var companionStartFailed = false
     private(set) var companionURLs: [String] = []
+    private(set) var companionDevices: [CompanionDeviceRow] = []
+    private(set) var companionDevicesError = false
+    private var applyingCompanionDirectly = false
+    var companionPortText: String
+    var companionLoopbackOnly: Bool {
+        didSet {
+            guard companionLoopbackOnly != oldValue else { return }
+            settingsStore.companionLoopbackOnly = companionLoopbackOnly
+            Task { await applyCompanionConfiguration() }
+        }
+    }
     private var companionURLTask: Task<Void, Never>?
     var companionServerEnabled: Bool {
         didSet {
             guard companionServerEnabled != oldValue else { return }
             settingsStore.companionServerEnabled = companionServerEnabled
+            guard !applyingCompanionDirectly else { return }
             let enabled = companionServerEnabled
             Task { await applyCompanionServer(enabled) }
         }
@@ -123,6 +135,8 @@ final class SettingsViewModel {
     ) {
         self.companionService = companionService
         self.companionServerEnabled = settingsStore.companionServerEnabled
+        self.companionPortText = String(settingsStore.companionPort)
+        self.companionLoopbackOnly = settingsStore.companionLoopbackOnly
         self.audio = audio
         self.settingsStore = settingsStore
         self.secretStoring = secretStoring
@@ -135,6 +149,7 @@ final class SettingsViewModel {
         await audio.load()
         companionPort = await companionService?.port
         await refreshCompanionURLs()
+        await loadCompanionDevices()
         screenRecordingStatus = await permissionsChecking.status(for: .screenRecording)
         microphoneStatus = await permissionsChecking.status(for: .microphone)
     }
@@ -155,6 +170,71 @@ final class SettingsViewModel {
             companionStartFailed = false
         }
         await refreshCompanionURLs()
+    }
+
+    func enableCompanionServer() async -> Bool {
+        if !companionServerEnabled {
+            applyingCompanionDirectly = true
+            companionServerEnabled = true
+            applyingCompanionDirectly = false
+        }
+        await applyCompanionServer(true)
+        return companionPort != nil
+    }
+
+    var isCompanionPortValid: Bool {
+        guard let value = Int(companionPortText.trimmingCharacters(in: .whitespaces)) else { return false }
+        return (1024...65535).contains(value)
+    }
+
+    func commitCompanionPort() async {
+        guard isCompanionPortValid, let value = UInt16(companionPortText.trimmingCharacters(in: .whitespaces)) else {
+            companionPortText = String(settingsStore.companionPort)
+            return
+        }
+        guard value != settingsStore.companionPort else { return }
+        settingsStore.companionPort = value
+        await applyCompanionConfiguration()
+    }
+
+    func applyCompanionConfiguration() async {
+        guard let companionService else { return }
+        do {
+            if let port = try await companionService.update(configuration: settingsStore.companionConfiguration) {
+                companionPort = port
+            }
+            companionStartFailed = false
+        } catch {
+            companionPort = nil
+            companionStartFailed = true
+        }
+        await refreshCompanionURLs()
+    }
+
+    func loadCompanionDevices() async {
+        guard let companionService else { return }
+        do {
+            let devices = try await companionService.pairingStore.pairedDevices()
+            let connected = Set(await companionService.connectedDeviceIds())
+            companionDevices = devices.map {
+                CompanionDeviceRow(id: $0.deviceId, name: $0.name, createdAt: $0.createdAt, lastSeenAt: $0.lastSeenAt, isConnected: connected.contains($0.deviceId))
+            }
+            companionDevicesError = false
+        } catch {
+            companionDevicesError = true
+        }
+    }
+
+    func revokeCompanionDevice(_ id: String) async {
+        guard let companionService else { return }
+        try? await companionService.pairingStore.revoke(deviceId: id)
+        await loadCompanionDevices()
+    }
+
+    func revokeAllCompanionDevices() async {
+        guard let companionService else { return }
+        try? await companionService.pairingStore.revokeAll()
+        await loadCompanionDevices()
     }
 
     func refreshCompanionURLs() async {
@@ -225,4 +305,12 @@ final class SettingsViewModel {
         screenRecordingStatus = await permissionsChecking.status(for: .screenRecording)
         microphoneStatus = await permissionsChecking.status(for: .microphone)
     }
+}
+
+struct CompanionDeviceRow: Identifiable, Equatable {
+    let id: String
+    let name: String
+    let createdAt: Date
+    let lastSeenAt: Date?
+    let isConnected: Bool
 }

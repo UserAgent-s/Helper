@@ -90,6 +90,20 @@ targets:
     dependencies:
       - target: UserAgent057
 
+  UserAgent057UITests:
+    type: bundle.ui-testing
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: Tests/UITests
+    settings:
+      base:
+        SWIFT_VERSION: "6.0"
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: UserAgent057
+    dependencies:
+      - target: UserAgent057
+
 schemes:
   UserAgent057:
     build:
@@ -113,3 +127,13 @@ schemes:
       config: Debug
       targets:
         - UserAgent057Tests
+
+  UserAgent057UITests:
+    build:
+      targets:
+        UserAgent057: all
+        UserAgent057UITests: [test]
+    test:
+      config: Debug
+      targets:
+        - UserAgent057UITests

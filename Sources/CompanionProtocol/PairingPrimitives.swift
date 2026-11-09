@@ -79,6 +79,12 @@ public struct PairingCode: Sendable, Equatable {
     public let kind: PairingCodeKind
     public let value: String
     public let expiresAt: Date
+
+    public init(kind: PairingCodeKind, value: String, expiresAt: Date) {
+        self.kind = kind
+        self.value = value
+        self.expiresAt = expiresAt
+    }
 }
 
 public struct PairedDevice: Sendable, Equatable, Codable {
