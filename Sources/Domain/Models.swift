@@ -30,6 +30,9 @@ public enum RealtimeAnswerEvent: Sendable, Equatable {
 
     case cancelled(responseID: String, reason: String)
     case failed(String)
+    case questionContext(responseID: String, itemIDs: [String])
+    case transcript(TranscriptEvent)
+    case transcriptFailed(itemID: String)
 }
 
 public enum TranscriptSource: Sendable, Equatable {

@@ -4,109 +4,151 @@ import Testing
 
 @Suite struct QuestionAnswerLoggerTests {
 
-    @Test func whisperNotCalledBeforeBeginDraft() async {
-        let transcribing = FakeLocalTranscribing()
-        let repository = FakeQuestionAnswerRepository()
-        _ = QuestionAnswerLogger(localTranscribing: transcribing, repository: repository, answerModelID: "test-model")
+    private func final(_ itemID: String, _ text: String, language: String? = nil) -> TranscriptEvent {
+        TranscriptEvent(speaker: .them, itemID: itemID, text: text, language: language, isFinal: true)
+    }
 
-        #expect(await transcribing.transcribeCallCount == 0)
+    private func begin(_ logger: QuestionAnswerLogger, _ responseID: String, items: [String], trigger: AnswerTriggerKind = .automatic) async {
+        await logger.beginDraft(responseID: responseID, triggerKind: trigger, sourceAppBundleID: nil, contextWindowStartedAt: Date(), questionItemIDs: items)
+    }
+
+    @Test func nothingPersistedBeforeBeginDraft() async {
+        let repository = FakeQuestionAnswerRepository()
+        let logger = QuestionAnswerLogger(repository: repository, answerModelID: "test-model")
+        await logger.recordTranscript(final("u1", "Вопрос"))
+        await logger.flush()
         #expect(await repository.savedPairs.isEmpty)
     }
 
-    @Test func beginDraftPersistsAnswerStreamingBeforeTranscriptionResolves() async throws {
-        let transcribing = FakeLocalTranscribing()
-        await transcribing.setDelay(.milliseconds(200))
+    @Test func beginDraftPersistsAnswerStreamingWhileTranscriptPending() async throws {
         let repository = FakeQuestionAnswerRepository()
-        let logger = QuestionAnswerLogger(localTranscribing: transcribing, repository: repository, answerModelID: "test-model")
+        let logger = QuestionAnswerLogger(repository: repository, answerModelID: "test-model")
 
-        await logger.beginDraft(
-            responseID: "r1",
-            triggerKind: .automatic,
-            sourceAppBundleID: "com.example.meet",
-            contextWindowStartedAt: Date(),
-            contextSnapshot: []
-        )
-        try await Task.sleep(for: .milliseconds(30))
+        await logger.beginDraft(responseID: "r1", triggerKind: .automatic, sourceAppBundleID: "com.example.meet", contextWindowStartedAt: Date(), questionItemIDs: ["u1"])
+        await logger.flush()
 
         let saved = await repository.latest(responseID: "r1")
         #expect(saved?.status == .answerStreaming)
         #expect(saved?.questionText == nil)
+        #expect(saved?.questionTranscriptionStatus == .pending)
+        #expect(saved?.sourceAppBundleID == "com.example.meet")
     }
 
-    @Test func multipleContextSegmentsPassedAsOneSnapshot() async throws {
-        let transcribing = FakeLocalTranscribing()
+    @Test func committedThenDeltaThenCompletedAttachesFinalText() async throws {
         let repository = FakeQuestionAnswerRepository()
-        let logger = QuestionAnswerLogger(localTranscribing: transcribing, repository: repository, answerModelID: "test-model")
+        let logger = QuestionAnswerLogger(repository: repository, answerModelID: "test-model")
 
-        let frames = (0..<3).map { index in
-            PCMAudioFrame(samples: [Int16(index)], sampleRate: 16000, channelCount: 1, capturedAt: Date(), source: .systemAudio)
-        }
+        await begin(logger, "r1", items: ["u1"])
+        await logger.recordTranscript(TranscriptEvent(speaker: .them, itemID: "u1", text: "Расскажите", isFinal: false))
+        await logger.flush()
+        #expect(await repository.latest(responseID: "r1")?.questionText == nil)
 
-        await logger.beginDraft(
-            responseID: "r1",
-            triggerKind: .automatic,
-            sourceAppBundleID: nil,
-            contextWindowStartedAt: Date(),
-            contextSnapshot: frames
-        )
-        try await Task.sleep(for: .milliseconds(30))
-
-        #expect(await transcribing.transcribeCallCount == 1)
-        #expect(await transcribing.receivedFrameBatches.first?.count == 3)
+        await logger.recordTranscript(final("u1", "Расскажите про Kafka", language: "ru"))
+        await logger.flush()
+        let saved = await repository.latest(responseID: "r1")
+        #expect(saved?.questionText == "Расскажите про Kafka")
+        #expect(saved?.questionTranscriptionStatus == .completed)
     }
 
-    @Test func manualTriggerCreatesRecordWithManualKind() async throws {
-        let transcribing = FakeLocalTranscribing()
+    @Test func completedBeforeDraftIsUsedImmediately() async throws {
         let repository = FakeQuestionAnswerRepository()
-        let logger = QuestionAnswerLogger(localTranscribing: transcribing, repository: repository, answerModelID: "test-model")
+        let logger = QuestionAnswerLogger(repository: repository, answerModelID: "test-model")
 
-        await logger.beginDraft(
-            responseID: "r1",
-            triggerKind: .manual,
-            sourceAppBundleID: nil,
-            contextWindowStartedAt: Date(),
-            contextSnapshot: []
-        )
-        try await Task.sleep(for: .milliseconds(20))
+        await logger.recordTranscript(final("u1", "Первая часть"))
+        await logger.recordTranscript(final("u2", "вторая часть?"))
+        await begin(logger, "r1", items: ["u1", "u2"])
+        await logger.flush()
 
-        #expect(await repository.latest(responseID: "r1")?.triggerKind == .manual)
+        let saved = await repository.latest(responseID: "r1")
+        #expect(saved?.questionText == "Первая часть вторая часть?")
+        #expect(saved?.questionTranscriptionStatus == .completed)
     }
 
-    @Test func answerSavedEvenWhileQuestionStillTranscribing() async throws {
-        let transcribing = FakeLocalTranscribing()
-        await transcribing.setDelay(.milliseconds(200))
+    @Test func failedItemDoesNotBlockOtherParts() async throws {
         let repository = FakeQuestionAnswerRepository()
-        let logger = QuestionAnswerLogger(localTranscribing: transcribing, repository: repository, answerModelID: "test-model")
+        let logger = QuestionAnswerLogger(repository: repository, answerModelID: "test-model")
 
-        await logger.beginDraft(
-            responseID: "r1",
-            triggerKind: .automatic,
-            sourceAppBundleID: nil,
-            contextWindowStartedAt: Date(),
-            contextSnapshot: []
-        )
+        await begin(logger, "r1", items: ["u1", "u2"])
+        await logger.recordTranscriptFailed(itemID: "u1")
+        await logger.recordTranscript(final("u2", "Как масштабировать?"))
+        await logger.flush()
+
+        let saved = await repository.latest(responseID: "r1")
+        #expect(saved?.questionText == "Как масштабировать?")
+        #expect(saved?.questionTranscriptionStatus == .completed)
+    }
+
+    @Test func allItemsFailedMarksQuestionNotRecognized() async throws {
+        let repository = FakeQuestionAnswerRepository()
+        let logger = QuestionAnswerLogger(repository: repository, answerModelID: "test-model")
+
+        await begin(logger, "r1", items: ["u1"])
+        await logger.recordTranscriptFailed(itemID: "u1")
+        await logger.flush()
+
+        let saved = await repository.latest(responseID: "r1")
+        #expect(saved?.questionTranscriptionStatus == .failed)
+        #expect(saved?.questionText == nil)
+    }
+
+    @Test func noQuestionItemsMarksQuestionNotRecognizedAtOnce() async throws {
+        let repository = FakeQuestionAnswerRepository()
+        let logger = QuestionAnswerLogger(repository: repository, answerModelID: "test-model")
+
+        await begin(logger, "r1", items: [], trigger: .manual)
+        await logger.flush()
+
+        let saved = await repository.latest(responseID: "r1")
+        #expect(saved?.questionTranscriptionStatus == .failed)
+        #expect(saved?.triggerKind == .manual)
+    }
+
+    @Test func transcriptTimeoutKeepsPartialTextOrFails() async throws {
+        let repository = FakeQuestionAnswerRepository()
+        let logger = QuestionAnswerLogger(repository: repository, answerModelID: "test-model", transcriptTimeout: .milliseconds(20))
+
+        await begin(logger, "partial", items: ["u1", "u2"])
+        await logger.recordTranscript(final("u1", "Только начало"))
+        await begin(logger, "none", items: ["u9"])
+        try await Task.sleep(for: .milliseconds(80))
+        await logger.flush()
+
+        #expect(await repository.latest(responseID: "partial")?.questionText == "Только начало")
+        #expect(await repository.latest(responseID: "partial")?.questionTranscriptionStatus == .completed)
+        #expect(await repository.latest(responseID: "none")?.questionTranscriptionStatus == .failed)
+    }
+
+    @Test func answerSavedEvenWhileQuestionStillPending() async throws {
+        let repository = FakeQuestionAnswerRepository()
+        let logger = QuestionAnswerLogger(repository: repository, answerModelID: "test-model")
+
+        await begin(logger, "r1", items: ["u1"])
         await logger.recordCompleted(responseID: "r1", finalText: "Готовый ответ", responseTotalMs: 850)
-        try await Task.sleep(for: .milliseconds(30))
+        await logger.flush()
 
         let saved = await repository.latest(responseID: "r1")
         #expect(saved?.answerText == "Готовый ответ")
         #expect(saved?.status == .completed)
         #expect(saved?.questionText == nil)
+
+        await logger.recordTranscript(final("u1", "Поздний вопрос"))
+        await logger.flush()
+        let late = await repository.latest(responseID: "r1")
+        #expect(late?.questionText == "Поздний вопрос")
+        #expect(late?.answerText == "Готовый ответ")
+        #expect(late?.id == saved?.id)
+        #expect(await logger.pendingDraftCount == 0)
     }
 
-    @Test func lateTranscriptionUpdatesCorrectUUID() async throws {
-        let transcribing = ScriptedLocalTranscribing()
-        await transcribing.setResult([TranscribedSegment(text: "Вопрос A", startMs: 0, endMs: 500, source: .local)], forFirstSample: 1)
-        await transcribing.setResult([TranscribedSegment(text: "Вопрос B", startMs: 0, endMs: 500, source: .local)], forFirstSample: 2)
+    @Test func lateTranscriptsUpdateTheirOwnDrafts() async throws {
         let repository = FakeQuestionAnswerRepository()
-        let logger = QuestionAnswerLogger(localTranscribing: transcribing, repository: repository, answerModelID: "test-model")
+        let logger = QuestionAnswerLogger(repository: repository, answerModelID: "test-model")
 
-        let frameA = PCMAudioFrame(samples: [1], sampleRate: 16000, channelCount: 1, capturedAt: Date(), source: .systemAudio)
-        let frameB = PCMAudioFrame(samples: [2], sampleRate: 16000, channelCount: 1, capturedAt: Date(), source: .systemAudio)
-
-        await logger.beginDraft(responseID: "r-a", triggerKind: .automatic, sourceAppBundleID: nil, contextWindowStartedAt: Date(), contextSnapshot: [frameA])
-        await logger.beginDraft(responseID: "r-b", triggerKind: .automatic, sourceAppBundleID: nil, contextWindowStartedAt: Date(), contextSnapshot: [frameB])
-        try await Task.sleep(for: .milliseconds(30))
+        await begin(logger, "r-a", items: ["a"])
+        await begin(logger, "r-b", items: ["b"])
+        await logger.recordTranscript(final("b", "Вопрос B"))
+        await logger.recordTranscript(final("a", "Вопрос A"))
+        await logger.flush()
 
         let pairA = await repository.latest(responseID: "r-a")
         let pairB = await repository.latest(responseID: "r-b")
@@ -115,69 +157,37 @@ import Testing
         #expect(pairA?.id != pairB?.id)
     }
 
-    @Test func transcriptionFailureSavesStatusFailedWithoutFabricatedQuestion() async throws {
-        let transcribing = FakeLocalTranscribing()
-        await transcribing.setError(TestError(message: "whisper_unavailable"))
-        let repository = FakeQuestionAnswerRepository()
-        let logger = QuestionAnswerLogger(localTranscribing: transcribing, repository: repository, answerModelID: "test-model")
-
-        await logger.beginDraft(responseID: "r1", triggerKind: .automatic, sourceAppBundleID: nil, contextWindowStartedAt: Date(), contextSnapshot: [])
-        try await Task.sleep(for: .milliseconds(30))
-
-        let saved = await repository.latest(responseID: "r1")
-        #expect(saved?.questionTranscriptionStatus == .failed)
-        #expect(saved?.questionText == nil)
-    }
-
-    @Test func transcriptionTimeoutSavesStatusFailed() async throws {
-        let transcribing = FakeLocalTranscribing()
-        await transcribing.setDelay(.milliseconds(200))
-        let repository = FakeQuestionAnswerRepository()
-        let logger = QuestionAnswerLogger(localTranscribing: transcribing, repository: repository, answerModelID: "test-model", whisperTimeout: .milliseconds(20))
-
-        await logger.beginDraft(responseID: "r1", triggerKind: .automatic, sourceAppBundleID: nil, contextWindowStartedAt: Date(), contextSnapshot: [])
-        try await Task.sleep(for: .milliseconds(60))
-
-        let saved = await repository.latest(responseID: "r1")
-        #expect(saved?.questionTranscriptionStatus == .failed)
-    }
-
     @Test func recordCancelledMarksStatusCancelled() async throws {
-        let transcribing = FakeLocalTranscribing()
-        await transcribing.setDelay(.milliseconds(200))
         let repository = FakeQuestionAnswerRepository()
-        let logger = QuestionAnswerLogger(localTranscribing: transcribing, repository: repository, answerModelID: "test-model")
+        let logger = QuestionAnswerLogger(repository: repository, answerModelID: "test-model")
 
-        await logger.beginDraft(responseID: "r1", triggerKind: .automatic, sourceAppBundleID: nil, contextWindowStartedAt: Date(), contextSnapshot: [])
+        await begin(logger, "r1", items: ["u1"])
         await logger.recordCancelled(responseID: "r1")
-        try await Task.sleep(for: .milliseconds(20))
+        await logger.flush()
 
         #expect(await repository.latest(responseID: "r1")?.status == .cancelled)
     }
 
     @Test func discardBeforeValidAnswerNeverPersistsAnything() async throws {
-        let transcribing = FakeLocalTranscribing()
         let repository = FakeQuestionAnswerRepository()
-        let logger = QuestionAnswerLogger(localTranscribing: transcribing, repository: repository, answerModelID: "test-model")
+        let logger = QuestionAnswerLogger(repository: repository, answerModelID: "test-model")
 
         await logger.discardBeforeValidAnswer(responseID: "never-started")
         await logger.recordCompleted(responseID: "never-started", finalText: "should not persist", responseTotalMs: nil)
-        try await Task.sleep(for: .milliseconds(20))
+        await logger.flush()
 
         #expect(await repository.savedPairs.isEmpty)
-        #expect(await transcribing.transcribeCallCount == 0)
     }
 
     @Test func twoConcurrentDraftsDoNotMix() async throws {
-        let transcribing = FakeLocalTranscribing()
         let repository = FakeQuestionAnswerRepository()
-        let logger = QuestionAnswerLogger(localTranscribing: transcribing, repository: repository, answerModelID: "test-model")
+        let logger = QuestionAnswerLogger(repository: repository, answerModelID: "test-model")
 
-        await logger.beginDraft(responseID: "r1", triggerKind: .automatic, sourceAppBundleID: nil, contextWindowStartedAt: Date(), contextSnapshot: [])
-        await logger.beginDraft(responseID: "r2", triggerKind: .manual, sourceAppBundleID: nil, contextWindowStartedAt: Date(), contextSnapshot: [])
+        await begin(logger, "r1", items: [])
+        await begin(logger, "r2", items: [], trigger: .manual)
         await logger.recordCompleted(responseID: "r1", finalText: "Ответ один", responseTotalMs: 100)
         await logger.recordCompleted(responseID: "r2", finalText: "Ответ два", responseTotalMs: 200)
-        try await Task.sleep(for: .milliseconds(30))
+        await logger.flush()
 
         let pair1 = await repository.latest(responseID: "r1")
         let pair2 = await repository.latest(responseID: "r2")
@@ -188,15 +198,12 @@ import Testing
     }
 
     @Test func qaLoggerWritesAreOrdered() async throws {
-        let transcribing = FakeLocalTranscribing()
-        await transcribing.setResult([TranscribedSegment(text: "Поздний вопрос", startMs: 0, endMs: 100, source: .remote)])
-        await transcribing.setDelay(.milliseconds(20))
         let repository = DelayedFirstWriteQuestionAnswerRepository(firstWriteDelay: .milliseconds(120))
-        let logger = QuestionAnswerLogger(localTranscribing: transcribing, repository: repository, answerModelID: "test-model")
+        let logger = QuestionAnswerLogger(repository: repository, answerModelID: "test-model")
 
-        await logger.beginDraft(responseID: "r1", triggerKind: .automatic, sourceAppBundleID: nil, contextWindowStartedAt: Date(), contextSnapshot: [])
+        await begin(logger, "r1", items: ["u1"])
         await logger.recordCompleted(responseID: "r1", finalText: "Готово", responseTotalMs: 10)
-        try await Task.sleep(for: .milliseconds(60))
+        await logger.recordTranscript(final("u1", "Поздний вопрос"))
         await logger.flush()
 
         let stored = await repository.stored.values.first
@@ -207,21 +214,33 @@ import Testing
     }
 
     @Test func qaModelIDsAreAnswerAndTranscriptionModels() async throws {
-        let transcribing = FakeLocalTranscribing()
         let repository = FakeQuestionAnswerRepository()
         let logger = QuestionAnswerLogger(
-            localTranscribing: transcribing,
             repository: repository,
             answerModelID: "gpt-realtime-2.1",
-            questionTranscriptionModelID: { "openai_whisper-small" }
+            questionTranscriptionModelID: { "gpt-transcribe" }
         )
 
-        await logger.beginDraft(responseID: "r1", triggerKind: .manual, sourceAppBundleID: nil, contextWindowStartedAt: Date(), contextSnapshot: [])
+        await begin(logger, "r1", items: [], trigger: .manual)
         await logger.flush()
 
         let saved = await repository.latest(responseID: "r1")
         #expect(saved?.answerModelID == "gpt-realtime-2.1")
-        #expect(saved?.questionTranscriptionModelID == "openai_whisper-small")
+        #expect(saved?.questionTranscriptionModelID == "gpt-transcribe")
+    }
+
+    @Test func transcriptRetentionIsBounded() async throws {
+        let repository = FakeQuestionAnswerRepository()
+        let logger = QuestionAnswerLogger(repository: repository, answerModelID: "test-model", transcriptTimeout: .milliseconds(20), transcriptRetention: 2)
+
+        await logger.recordTranscript(final("old", "Старое"))
+        await logger.recordTranscript(final("x", "x"))
+        await logger.recordTranscript(final("y", "y"))
+        await begin(logger, "r1", items: ["old"])
+        try await Task.sleep(for: .milliseconds(60))
+        await logger.flush()
+
+        #expect(await repository.latest(responseID: "r1")?.questionTranscriptionStatus == .failed)
     }
 }
 

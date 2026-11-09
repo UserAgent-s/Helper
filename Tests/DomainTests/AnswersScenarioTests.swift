@@ -49,30 +49,30 @@ import Testing
         await controller.stop()
     }
 
-    @Test func threeTurnExplanationThenQuestionAccumulatesFullContextSnapshot() async throws {
+    @Test func threeTurnExplanationThenQuestionJoinsAllRealtimeTranscripts() async throws {
         let systemAudio = FakeSystemAudioCapturing()
         let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
-        let transcribing = FakeLocalTranscribing()
         let repository = FakeQuestionAnswerRepository()
-        let logger = QuestionAnswerLogger(localTranscribing: transcribing, repository: repository, answerModelID: "test")
+        let logger = QuestionAnswerLogger(repository: repository, answerModelID: "test")
         let controller = AnswersModeController(
             captureHub: CaptureHub(system: systemAudio, microphone: FakeMicrophoneCapturing()), realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" },
             questionAnswerLogger: logger
         )
 
         try await controller.start()
-        let turns = SyntheticAudioFixtures.explanationThenPauseThenQuestion(turnDurationsMs: [300, 300, 300], pauseMs: 100)
-        for frame in turns {
-            await systemAudio.emit(frame)
+        for (index, text) in ["Мы строим платёжный шлюз.", "Нагрузка десять тысяч RPS.", "Как бы вы спроектировали ретраи?"].enumerated() {
+            await realtime.emit(.transcript(TranscriptEvent(speaker: .them, itemID: "u\(index)", text: text, isFinal: true)))
         }
-        try await Task.sleep(for: .milliseconds(20))
+        await realtime.emit(.questionContext(responseID: "r1", itemIDs: ["u0", "u1", "u2"]))
         await realtime.emit(.responseStarted(responseID: "r1", trigger: .automatic))
         await realtime.emit(.textDelta(responseID: "r1", text: "Ответ."))
         try await Task.sleep(for: .milliseconds(30))
+        await logger.flush()
 
-        #expect(await transcribing.transcribeCallCount == 1)
-        #expect(await transcribing.receivedFrameBatches.first?.count == turns.count)
+        let saved = await repository.latest(responseID: "r1")
+        #expect(saved?.questionText == "Мы строим платёжный шлюз. Нагрузка десять тысяч RPS. Как бы вы спроектировали ретраи?")
+        #expect(saved?.questionTranscriptionStatus == .completed)
 
         await controller.stop()
     }
@@ -111,27 +111,27 @@ import Testing
         await controller.stop()
     }
 
-    @Test func pauseInsideQuestionDoesNotSplitContextWindow() async throws {
+    @Test func pauseInsideQuestionKeepsBothTranscriptItemsInOneQuestion() async throws {
         let systemAudio = FakeSystemAudioCapturing()
         let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
-        let transcribing = FakeLocalTranscribing()
         let repository = FakeQuestionAnswerRepository()
-        let logger = QuestionAnswerLogger(localTranscribing: transcribing, repository: repository, answerModelID: "test")
+        let logger = QuestionAnswerLogger(repository: repository, answerModelID: "test")
         let controller = AnswersModeController(
             captureHub: CaptureHub(system: systemAudio, microphone: FakeMicrophoneCapturing()), realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" },
             questionAnswerLogger: logger
         )
 
         try await controller.start()
-        let frames = SyntheticAudioFixtures.toneBurst(durationMs: 200) + SyntheticAudioFixtures.silence(durationMs: 300) + SyntheticAudioFixtures.toneBurst(durationMs: 200)
-        for frame in frames { await systemAudio.emit(frame) }
-        try await Task.sleep(for: .milliseconds(20))
+        await realtime.emit(.questionContext(responseID: "r1", itemIDs: ["a", "b"]))
         await realtime.emit(.responseStarted(responseID: "r1", trigger: .automatic))
         await realtime.emit(.textDelta(responseID: "r1", text: "Ответ."))
+        await realtime.emit(.transcript(TranscriptEvent(speaker: .them, itemID: "b", text: "про индексы?", isFinal: true)))
+        await realtime.emit(.transcript(TranscriptEvent(speaker: .them, itemID: "a", text: "А что вы думаете", isFinal: true)))
         try await Task.sleep(for: .milliseconds(30))
+        await logger.flush()
 
-        #expect(await transcribing.receivedFrameBatches.first?.count == frames.count)
+        #expect(await repository.latest(responseID: "r1")?.questionText == "А что вы думаете про индексы?")
         await controller.stop()
     }
 

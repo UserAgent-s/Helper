@@ -14,6 +14,7 @@ public enum ForceAnswerStrategy: Sendable, Equatable {
 
 public actor OpenAIRealtimeAnswerClient: LiveResponder {
     public static let modelID = "gpt-realtime-2.1"
+    public static let transcriptionModelID = "gpt-transcribe"
     private static var endpointURL: URL {
         var components = URLComponents()
         components.scheme = "wss"
@@ -36,6 +37,10 @@ public actor OpenAIRealtimeAnswerClient: LiveResponder {
     private let reconnectBaseDelay: Duration
     private let maxReconnectAttempts: Int
     private let redactedLog: @Sendable (String) -> Void
+    private let transcriptionLanguages: [String]
+    private let contextMaxAge: TimeInterval
+    private let sweepInterval: Duration
+    private let now: @Sendable () -> Date
 
     private let publicStream: AsyncStream<RealtimeAnswerEvent>
     private let publicContinuation: AsyncStream<RealtimeAnswerEvent>.Continuation
@@ -45,6 +50,16 @@ public actor OpenAIRealtimeAnswerClient: LiveResponder {
     private var sessionActive = false
     private var eventsTask: Task<Void, Never>?
     private var contextWindow = AnswerContextWindow()
+    private var sweepTask: Task<Void, Never>?
+
+    private var audioItemIDs: [String] = []
+    private var transcripts: [String: String] = [:]
+    private var questionItemsByResponse: [String: [String]] = [:]
+    private var answerTextByResponse: [String: String] = [:]
+    private var carryOver: CarryOverMemory
+    private var carryOverItemID: String?
+    private var carryOverGeneration = UUID()
+    private var carryOverRefreshDeferred = false
 
     private var trackers: [String: ResponseTextTracker] = [:]
     private var responseTrigger: [String: AnswerTriggerKind] = [:]
@@ -68,8 +83,19 @@ public actor OpenAIRealtimeAnswerClient: LiveResponder {
         reconnectBaseDelay: Duration = .milliseconds(500),
         maxReconnectAttempts: Int = 3,
         forceAnswerStrategy: ForceAnswerStrategy = .systemItem,
+        transcriptionLanguages: [String] = ["ru", "en"],
+        carryOverCapacity: Int = 2,
+        carryOverMaxAge: TimeInterval = 600,
+        contextMaxAge: TimeInterval = 300,
+        sweepInterval: Duration = .seconds(10),
+        now: @escaping @Sendable () -> Date = { Date() },
         redactedLog: @escaping @Sendable (String) -> Void = { _ in }
     ) {
+        self.transcriptionLanguages = transcriptionLanguages
+        self.carryOver = CarryOverMemory(capacity: carryOverCapacity, maxAge: carryOverMaxAge)
+        self.contextMaxAge = contextMaxAge
+        self.sweepInterval = sweepInterval
+        self.now = now
         self.forceAnswerStrategy = forceAnswerStrategy
         self.transport = transport
         self.credentialProviding = credentialProviding
@@ -90,9 +116,11 @@ public actor OpenAIRealtimeAnswerClient: LiveResponder {
         let credential = try await Self.requireCredential(from: credentialProviding)
 
         resetSessionState()
+        carryOver.removeAll()
         try await transport.connect(url: Self.endpointURL, auth: .bearer(credential.apiKey))
         sessionActive = true
         startReceiveLoop()
+        startSweep()
         try await transport.send(.sessionUpdate(makeSessionConfig()))
         redactedLog("realtime session started (model=\(Self.modelID))")
     }
@@ -109,7 +137,7 @@ public actor OpenAIRealtimeAnswerClient: LiveResponder {
     }
 
     nonisolated public var capabilities: ProviderCapabilities {
-        [.serverVAD, .textInjection, .manualResponse, .streamingText]
+        [.serverVAD, .inputTranscription, .textInjection, .manualResponse, .streamingText]
     }
 
     public func injectContext(_ text: String) async throws {
@@ -123,7 +151,7 @@ public actor OpenAIRealtimeAnswerClient: LiveResponder {
             role: .system,
             text: RealtimeInstructions.injectedContextPrefix + trimmed
         )))
-        for id in evicted { try? await transport.send(.conversationItemDelete(itemID: id)) }
+        await deleteEvicted(evicted)
     }
 
     public func forceResponse() async throws {
@@ -191,6 +219,12 @@ public actor OpenAIRealtimeAnswerClient: LiveResponder {
         let idsToDelete = await contextWindow.takeAllForReset()
         for id in idsToDelete { try? await transport.send(.conversationItemDelete(itemID: id)) }
         try? await transport.send(.inputAudioBufferClear)
+        carryOver.removeAll()
+        await refreshCarryOverItem()
+        audioItemIDs.removeAll()
+        transcripts.removeAll()
+        questionItemsByResponse.removeAll()
+        answerTextByResponse.removeAll()
         trackers.removeAll()
         responseTrigger.removeAll()
         visibleResponseID = nil
@@ -212,12 +246,22 @@ public actor OpenAIRealtimeAnswerClient: LiveResponder {
         sessionActive = false
         eventsTask?.cancel()
         eventsTask = nil
+        sweepTask?.cancel()
+        sweepTask = nil
         await transport.close()
         resetSessionState()
+        carryOver.removeAll()
     }
 
     private func resetSessionState() {
-        contextWindow = AnswerContextWindow()
+        contextWindow = AnswerContextWindow(maxAge: contextMaxAge, now: now)
+        audioItemIDs.removeAll()
+        transcripts.removeAll()
+        questionItemsByResponse.removeAll()
+        answerTextByResponse.removeAll()
+        carryOverItemID = nil
+        carryOverGeneration = UUID()
+        carryOverRefreshDeferred = false
         trackers.removeAll()
         responseTrigger.removeAll()
         inFlightResponseIDs.removeAll()
@@ -236,7 +280,8 @@ public actor OpenAIRealtimeAnswerClient: LiveResponder {
             audio: AudioConfig(input: AudioInputConfig(
 
                 format: AudioFormatConfig(rate: 24_000),
-                turnDetection: vadSettingsProvider().config
+                turnDetection: vadSettingsProvider().config,
+                transcription: InputTranscriptionConfig(model: Self.transcriptionModelID, languages: transcriptionLanguages)
             )),
             reasoning: ReasoningConfig(effort: "low")
         )
@@ -284,8 +329,9 @@ public actor OpenAIRealtimeAnswerClient: LiveResponder {
 
         case .inputAudioBufferCommitted(let itemID, _):
             if windowStartedAt == nil { windowStartedAt = Date() }
+            audioItemIDs.append(itemID)
             let evicted = await contextWindow.trackCommittedUserItem(itemID)
-            for id in evicted { try? await transport.send(.conversationItemDelete(itemID: id)) }
+            await deleteEvicted(evicted)
             if pendingManualSend {
                 pendingManualSend = false
                 try? await sendManualResponseCreate()
@@ -297,6 +343,7 @@ public actor OpenAIRealtimeAnswerClient: LiveResponder {
         case .responseCreated(let responseID, let metadata):
             inFlightResponseIDs.insert(responseID)
             responseCreatedAt[responseID] = Date()
+            questionItemsByResponse[responseID] = audioItemIDs
             let trigger: AnswerTriggerKind
             if let echoed = metadata?["trigger"] {
                 trigger = echoed == "manual" ? .manual : .automatic
@@ -317,6 +364,24 @@ public actor OpenAIRealtimeAnswerClient: LiveResponder {
 
         case .responseDone(let responseID, let status, let outputItemIDs):
             await handleResponseDone(responseID: responseID, status: status, outputItemIDs: outputItemIDs)
+
+        case .inputAudioTranscriptionDelta(let itemID, let delta):
+            guard !delta.isEmpty else { return }
+            emit(.transcript(TranscriptEvent(speaker: .them, itemID: itemID, text: delta, isFinal: false)))
+
+        case .inputAudioTranscriptionCompleted(let itemID, let transcript, let language):
+            let text = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+            emit(.transcript(TranscriptEvent(speaker: .them, itemID: itemID, text: text, language: language, isFinal: true)))
+            guard !text.isEmpty else { return }
+            if audioItemIDs.contains(itemID) {
+                transcripts[itemID] = text
+            } else if carryOver.attachTranscript(itemID: itemID, text: text) {
+                await requestCarryOverRefresh()
+            }
+
+        case .inputAudioTranscriptionFailed(let itemID, _):
+            redactedLog("realtime input transcription failed")
+            emit(.transcriptFailed(itemID: itemID))
 
         case .error(let message, let code):
             redactedLog("realtime error code=\(code ?? "-")")
@@ -371,6 +436,8 @@ public actor OpenAIRealtimeAnswerClient: LiveResponder {
 
         if tracker.isReal {
             await contextWindow.trackAssistantOutputItem(responseID: responseID, itemID: itemID)
+            let previous = answerTextByResponse[responseID].map { $0 + "\n" } ?? ""
+            answerTextByResponse[responseID] = previous + text
         }
     }
 
@@ -404,6 +471,7 @@ public actor OpenAIRealtimeAnswerClient: LiveResponder {
             }
         }
 
+        emit(.questionContext(responseID: responseID, itemIDs: questionItemsByResponse[responseID] ?? []))
         emit(.responseStarted(responseID: responseID, trigger: responseTrigger[responseID] ?? .automatic))
         if !bufferedText.isEmpty {
             emit(.textDelta(responseID: responseID, text: bufferedText))
@@ -412,7 +480,13 @@ public actor OpenAIRealtimeAnswerClient: LiveResponder {
 
     private func handleResponseDone(responseID: String, status: String, outputItemIDs: [String]) async {
         inFlightResponseIDs.remove(responseID)
-        defer { trackers[responseID] = nil; responseCreatedAt[responseID] = nil; responseTrigger[responseID] = nil }
+        defer {
+            trackers[responseID] = nil
+            responseCreatedAt[responseID] = nil
+            responseTrigger[responseID] = nil
+            questionItemsByResponse[responseID] = nil
+            answerTextByResponse[responseID] = nil
+        }
 
         if status == "cancelled" {
             let tracked = await contextWindow.takeCancelledResponseOutput(responseID: responseID)
@@ -440,6 +514,7 @@ public actor OpenAIRealtimeAnswerClient: LiveResponder {
             visibleResponseID = nil
             windowStartedAt = nil
             emit(.completed(responseID: responseID))
+            await rememberCompletedAnswer(responseID: responseID)
         } else {
 
             let idsToDelete = await contextWindow.takeAssistantOutputItems(responseID: responseID)
@@ -482,7 +557,94 @@ public actor OpenAIRealtimeAnswerClient: LiveResponder {
         try await transport.connect(url: Self.endpointURL, auth: .bearer(credential.apiKey))
         startReceiveLoop()
         try await transport.send(.sessionUpdate(makeSessionConfig()))
+        await refreshCarryOverItem()
         await latencyRecording.record(.reconnectMs(Int(Date().timeIntervalSince(reconnectStartedAt) * 1000)))
+    }
+
+    private func rememberCompletedAnswer(responseID: String) async {
+        let questionIDs = questionItemsByResponse[responseID] ?? []
+        let parts = transcripts.filter { questionIDs.contains($0.key) }
+        audioItemIDs.removeAll()
+        transcripts.removeAll()
+        guard let answer = answerTextByResponse[responseID], !answer.isEmpty else { return }
+        carryOver.append(CarryOverEntry(
+            responseID: responseID,
+            questionItemIDs: questionIDs,
+            questionParts: parts,
+            answer: answer,
+            completedAt: now()
+        ))
+        await refreshCarryOverItem()
+    }
+
+    private func refreshCarryOverItem() async {
+        carryOverRefreshDeferred = false
+        let generation = UUID()
+        carryOverGeneration = generation
+        if let old = carryOverItemID {
+            carryOverItemID = nil
+            try? await transport.send(.conversationItemDelete(itemID: old))
+        }
+        guard sessionActive, carryOverGeneration == generation, let text = carryOver.renderedText else { return }
+        let itemID = Self.makeItemID(prefix: "carry_")
+        carryOverItemID = itemID
+        do {
+            try await transport.send(.conversationItemCreate(ConversationItemPayload(id: itemID, role: .system, text: text)))
+        } catch {
+            if carryOverItemID == itemID { carryOverItemID = nil }
+        }
+    }
+
+    private func deleteEvicted(_ ids: [String]) async {
+        guard !ids.isEmpty else { return }
+        audioItemIDs.removeAll { ids.contains($0) }
+        for id in ids {
+            transcripts[id] = nil
+            try? await transport.send(.conversationItemDelete(itemID: id))
+        }
+    }
+
+    private func startSweep() {
+        sweepTask?.cancel()
+        let interval = sweepInterval
+        sweepTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: interval)
+                guard !Task.isCancelled, let self else { return }
+                await self.sweep()
+            }
+        }
+    }
+
+    private var responseInProgress: Bool {
+        !inFlightResponseIDs.isEmpty || visibleResponseID != nil
+    }
+
+    private func requestCarryOverRefresh() async {
+        if responseInProgress {
+            carryOverRefreshDeferred = true
+        } else {
+            await refreshCarryOverItem()
+        }
+    }
+
+    private func flushDeferredCarryOverRefresh() async {
+        guard carryOverRefreshDeferred, !responseInProgress else { return }
+        await refreshCarryOverItem()
+    }
+
+    private func sweep() async {
+        guard sessionActive, !responseInProgress else { return }
+        await deleteEvicted(await contextWindow.evictExpired())
+        if carryOver.evictExpired(now: now()) {
+            await refreshCarryOverItem()
+        } else {
+            await flushDeferredCarryOverRefresh()
+        }
+    }
+
+    var carryOverItemIDForTesting: String? {
+        carryOverItemID
     }
 
     private static func requireCredential(from provider: any RealtimeCredentialProviding) async throws -> RealtimeCredential {

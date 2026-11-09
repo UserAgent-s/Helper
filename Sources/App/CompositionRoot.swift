@@ -39,7 +39,6 @@ final class CompositionRoot {
     private var retentionSweepTask: Task<Void, Never>?
     let database: SQLiteDatabase
 
-    let answersRingBuffer: AnswersRingBuffer
     let questionAnswerLogger: QuestionAnswerLogger
 
     let recordingModeController: RecordingModeController
@@ -119,12 +118,10 @@ final class CompositionRoot {
             redactedLog: realtimeDiagLog
         )
 
-        answersRingBuffer = AnswersRingBuffer()
         questionAnswerLogger = QuestionAnswerLogger(
-            localTranscribing: localTranscribing,
             repository: questionAnswerRepository,
             answerModelID: OpenAIRealtimeAnswerClient.modelID,
-            questionTranscriptionModelID: { [settingsStore] in settingsStore.whisperModelID }
+            questionTranscriptionModelID: { OpenAIRealtimeAnswerClient.transcriptionModelID }
         )
 
         let answersController = AnswersModeController(
@@ -134,7 +131,6 @@ final class CompositionRoot {
             instructionsProvider: { [profileKnowledge] in
                 RealtimeInstructions.system(for: settingsStore.answerLength, background: await profileKnowledge.realtimeDigest())
             },
-            answersRingBuffer: answersRingBuffer,
             questionAnswerLogger: questionAnswerLogger,
             latencyRecording: latencyRecording
         )

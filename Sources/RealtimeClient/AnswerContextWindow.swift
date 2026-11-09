@@ -12,16 +12,18 @@ actor AnswerContextWindow {
     private var forceItemIDsByResponse: [String: [String]] = [:]
     private let maxAge: TimeInterval
     private let maxItemCount: Int
+    private let now: @Sendable () -> Date
     private(set) var evictedItemCount = 0
 
-    init(maxAge: TimeInterval = 300, maxItemCount: Int = 512) {
+    init(maxAge: TimeInterval = 300, maxItemCount: Int = 512, now: @escaping @Sendable () -> Date = { Date() }) {
         self.maxAge = maxAge
         self.maxItemCount = maxItemCount
+        self.now = now
     }
 
     @discardableResult
     func trackCommittedUserItem(_ itemID: String) -> [String] {
-        committedUserItemIDs.append(TrackedItem(id: itemID, addedAt: Date()))
+        committedUserItemIDs.append(TrackedItem(id: itemID, addedAt: now()))
         return evictIfNeeded()
     }
 
@@ -72,12 +74,20 @@ actor AnswerContextWindow {
         return all
     }
 
+    func evictExpired() -> [String] {
+        evictIfNeeded()
+    }
+
+    var committedItemIDs: [String] {
+        committedUserItemIDs.map(\.id)
+    }
+
     var committedItemCount: Int {
         committedUserItemIDs.count
     }
 
     private func evictIfNeeded() -> [String] {
-        let cutoff = Date().addingTimeInterval(-maxAge)
+        let cutoff = now().addingTimeInterval(-maxAge)
         var evicted: [String] = []
         while let first = committedUserItemIDs.first, first.addedAt < cutoff {
             evicted.append(committedUserItemIDs.removeFirst().id)

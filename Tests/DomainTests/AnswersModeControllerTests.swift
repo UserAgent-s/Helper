@@ -298,9 +298,8 @@ import Testing
         let systemAudio = FakeSystemAudioCapturing()
         let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
-        let transcribing = FakeLocalTranscribing()
         let repository = FakeQuestionAnswerRepository()
-        let logger = QuestionAnswerLogger(localTranscribing: transcribing, repository: repository, answerModelID: "test-model")
+        let logger = QuestionAnswerLogger(repository: repository, answerModelID: "test-model")
         let controller = AnswersModeController(
             captureHub: CaptureHub(system: systemAudio, microphone: FakeMicrophoneCapturing()), realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" },
             questionAnswerLogger: logger
@@ -311,18 +310,16 @@ import Testing
         try await Task.sleep(for: .milliseconds(30))
 
         #expect(await repository.savedPairs.isEmpty)
-        #expect(await transcribing.transcribeCallCount == 0)
 
         await controller.stop()
     }
 
-    @Test func firstDeltaLogsAutomaticAnswerWithContextSnapshot() async throws {
+    @Test func firstDeltaLogsAutomaticAnswerWithRealtimeQuestionText() async throws {
         let systemAudio = FakeSystemAudioCapturing()
         let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
-        let transcribing = FakeLocalTranscribing()
         let repository = FakeQuestionAnswerRepository()
-        let logger = QuestionAnswerLogger(localTranscribing: transcribing, repository: repository, answerModelID: "test-model")
+        let logger = QuestionAnswerLogger(repository: repository, answerModelID: "test-model")
         let controller = AnswersModeController(
             captureHub: CaptureHub(system: systemAudio, microphone: FakeMicrophoneCapturing()), realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" },
             questionAnswerLogger: logger
@@ -332,19 +329,56 @@ import Testing
         await systemAudio.emit(PCMAudioFrame(samples: [1, 2, 3], sampleRate: 16000, channelCount: 1, capturedAt: Date(), source: .systemAudio))
         try await Task.sleep(for: .milliseconds(20))
 
+        await realtime.emit(.transcript(TranscriptEvent(speaker: .them, itemID: "u1", text: "Что такое", isFinal: false)))
+        await realtime.emit(.transcript(TranscriptEvent(speaker: .them, itemID: "u1", text: "Что такое идемпотентность?", language: "ru", isFinal: true)))
+        await realtime.emit(.questionContext(responseID: "auto-1", itemIDs: ["u1"]))
         await realtime.emit(.responseStarted(responseID: "auto-1", trigger: .automatic))
         await realtime.emit(.textDelta(responseID: "auto-1", text: "Первый"))
         await realtime.emit(.textDelta(responseID: "auto-1", text: " кусок"))
         await realtime.emit(.completed(responseID: "auto-1"))
         try await Task.sleep(for: .milliseconds(30))
+        await logger.flush()
 
-        #expect(await transcribing.transcribeCallCount == 1)
-        #expect(await transcribing.receivedFrameBatches.first?.count == 1)
         let saved = await repository.latest(responseID: "auto-1")
         #expect(saved?.triggerKind == .automatic)
         #expect(saved?.answerText == "Первый кусок")
         #expect(saved?.status == .completed)
+        #expect(saved?.questionText == "Что такое идемпотентность?")
+        #expect(saved?.questionTranscriptionStatus == .completed)
 
+        await controller.stop()
+    }
+
+    @Test func transcriptEventsAreForwardedAndUnrecognizedQuestionIsMarked() async throws {
+        let systemAudio = FakeSystemAudioCapturing()
+        let realtime = FakeLiveResponder()
+        let repository = FakeQuestionAnswerRepository()
+        let logger = QuestionAnswerLogger(repository: repository, answerModelID: "test-model")
+        let controller = AnswersModeController(
+            captureHub: CaptureHub(system: systemAudio, microphone: FakeMicrophoneCapturing()), realtime: realtime, answerTrigger: FakeAnswerTriggering(), instructionsProvider: { "test" },
+            questionAnswerLogger: logger
+        )
+        let transcripts = controller.transcriptEvents(subscriber: "test")
+        let received = Task { () -> [TranscriptEvent] in
+            var collected: [TranscriptEvent] = []
+            for await event in transcripts {
+                collected.append(event)
+                if collected.count == 2 { break }
+            }
+            return collected
+        }
+
+        try await controller.start()
+        await realtime.emit(.transcript(TranscriptEvent(speaker: .them, itemID: "u1", text: "При", isFinal: false)))
+        await realtime.emit(.transcript(TranscriptEvent(speaker: .them, itemID: "u1", text: "Привет", isFinal: true)))
+        await realtime.emit(.questionContext(responseID: "r1", itemIDs: []))
+        await realtime.emit(.responseStarted(responseID: "r1", trigger: .manual))
+        await realtime.emit(.textDelta(responseID: "r1", text: "Ответ"))
+        try await Task.sleep(for: .milliseconds(30))
+        await logger.flush()
+
+        #expect(await received.value.map(\.isFinal) == [false, true])
+        #expect(await repository.latest(responseID: "r1")?.questionTranscriptionStatus == .failed)
         await controller.stop()
     }
 
@@ -398,9 +432,8 @@ import Testing
         let systemAudio = FakeSystemAudioCapturing()
         let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
-        let transcribing = FakeLocalTranscribing()
         let repository = FakeQuestionAnswerRepository()
-        let logger = QuestionAnswerLogger(localTranscribing: transcribing, repository: repository, answerModelID: "test-model")
+        let logger = QuestionAnswerLogger(repository: repository, answerModelID: "test-model")
         let controller = AnswersModeController(
             captureHub: CaptureHub(system: systemAudio, microphone: FakeMicrophoneCapturing()), realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" },
             questionAnswerLogger: logger

@@ -118,4 +118,20 @@ public enum RealtimeInstructions {
     public static let injectedContextPrefix = "CONTEXT_NOTE. Reference material shared by the user for the current question. It is not a question by itself; use it only when answering.\n\n"
 
     public static let waitForQuestionSentinel = "⟦WAIT_FOR_QUESTION⟧"
+
+    public static let carryOverPrefix = "EARLIER_IN_THIS_CALL. Questions already asked and the answers already given, oldest first. They are answered; never answer them again and never treat them as a new question. Use them only when the interviewer refers back to them or to stay consistent.\n"
+
+    public static let carryOverAnswerLimit = 1200
+
+    public static func carryOver(_ pairs: [(question: String?, answer: String)]) -> String? {
+        let blocks = pairs.compactMap { pair -> String? in
+            let answer = pair.answer.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !answer.isEmpty else { return nil }
+            let clipped = answer.count > carryOverAnswerLimit ? String(answer.prefix(carryOverAnswerLimit)) + "…" : answer
+            let question = pair.question?.trimmingCharacters(in: .whitespacesAndNewlines)
+            return "Q: \(question?.isEmpty == false ? question! : "(not transcribed)")\nA: \(clipped)"
+        }
+        guard !blocks.isEmpty else { return nil }
+        return carryOverPrefix + "\n" + blocks.joined(separator: "\n\n")
+    }
 }

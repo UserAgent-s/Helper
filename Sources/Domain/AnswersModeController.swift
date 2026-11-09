@@ -2,20 +2,16 @@ import Foundation
 
 public actor AnswersModeController: ModeController {
     public static let realtimeConsumer = "answers.realtime"
-    public static let ringBufferConsumer = "answers.ringBuffer"
 
     private let captureHub: CaptureHub
     private let realtime: any LiveResponder
     private let answerTrigger: any AnswerTriggering
     private let instructionsProvider: @Sendable () async -> String
-    private let answersRingBuffer: AnswersRingBuffer
     private let questionAnswerLogger: QuestionAnswerLogger?
     private let latencyRecording: (any LatencyRecording)?
 
     private var captureTask: Task<Void, Never>?
-    private var ringBufferTask: Task<Void, Never>?
     private var realtimeSubscription: CaptureSubscription?
-    private var ringBufferSubscription: CaptureSubscription?
     private var eventsTask: Task<Void, Never>?
     private var triggerTask: Task<Void, Never>?
     private var effectiveScope: SystemAudioScope?
@@ -29,18 +25,19 @@ public actor AnswersModeController: ModeController {
     private var responseStartedAt: Date?
     private var contextWindowStartedAt = Date()
     private var streamingText = ""
+    private var questionItemIDsByResponse: [String: [String]] = [:]
 
     private let failureStream: AsyncStream<String>
     private let failureContinuation: AsyncStream<String>.Continuation
 
     private let streamEventBroadcaster = AsyncBroadcaster<AnswerStreamEvent>()
+    private let transcriptBroadcaster = AsyncBroadcaster<TranscriptEvent>()
 
     public init(
         captureHub: CaptureHub,
         realtime: any LiveResponder,
         answerTrigger: any AnswerTriggering,
         instructionsProvider: @escaping @Sendable () async -> String,
-        answersRingBuffer: AnswersRingBuffer = AnswersRingBuffer(),
         questionAnswerLogger: QuestionAnswerLogger? = nil,
         latencyRecording: (any LatencyRecording)? = nil
     ) {
@@ -48,7 +45,6 @@ public actor AnswersModeController: ModeController {
         self.realtime = realtime
         self.answerTrigger = answerTrigger
         self.instructionsProvider = instructionsProvider
-        self.answersRingBuffer = answersRingBuffer
         self.questionAnswerLogger = questionAnswerLogger
         self.latencyRecording = latencyRecording
         (self.failureStream, self.failureContinuation) = AsyncStream<String>.makeStream()
@@ -79,7 +75,7 @@ public actor AnswersModeController: ModeController {
         responseStartedAt = nil
         streamingText = ""
         contextWindowStartedAt = Date()
-        await answersRingBuffer.clear()
+        questionItemIDsByResponse.removeAll()
         streamEventBroadcaster.yield(.collectingContext)
 
         try await realtime.start(instructions: await instructionsProvider())
@@ -88,17 +84,7 @@ public actor AnswersModeController: ModeController {
 
         let realtimeSubscription = try await captureHub.acquire(.systemAudio, consumer: Self.realtimeConsumer, policy: .bufferingNewest(250))
         self.realtimeSubscription = realtimeSubscription
-        let ringBufferSubscription = try await captureHub.acquire(.systemAudio, consumer: Self.ringBufferConsumer, policy: .bufferingNewest(500))
-        self.ringBufferSubscription = ringBufferSubscription
         effectiveScope = await captureHub.systemEffectiveScope
-
-        let answersRingBuffer = self.answersRingBuffer
-        ringBufferTask = Task {
-            for await frame in ringBufferSubscription.frames {
-                if Task.isCancelled { break }
-                await answersRingBuffer.append(frame)
-            }
-        }
 
         let latencyRecording = self.latencyRecording
         captureTask = Task { [weak self, realtime] in
@@ -129,14 +115,13 @@ public actor AnswersModeController: ModeController {
         responseStartedAt = nil
         streamingText = ""
         contextWindowStartedAt = Date()
-        await answersRingBuffer.clear()
+        questionItemIDsByResponse.removeAll()
         streamEventBroadcaster.yield(.collectingContext)
     }
 
     public func stop() async {
         isRunning = false
         captureTask?.cancel(); captureTask = nil
-        ringBufferTask?.cancel(); ringBufferTask = nil
         if let questionAnswerLogger, let activeResponseID {
             if turnPhase == .streaming {
                 await questionAnswerLogger.recordCancelled(responseID: activeResponseID)
@@ -145,15 +130,14 @@ public actor AnswersModeController: ModeController {
             }
         }
         if let realtimeSubscription { await captureHub.release(realtimeSubscription) }
-        if let ringBufferSubscription { await captureHub.release(ringBufferSubscription) }
         realtimeSubscription = nil
-        ringBufferSubscription = nil
         await realtimeLease?.release(); realtimeLease = nil
         turnPhase = .collectingContext
         activeResponseID = nil
         activeResponseTrigger = nil
         responseStartedAt = nil
         streamingText = ""
+        questionItemIDsByResponse.removeAll()
         effectiveScope = nil
     }
 
@@ -172,6 +156,10 @@ public actor AnswersModeController: ModeController {
     private func reportCaptureStreamEndedUnexpectedly() {
         guard isRunning else { return }
         failureContinuation.yield("system_audio_capture_ended")
+    }
+
+    nonisolated public func transcriptEvents(subscriber: String = #fileID) -> AsyncStream<TranscriptEvent> {
+        transcriptBroadcaster.subscribe(subscriber)
     }
 
     nonisolated public func streamEvents(subscriber: String = #fileID) -> AsyncStream<AnswerStreamEvent> {
@@ -198,14 +186,13 @@ public actor AnswersModeController: ModeController {
                 await latencyRecording?.record(.firstDeltaToFirstPaintMs(Int(Date().timeIntervalSince(firstDeltaObservedAt) * 1000)))
             }
             if isFirstDelta, let questionAnswerLogger {
-                let snapshot = await answersRingBuffer.snapshot()
                 let sourceAppBundleID = effectiveScope?.targetApplicationBundleID
                 await questionAnswerLogger.beginDraft(
                     responseID: id,
                     triggerKind: activeResponseTrigger ?? .automatic,
                     sourceAppBundleID: sourceAppBundleID,
                     contextWindowStartedAt: contextWindowStartedAt,
-                    contextSnapshot: snapshot
+                    questionItemIDs: questionItemIDsByResponse.removeValue(forKey: id) ?? []
                 )
             }
         case .waitingForQuestion:
@@ -227,7 +214,6 @@ public actor AnswersModeController: ModeController {
             activeResponseTrigger = nil
             responseStartedAt = nil
             contextWindowStartedAt = Date()
-            await answersRingBuffer.clear()
         case .cancelled(let id, _):
             guard id == activeResponseID else { return }
             turnPhase = .collectingContext
@@ -239,8 +225,16 @@ public actor AnswersModeController: ModeController {
             }
             activeResponseTrigger = nil
             responseStartedAt = nil
+            questionItemIDsByResponse[id] = nil
         case .failed(let reason):
             failureContinuation.yield(reason)
+        case .questionContext(let id, let itemIDs):
+            questionItemIDsByResponse[id] = itemIDs
+        case .transcript(let transcript):
+            transcriptBroadcaster.yield(transcript)
+            await questionAnswerLogger?.recordTranscript(transcript)
+        case .transcriptFailed(let itemID):
+            await questionAnswerLogger?.recordTranscriptFailed(itemID: itemID)
         }
     }
 

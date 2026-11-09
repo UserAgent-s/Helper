@@ -102,10 +102,28 @@ struct AudioConfig: Encodable, Sendable {
 struct AudioInputConfig: Encodable, Sendable {
     let format: AudioFormatConfig
     let turnDetection: TurnDetectionConfig
+    var transcription: InputTranscriptionConfig?
 
     enum CodingKeys: String, CodingKey {
-        case format
+        case format, transcription
         case turnDetection = "turn_detection"
+    }
+}
+
+struct InputTranscriptionConfig: Encodable, Sendable, Equatable {
+    let model: String
+    let languages: [String]?
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(model, forKey: .model)
+        if let languages, !languages.isEmpty {
+            try container.encode(languages, forKey: .languages)
+        }
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case model, languages
     }
 }
 
@@ -185,6 +203,9 @@ public enum RealtimeServerEvent: Sendable, Equatable {
     case outputTextDelta(responseID: String, itemID: String, delta: String)
     case outputTextDone(responseID: String, itemID: String, text: String)
     case responseDone(responseID: String, status: String, outputItemIDs: [String])
+    case inputAudioTranscriptionDelta(itemID: String, delta: String)
+    case inputAudioTranscriptionCompleted(itemID: String, transcript: String, language: String?)
+    case inputAudioTranscriptionFailed(itemID: String, message: String?)
     case rateLimitsUpdated
     case error(message: String, code: String?)
     case unknown(type: String)
@@ -226,6 +247,15 @@ enum RealtimeServerEventDecoder {
         case "response.done":
             guard let p = try? decoder.decode(ResponseDonePayload.self, from: data) else { return .unknown(type: envelope.type) }
             return .responseDone(responseID: p.response.id, status: p.response.status, outputItemIDs: (p.response.output ?? []).map(\.id))
+        case "conversation.item.input_audio_transcription.delta":
+            guard let p = try? decoder.decode(TranscriptionDeltaPayload.self, from: data) else { return .unknown(type: envelope.type) }
+            return .inputAudioTranscriptionDelta(itemID: p.itemID, delta: p.delta ?? "")
+        case "conversation.item.input_audio_transcription.completed":
+            guard let p = try? decoder.decode(TranscriptionCompletedPayload.self, from: data) else { return .unknown(type: envelope.type) }
+            return .inputAudioTranscriptionCompleted(itemID: p.itemID, transcript: p.transcript, language: p.languages?.first?.code)
+        case "conversation.item.input_audio_transcription.failed":
+            guard let p = try? decoder.decode(TranscriptionFailedPayload.self, from: data) else { return .unknown(type: envelope.type) }
+            return .inputAudioTranscriptionFailed(itemID: p.itemID, message: p.error?.message)
         case "rate_limits.updated":
             return .rateLimitsUpdated
         case "error":
@@ -290,6 +320,27 @@ enum RealtimeServerEventDecoder {
             let output: [OutputItem]?
         }
         let response: ResponseObject
+    }
+
+    private struct TranscriptionDeltaPayload: Decodable {
+        let itemID: String
+        let delta: String?
+        enum CodingKeys: String, CodingKey { case itemID = "item_id", delta }
+    }
+
+    private struct TranscriptionCompletedPayload: Decodable {
+        struct Language: Decodable { let code: String }
+        let itemID: String
+        let transcript: String
+        let languages: [Language]?
+        enum CodingKeys: String, CodingKey { case itemID = "item_id", transcript, languages }
+    }
+
+    private struct TranscriptionFailedPayload: Decodable {
+        struct Detail: Decodable { let message: String? }
+        let itemID: String
+        let error: Detail?
+        enum CodingKeys: String, CodingKey { case itemID = "item_id", error }
     }
 
     private struct ErrorPayload: Decodable {
