@@ -166,7 +166,10 @@ public actor AnswersModeController: ModeController {
         streamEventBroadcaster.subscribe(subscriber)
     }
 
+    private(set) var handledEventCountForTesting = 0
+
     private func handle(_ event: RealtimeAnswerEvent) async {
+        defer { handledEventCountForTesting += 1 }
         guard isRunning else { return }
         switch event {
         case .responseStarted(let id, let trigger):

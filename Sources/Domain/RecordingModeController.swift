@@ -24,6 +24,7 @@ public actor RecordingModeController: ModeController {
     private var microphoneSubscription: CaptureSubscription?
 
     private var meetingID: MeetingID?
+    private(set) var ingestedFrameCountForTesting = 0
     private var systemAudioChannel: RecordingBackpressureChannel?
     private var microphoneChannel: RecordingBackpressureChannel?
     private var systemAudioPipeline: ChunkedTranscriptionPipeline?
@@ -183,6 +184,7 @@ public actor RecordingModeController: ModeController {
             if audioRecordingActive {
                 await audioRecording?.write(frame)
             }
+            ingestedFrameCountForTesting += 1
             let shouldFlush = await pipeline.ingest(frame)
             if shouldFlush {
                 await flush(pipeline: pipeline)

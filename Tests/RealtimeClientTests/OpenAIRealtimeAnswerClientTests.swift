@@ -73,7 +73,7 @@ actor AnswerEventCollector {
         transport.emit(.inputAudioBufferCommitted(itemID: "item-1", previousItemID: nil))
         transport.emit(.responseCreated(responseID: "resp-1"))
         transport.emit(.outputTextDelta(responseID: "resp-1", itemID: "out-1", delta: "Прямой ответ."))
-        try await Task.sleep(for: .milliseconds(20))
+        await waitUntil { await collector.events.contains(.textDelta(responseID: "resp-1", text: "Прямой ответ.")) }
 
         let eventsBeforeDone = await collector.events
         #expect(eventsBeforeDone.contains(.responseStarted(responseID: "resp-1", trigger: .automatic)))
@@ -82,7 +82,7 @@ actor AnswerEventCollector {
 
         transport.emit(.outputTextDone(responseID: "resp-1", itemID: "out-1", text: "Прямой ответ."))
         transport.emit(.responseDone(responseID: "resp-1", status: "completed", outputItemIDs: ["out-1"]))
-        try await Task.sleep(for: .milliseconds(20))
+        await waitUntil { await collector.events.contains(.completed(responseID: "resp-1")) }
 
         let finalEvents = await collector.events
         #expect(finalEvents.contains(.completed(responseID: "resp-1")))
@@ -100,7 +100,7 @@ actor AnswerEventCollector {
         transport.emit(.outputTextDelta(responseID: "resp-1", itemID: "out-1", delta: RealtimeInstructions.waitForQuestionSentinel))
         transport.emit(.outputTextDone(responseID: "resp-1", itemID: "out-1", text: RealtimeInstructions.waitForQuestionSentinel))
         transport.emit(.responseDone(responseID: "resp-1", status: "completed", outputItemIDs: ["out-1"]))
-        try await Task.sleep(for: .milliseconds(20))
+        await waitUntil { await collector.events.contains(.waitingForQuestion) }
 
         let events = await collector.events
         #expect(events.contains(.waitingForQuestion))
@@ -134,7 +134,7 @@ actor AnswerEventCollector {
         transport.emit(.outputTextDelta(responseID: "answer-1", itemID: "out-answer", delta: "Ответ по всему контексту."))
         transport.emit(.outputTextDone(responseID: "answer-1", itemID: "out-answer", text: "Ответ по всему контексту."))
         transport.emit(.responseDone(responseID: "answer-1", status: "completed", outputItemIDs: ["out-answer"]))
-        try await Task.sleep(for: .milliseconds(30))
+        await waitUntil { await collector.events.contains(.responseStarted(responseID: "answer-1", trigger: .automatic)) }
 
         let events = await collector.events
         let started = events.filter { if case .responseStarted = $0 { true } else { false } }
@@ -236,7 +236,7 @@ actor AnswerEventCollector {
         transport.emit(.responseCreated(responseID: "auto-1", metadata: ["trigger": "automatic"]))
         transport.emit(.responseCreated(responseID: "manual-1", metadata: ["trigger": "manual"]))
         transport.emit(.outputTextDelta(responseID: "manual-1", itemID: "out-m", delta: "Ручной ответ"))
-        try await Task.sleep(for: .milliseconds(20))
+        await waitUntil { await collector.events.contains(.responseStarted(responseID: "manual-1", trigger: .manual)) }
 
         let events = await collector.events
         #expect(events.contains(.responseStarted(responseID: "manual-1", trigger: .manual)))
@@ -375,7 +375,7 @@ actor AnswerEventCollector {
         transport.emit(.outputTextDelta(responseID: "manual-1", itemID: "out-manual", delta: "Ручной ответ."))
         transport.emit(.outputTextDone(responseID: "manual-1", itemID: "out-manual", text: "Ручной ответ."))
         transport.emit(.responseDone(responseID: "manual-1", status: "completed", outputItemIDs: ["out-manual"]))
-        try await Task.sleep(for: .milliseconds(20))
+        await waitUntil { await collector.events.contains(.responseStarted(responseID: "manual-1", trigger: .manual)) }
 
         let events = await collector.events
         let started = events.filter { if case .responseStarted = $0 { true } else { false } }
@@ -397,7 +397,7 @@ actor AnswerEventCollector {
         try await Task.sleep(for: .milliseconds(10))
 
         transport.emit(.responseDone(responseID: "resp-1", status: "cancelled", outputItemIDs: ["out-1"]))
-        try await Task.sleep(for: .milliseconds(20))
+        await waitUntil { await collector.events.contains(.cancelled(responseID: "resp-1", reason: "interrupted_by_speech")) }
 
         let events = await collector.events
         #expect(events.contains(.cancelled(responseID: "resp-1", reason: "interrupted_by_speech")))
@@ -445,14 +445,18 @@ actor AnswerEventCollector {
         transport.emit(.outputTextDelta(responseID: "resp-1", itemID: "out-1", delta: "Готовый ответ."))
         transport.emit(.outputTextDone(responseID: "resp-1", itemID: "out-1", text: "Готовый ответ."))
         transport.emit(.responseDone(responseID: "resp-1", status: "completed", outputItemIDs: ["out-1"]))
-        try await Task.sleep(for: .milliseconds(20))
+        await waitUntil { await collector.events.contains(.completed(responseID: "resp-1")) }
 
         let eventsBeforeDisconnect = await collector.events
         #expect(eventsBeforeDisconnect.contains(.completed(responseID: "resp-1")))
 
         let connectsBefore = transport.connectCallCount
         transport.emitClosed(reason: "network_lost")
-        try await Task.sleep(for: .milliseconds(400))
+        await waitUntil {
+            let reconnected = transport.connectCallCount > connectsBefore && transport.sentEvents.filter { if case .sessionUpdate = $0 { true } else { false } }.count >= 2
+            let metrics = await latencyRecording.metrics
+            return reconnected && metrics.contains { if case .reconnectMs = $0 { true } else { false } }
+        }
 
         #expect(transport.connectCallCount > connectsBefore)
         #expect(transport.sentEvents.filter { if case .sessionUpdate = $0 { true } else { false } }.count >= 2)
@@ -476,7 +480,7 @@ actor AnswerEventCollector {
         await collector.start(consuming: client.events())
 
         transport.emit(.error(message: "rate limit exceeded for this account, retry after 30s", code: "rate_limit_exceeded"))
-        try await Task.sleep(for: .milliseconds(20))
+        await waitUntil { await collector.events.contains(.failed("rate_limit_exceeded")) }
 
         let events = await collector.events
         #expect(events.contains(.failed("rate_limit_exceeded")))
@@ -518,7 +522,7 @@ actor AnswerEventCollector {
         transport.emit(.inputAudioBufferCommitted(itemID: "user-1", previousItemID: nil))
         transport.emit(.responseCreated(responseID: "resp-1"))
         transport.emit(.outputTextDelta(responseID: "resp-1", itemID: "out-1", delta: expected))
-        try await Task.sleep(for: .milliseconds(20))
+        await waitUntil { await collector.events.contains(.textDelta(responseID: "resp-1", text: expected)) }
 
         let events = await collector.events
         #expect(events.contains(.textDelta(responseID: "resp-1", text: expected)))

@@ -31,3 +31,11 @@ actor LogCollector {
         lines.append(line)
     }
 }
+
+func waitUntil(timeout: Duration = .seconds(3), _ condition: () async -> Bool) async {
+    let deadline = ContinuousClock.now + timeout
+    while ContinuousClock.now < deadline {
+        if await condition() { return }
+        try? await Task.sleep(for: .milliseconds(5))
+    }
+}

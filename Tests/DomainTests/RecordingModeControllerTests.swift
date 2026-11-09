@@ -15,7 +15,7 @@ import Testing
         try await controller.start()
 
         await microphone.emit(PCMAudioFrame(samples: [0], sampleRate: 24000, channelCount: 1, capturedAt: Date(), source: .microphone))
-        try await Task.sleep(for: .milliseconds(20))
+        await waitUntil { await controller.ingestedFrameCountForTesting == 1 }
 
         #expect(await repository.appendedSegments.isEmpty)
 

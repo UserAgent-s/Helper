@@ -81,7 +81,7 @@ final class TestClock: @unchecked Sendable {
         transport.emit(.inputAudioBufferCommitted(itemID: "u1", previousItemID: nil))
         transport.emit(.inputAudioTranscriptionDelta(itemID: "u1", delta: "Расскажите"))
         transport.emit(.inputAudioTranscriptionCompleted(itemID: "u1", transcript: " Расскажите про CAP ", language: "ru"))
-        try await Task.sleep(for: .milliseconds(20))
+        await waitUntil { await collector.events.contains(.transcript(TranscriptEvent(speaker: .them, itemID: "u1", text: "Расскажите про CAP", language: "ru", isFinal: true))) }
 
         let transcripts = await collector.events.compactMap { event -> TranscriptEvent? in
             if case .transcript(let transcript) = event { return transcript }
@@ -104,7 +104,7 @@ final class TestClock: @unchecked Sendable {
         transport.emit(.inputAudioBufferCommitted(itemID: "u2", previousItemID: "u1"))
         transport.emit(.responseCreated(responseID: "r1"))
         transport.emit(.outputTextDelta(responseID: "r1", itemID: "o1", delta: "Ответ"))
-        try await Task.sleep(for: .milliseconds(20))
+        await waitUntil { await collector.events.contains(.responseStarted(responseID: "r1", trigger: .automatic)) }
 
         let events = await collector.events
         let contextIndex = events.firstIndex(of: .questionContext(responseID: "r1", itemIDs: ["u1", "u2"]))
@@ -122,7 +122,7 @@ final class TestClock: @unchecked Sendable {
         transport.emit(.inputAudioBufferCommitted(itemID: "u1", previousItemID: nil))
         transport.emit(.responseCreated(responseID: "r1"))
         transport.emit(.outputTextDelta(responseID: "r1", itemID: "o1", delta: "Сразу"))
-        try await Task.sleep(for: .milliseconds(20))
+        await waitUntil { await collector.events.contains(.textDelta(responseID: "r1", text: "Сразу")) }
 
         #expect(await collector.events.contains(.textDelta(responseID: "r1", text: "Сразу")))
         await client.stop()
@@ -137,7 +137,7 @@ final class TestClock: @unchecked Sendable {
         transport.emit(.inputAudioBufferCommitted(itemID: "u1", previousItemID: nil))
         transport.emit(.inputAudioTranscriptionFailed(itemID: "u1", message: "asr down"))
         answer(transport, response: "r1", item: "u2", text: "Ответ")
-        try await Task.sleep(for: .milliseconds(30))
+        await waitUntil { await collector.events.contains(.completed(responseID: "r1")) }
 
         let events = await collector.events
         #expect(events.contains(.transcriptFailed(itemID: "u1")))
@@ -155,7 +155,7 @@ final class TestClock: @unchecked Sendable {
         try await client.start(instructions: "test")
 
         answer(transport, response: "r1", item: "u1", text: "Kafka хранит лог партиций.", transcript: "Как устроена Kafka?")
-        try await Task.sleep(for: .milliseconds(30))
+        await waitUntil { carryCreates(transport).count == 1 }
 
         let carry = carryCreates(transport)
         #expect(carry.count == 1)
@@ -172,12 +172,12 @@ final class TestClock: @unchecked Sendable {
         try await client.start(instructions: "test")
 
         answer(transport, response: "r1", item: "u1", text: "Ответ один")
-        try await Task.sleep(for: .milliseconds(30))
+        await waitUntil { carryCreates(transport).count == 1 }
         let first = carryCreates(transport)
         #expect(first.first?.text.contains("(not transcribed)") == true)
 
         transport.emit(.inputAudioTranscriptionCompleted(itemID: "u1", transcript: "Поздний вопрос", language: nil))
-        try await Task.sleep(for: .milliseconds(30))
+        await waitUntil { carryCreates(transport).count == 2 }
 
         let all = carryCreates(transport)
         #expect(all.count == 2)
@@ -193,7 +193,7 @@ final class TestClock: @unchecked Sendable {
         answer(transport, response: "r1", item: "u1", text: "Ответ один", transcript: "Вопрос один")
         answer(transport, response: "r2", item: "u2", text: "Ответ два", transcript: "Вопрос два")
         answer(transport, response: "r3", item: "u3", text: "Ответ три", transcript: "Вопрос три")
-        try await Task.sleep(for: .milliseconds(40))
+        await waitUntil { carryCreates(transport).last?.text.contains("Вопрос три") == true }
 
         let latest = carryCreates(transport).last?.text ?? ""
         #expect(!latest.contains("Вопрос один"))
@@ -209,7 +209,7 @@ final class TestClock: @unchecked Sendable {
         try await client.start(instructions: "test")
 
         answer(transport, response: "r1", item: "u1", text: "Ответ", transcript: "Вопрос")
-        try await Task.sleep(for: .milliseconds(40))
+        await waitUntil { !carryCreates(transport).isEmpty }
         let carryID = try #require(carryCreates(transport).first?.id)
 
         clock.advance(by: 599)
@@ -217,7 +217,7 @@ final class TestClock: @unchecked Sendable {
         #expect(!deletedIDs(transport).contains(carryID))
 
         clock.advance(by: 2)
-        try await Task.sleep(for: .milliseconds(40))
+        await waitUntil { deletedIDs(transport).contains(carryID) }
         #expect(deletedIDs(transport).contains(carryID))
         #expect(carryCreates(transport).count == 1)
         #expect(await client.carryOverItemIDForTesting == nil)
@@ -234,7 +234,7 @@ final class TestClock: @unchecked Sendable {
         #expect(!deletedIDs(transport).contains("old"))
 
         clock.advance(by: 301)
-        try await Task.sleep(for: .milliseconds(40))
+        await waitUntil { deletedIDs(transport).contains("old") }
         #expect(deletedIDs(transport).contains("old"))
         await client.stop()
     }
@@ -260,12 +260,12 @@ final class TestClock: @unchecked Sendable {
         try await client.start(instructions: "test")
 
         answer(transport, response: "r1", item: "u1", text: "Ответ до обрыва", transcript: "Вопрос до обрыва")
-        try await Task.sleep(for: .milliseconds(30))
+        await waitUntil { carryCreates(transport).count == 1 }
         let before = carryCreates(transport)
         #expect(before.count == 1)
 
         transport.emitClosed(reason: "network_lost")
-        try await Task.sleep(for: .milliseconds(400))
+        await waitUntil { carryCreates(transport).count >= 2 }
 
         let events = transport.sentEvents
         let lastSessionUpdate = try #require(events.lastIndex { if case .sessionUpdate = $0 { true } else { false } })
@@ -285,7 +285,7 @@ final class TestClock: @unchecked Sendable {
         try await client.start(instructions: "test")
 
         answer(transport, response: "r1", item: "u1", text: "Ответ", transcript: "Вопрос")
-        try await Task.sleep(for: .milliseconds(30))
+        await waitUntil { !carryCreates(transport).isEmpty }
         let carryID = try #require(carryCreates(transport).first?.id)
 
         await client.resetContext()
@@ -299,7 +299,7 @@ final class TestClock: @unchecked Sendable {
         try await client.start(instructions: "test")
 
         answer(transport, response: "r1", item: "u1", text: "Ответ", transcript: "Вопрос")
-        try await Task.sleep(for: .milliseconds(30))
+        await waitUntil { !carryCreates(transport).isEmpty }
 
         await #expect(throws: RealtimeClientError.noContext) {
             try await client.forceResponse()

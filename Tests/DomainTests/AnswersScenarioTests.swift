@@ -25,7 +25,7 @@ import Testing
         await realtime.emit(.responseStarted(responseID: "r1", trigger: .automatic))
         await realtime.emit(.textDelta(responseID: "r1", text: "Ответ."))
         await realtime.emit(.completed(responseID: "r1"))
-        try await Task.sleep(for: .milliseconds(30))
+        await settle(controller, realtime)
 
         #expect(await controller.turnPhase == .completed)
         await controller.stop()
@@ -42,7 +42,7 @@ import Testing
             await systemAudio.emit(frame)
         }
         await realtime.emit(.waitingForQuestion)
-        try await Task.sleep(for: .milliseconds(20))
+        await settle(controller, realtime)
 
         #expect(await controller.turnPhase == .collectingContext)
         #expect(await controller.activeResponseID == nil)
@@ -67,7 +67,7 @@ import Testing
         await realtime.emit(.questionContext(responseID: "r1", itemIDs: ["u0", "u1", "u2"]))
         await realtime.emit(.responseStarted(responseID: "r1", trigger: .automatic))
         await realtime.emit(.textDelta(responseID: "r1", text: "Ответ."))
-        try await Task.sleep(for: .milliseconds(30))
+        await settle(controller, realtime)
         await logger.flush()
 
         let saved = await repository.latest(responseID: "r1")
@@ -89,7 +89,7 @@ import Testing
         await realtime.emit(.responseStarted(responseID: "r1", trigger: .automatic))
         await realtime.emit(.textDelta(responseID: "r1", text: "Финальный ответ."))
         await realtime.emit(.completed(responseID: "r1"))
-        try await Task.sleep(for: .milliseconds(30))
+        await settle(controller, realtime)
 
         #expect(await controller.turnPhase == .completed)
         await controller.stop()
@@ -103,9 +103,9 @@ import Testing
 
         try await controller.start()
         await realtime.emit(.waitingForQuestion)
-        try await Task.sleep(for: .milliseconds(10))
+        await settle(controller, realtime)
         await trigger.fire()
-        try await Task.sleep(for: .milliseconds(20))
+        await waitUntil { await realtime.forceResponseCallCount == 1 }
 
         #expect(await realtime.forceResponseCallCount == 1)
         await controller.stop()
@@ -128,7 +128,7 @@ import Testing
         await realtime.emit(.textDelta(responseID: "r1", text: "Ответ."))
         await realtime.emit(.transcript(TranscriptEvent(speaker: .them, itemID: "b", text: "про индексы?", isFinal: true)))
         await realtime.emit(.transcript(TranscriptEvent(speaker: .them, itemID: "a", text: "А что вы думаете", isFinal: true)))
-        try await Task.sleep(for: .milliseconds(30))
+        await settle(controller, realtime)
         await logger.flush()
 
         #expect(await repository.latest(responseID: "r1")?.questionText == "А что вы думаете про индексы?")
@@ -145,12 +145,12 @@ import Testing
         await realtime.emit(.responseStarted(responseID: "r1", trigger: .automatic))
         await realtime.emit(.textDelta(responseID: "r1", text: "Первый ответ."))
         await realtime.emit(.completed(responseID: "r1"))
-        try await Task.sleep(for: .milliseconds(20))
+        await settle(controller, realtime)
 
         await realtime.emit(.responseStarted(responseID: "r2", trigger: .automatic))
         await realtime.emit(.textDelta(responseID: "r2", text: "Второй ответ."))
         await realtime.emit(.completed(responseID: "r2"))
-        try await Task.sleep(for: .milliseconds(20))
+        await settle(controller, realtime)
 
         #expect(await controller.turnPhase == .completed)
         #expect(await controller.activeResponseID == nil)
@@ -169,12 +169,13 @@ import Testing
         await realtime.emit(.responseStarted(responseID: "r1", trigger: .automatic))
         await realtime.emit(.textDelta(responseID: "r1", text: "Ответ на русском языке."))
         await realtime.emit(.completed(responseID: "r1"))
-        try await Task.sleep(for: .milliseconds(20))
+        await settle(controller, realtime)
 
         await realtime.emit(.responseStarted(responseID: "r2", trigger: .automatic))
         await realtime.emit(.textDelta(responseID: "r2", text: "Answer in English."))
         await realtime.emit(.completed(responseID: "r2"))
-        try await Task.sleep(for: .milliseconds(20))
+        await settle(controller, realtime)
+        await waitUntil { await collector.events.contains(.completed(finalText: "Answer in English.")) }
 
         let events = await collector.events
         #expect(events.contains(.completed(finalText: "Ответ на русском языке.")))
@@ -192,7 +193,7 @@ import Testing
         for frame in SyntheticAudioFixtures.backgroundNoise(durationMs: 200) {
             await systemAudio.emit(frame)
         }
-        try await Task.sleep(for: .milliseconds(20))
+        await waitUntil { await realtime.appendedFrameCount == 10 }
 
         #expect(await realtime.appendedFrameCount == 10)
         await controller.stop()

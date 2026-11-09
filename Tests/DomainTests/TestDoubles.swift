@@ -207,7 +207,10 @@ actor FakeLiveResponder: LiveResponder {
         continuation.finish()
     }
 
+    private(set) var emittedEventCount = 0
+
     func emit(_ event: RealtimeAnswerEvent) {
+        emittedEventCount += 1
         continuation.yield(event)
     }
 }

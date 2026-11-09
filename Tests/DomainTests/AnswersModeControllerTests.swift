@@ -124,7 +124,7 @@ import Testing
         await realtime.emit(.completed(responseID: "auto-1"))
         await realtime.emit(.completed(responseID: "manual-1"))
 
-        try await Task.sleep(for: .milliseconds(30))
+        await settle(controller, realtime)
 
         #expect(await controller.turnPhase == .completed)
         #expect(await controller.activeResponseID == nil)
@@ -144,7 +144,7 @@ import Testing
 
         await realtime.emit(.responseStarted(responseID: "auto-1", trigger: .automatic))
         await realtime.emit(.textDelta(responseID: "auto-1", text: "..."))
-        try await Task.sleep(for: .milliseconds(20))
+        await settle(controller, realtime)
 
         await trigger.fire()
         try await Task.sleep(for: .milliseconds(20))
@@ -162,7 +162,7 @@ import Testing
 
         try await controller.start()
         await trigger.fire()
-        try await Task.sleep(for: .milliseconds(20))
+        await waitUntil { await realtime.forceResponseCallCount == 1 }
         #expect(await realtime.forceResponseCallCount == 1)
 
         await controller.stop()
@@ -184,12 +184,12 @@ import Testing
         await realtime.emit(.responseStarted(responseID: "auto-1", trigger: .automatic))
         await realtime.emit(.textDelta(responseID: "auto-1", text: "Ответ"))
         await realtime.emit(.completed(responseID: "auto-1"))
-        try await Task.sleep(for: .milliseconds(20))
+        await settle(controller, realtime)
 
         #expect(await controller.turnPhase == .completed)
 
         await trigger.fire()
-        try await Task.sleep(for: .milliseconds(20))
+        await waitUntil { await realtime.forceResponseCallCount == 1 }
 
         #expect(await realtime.forceResponseCallCount == 1)
 
@@ -205,7 +205,7 @@ import Testing
         try await controller.start()
         await realtime.emit(.waitingForQuestion)
         await realtime.emit(.waitingForQuestion)
-        try await Task.sleep(for: .milliseconds(20))
+        await settle(controller, realtime)
 
         #expect(await controller.turnPhase == .collectingContext)
         #expect(await controller.activeResponseID == nil)
@@ -227,7 +227,8 @@ import Testing
         await realtime.emit(.textDelta(responseID: "auto-1", text: "Прямой"))
         await realtime.emit(.textDelta(responseID: "auto-1", text: " ответ."))
         await realtime.emit(.completed(responseID: "auto-1"))
-        try await Task.sleep(for: .milliseconds(30))
+        await settle(controller, realtime)
+        await waitUntil { await collector.events.contains(.completed(finalText: "Прямой ответ.")) }
 
         let events = await collector.events
         #expect(events.contains(.streaming(text: "Прямой")))
@@ -272,7 +273,8 @@ import Testing
         await realtime.emit(.responseStarted(responseID: "auto-1", trigger: .automatic))
         await realtime.emit(.textDelta(responseID: "auto-1", text: "Начало"))
         await realtime.emit(.cancelled(responseID: "auto-1", reason: "interrupted_by_speech"))
-        try await Task.sleep(for: .milliseconds(30))
+        await settle(controller, realtime)
+        await waitUntil { await collector.events.contains(.cancelled) }
 
         let events = await collector.events
         #expect(events.contains(.cancelled))
@@ -307,7 +309,7 @@ import Testing
 
         try await controller.start()
         await realtime.emit(.waitingForQuestion)
-        try await Task.sleep(for: .milliseconds(30))
+        await settle(controller, realtime)
 
         #expect(await repository.savedPairs.isEmpty)
 
@@ -336,7 +338,7 @@ import Testing
         await realtime.emit(.textDelta(responseID: "auto-1", text: "Первый"))
         await realtime.emit(.textDelta(responseID: "auto-1", text: " кусок"))
         await realtime.emit(.completed(responseID: "auto-1"))
-        try await Task.sleep(for: .milliseconds(30))
+        await settle(controller, realtime)
         await logger.flush()
 
         let saved = await repository.latest(responseID: "auto-1")
@@ -374,7 +376,7 @@ import Testing
         await realtime.emit(.questionContext(responseID: "r1", itemIDs: []))
         await realtime.emit(.responseStarted(responseID: "r1", trigger: .manual))
         await realtime.emit(.textDelta(responseID: "r1", text: "Ответ"))
-        try await Task.sleep(for: .milliseconds(30))
+        await settle(controller, realtime)
         await logger.flush()
 
         #expect(await received.value.map(\.isFinal) == [false, true])
@@ -394,7 +396,7 @@ import Testing
 
         try await controller.start()
         await systemAudio.emit(PCMAudioFrame(samples: [1], sampleRate: 16000, channelCount: 1, capturedAt: Date(), source: .systemAudio))
-        try await Task.sleep(for: .milliseconds(20))
+        await waitUntil { await latency.recordedMetrics.contains { if case .captureCallbackToSendMs = $0 { true } else { false } } }
 
         let recorded = await latency.recordedMetrics
         #expect(recorded.contains { if case .captureCallbackToSendMs = $0 { true } else { false } })
@@ -416,7 +418,7 @@ import Testing
         await realtime.emit(.responseStarted(responseID: "auto-1", trigger: .automatic))
         await realtime.emit(.textDelta(responseID: "auto-1", text: "Первый"))
         await realtime.emit(.textDelta(responseID: "auto-1", text: " второй"))
-        try await Task.sleep(for: .milliseconds(20))
+        await settle(controller, realtime)
 
         let recorded = await latency.recordedMetrics
         let paintMetrics = recorded.compactMap { metric -> Int? in
@@ -445,7 +447,7 @@ import Testing
         await realtime.emit(.responseStarted(responseID: "manual-1", trigger: .manual))
         await realtime.emit(.textDelta(responseID: "manual-1", text: "Ответ сейчас"))
         await realtime.emit(.completed(responseID: "manual-1"))
-        try await Task.sleep(for: .milliseconds(30))
+        await settle(controller, realtime)
 
         #expect(await repository.latest(responseID: "manual-1")?.triggerKind == .manual)
 
@@ -463,7 +465,7 @@ import Testing
 
         try await controller.start()
         await systemAudio.simulateUnexpectedEnd()
-        try await Task.sleep(for: .milliseconds(30))
+        await waitUntil { await collector.reasons == ["system_audio_capture_ended"] }
 
         #expect(await collector.reasons == ["system_audio_capture_ended"])
 

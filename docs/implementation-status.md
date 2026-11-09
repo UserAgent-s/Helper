@@ -778,3 +778,23 @@ M1 по коду закрыт (S1.1–S1.7). Ручной чек-лист M1 в 
 - `ClientCommandValidationTests`: `freeText` 4000 проходит, 4001 отклоняется, эмодзи считаются по UTF-16; `cmdId`, токен, `lastSeq`, имя устройства, кадр больше 64 КБ.
 
 Попутно исправлены три теста из S1.7, которые падали под нагрузкой полного прогона: `transcriptTimeoutKeepsPartialTextOrFails`, `transcriptRetentionIsBounded` и `noContextEmittedWhenManualTriggerRejected`. Фиксированные `sleep` заменены ожиданием условия с потолком 2 с. Для этого `waitUntil` вынесен из `CaptureHubTests` в `Tests/DomainTests/WaitUntil.swift`. Итого swift 346 + AppTests.
+
+**S2.2. DeltaDiffer, PointSegmenter, ReplayBuffer.** Добавлены в `CompanionProtocol`, по-прежнему без зависимости от Domain: `WireTextSanitizer`, `DeltaDiffer` (`TextChange`), `PointSegmenter`, `AnswerStreamProjector`, `ReplayBuffer`, `ServerEvent.isReplayable`. Семантика описана в ADR 0005, раздел «Потоковый ответ и доигрывание». Почему отличается от плана v2:
+- Пункты считаются блоками верхнего уровня, а не только элементами списка. Иначе у ответа без списка не было бы ни одного `pointId` для «раскрыть через Claude».
+- Транзитные события не хранятся в буфере.
+- Маркер вырезается на проводе дополнительно, потому что клиент Realtime отбрасывает только ответ, целиком равный маркеру.
+
+Тесты: 28 новых в `CompanionProtocolTests`, всего там 55.
+- `DeltaDifferTests`: кириллица, эмодзи, комбинирующий знак, ZWJ, восстановление текста по цепочке изменений.
+- `PointSegmenterTests`: `- `, `1. `, `2) `, вложенность, абзацы и заголовки, код в ограждении, CRLF. Отдельно проверено при посимвольном росте текста, что индексы только растут и `pointId` стабилен.
+- `WireTextSanitizerTests`: включает проверку, что маркер не попадает в закодированные кадры.
+- `AnswerStreamProjectorTests`.
+- `ReplayBufferTests`: переполнение, `lastSeq` из будущего и отрицательный, транзитные события, немонотонный `seq`, `removeAll`.
+
+Стабилизация тестов (в том же коммите). При полном параллельном прогоне (около 370 тестов) падали тесты с фиксированными `sleep` 10–40 мс. Исправление:
+- **Тесты RealtimeClient и Domain.** Перед положительными проверками `sleep` заменён на `waitUntil` с потолком 2–3 с. Перед отрицательными проверками («не произошло») `sleep` оставлен намеренно: ложных падений там не бывает.
+- **Тесты контроллера answers.** Добавлен детерминированный `settle(controller, realtime)`: он ждёт, пока `AnswersModeController.handledEventCountForTesting` догонит `FakeLiveResponder.emittedEventCount`.
+- **Тест записи.** Ждёт `RecordingModeController.ingestedFrameCountForTesting`.
+
+Оба счётчика внутренние (internal), доступны только через `@testable`. Попутно найдено поведение в коде: `RecordingModeController.stop()` отменяет producer до того, как кадры в полёте дойдут до конвейера. Последние миллисекунды звука при остановке записи могут теряться. Для стенограммы это допустимо, оставлено как есть.
+Итого swift 374 + AppTests.
