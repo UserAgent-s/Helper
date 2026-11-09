@@ -46,3 +46,6 @@ build/
 
 # Local dev signing identity (scripts/make-dev-signing-identity.sh)
 Config/DevSigning.local.xcconfig
+
+# Claude Code handoff (local progress journal, not shared)
+.claude/handoff/

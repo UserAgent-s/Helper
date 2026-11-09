@@ -61,3 +61,13 @@ Also:
 - Never grant an MCP server automatic permission for destructive commands.
 - Never connect an unknown or unvetted MCP server to the meeting-recordings
   store — audio and transcripts may contain confidential information.
+
+## Plan execution workflow (plan v3, branch `codex/useragent057-m0`)
+
+- Progress journal and plan data live in `.claude/handoff/` (gitignored, local only): `HANDOFF.md`, `plan_v2.json`, `v3.json`, `v3_rest.txt`. Read `HANDOFF.md` first; its `## Next:` line names the step to do.
+- Read a step: `python3 -c "import json;d=json.load(open('.claude/handoff/plan_v2.json'));m=[x for x in d['milestones'] if x['id']=='M4'][0];s=[x for x in m['steps'] if x['id']=='S4.8'][0];[print('##',k,'\n',s[k]) for k in s]"`.
+- Research the relevant API (Context7, Apple docs, local probes) before writing code.
+- One commit per step, never push. Commit message ends with the trailers `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>` and `Claude-Session: <current session URL>`.
+- Before committing run `make verify-fast > .claude/handoff/vf.log 2>&1`; it must exit 0.
+- Record each step in `docs/implementation-status.md` (and the ADR it touches), then append a `- [x] S<n> DONE <hash>: …` line and update the `## Next:` line in `HANDOFF.md`.
+- Report to the owner in Russian. Owner-only steps: `make dev-identity`, `make ui-test`, `make verify-real-me`, paid real-API tests, phone runs.

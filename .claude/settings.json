@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"$CLAUDE_PROJECT_DIR/.claude/handoff/HANDOFF.md\"; [ -f \"$f\" ] || exit 0; echo \"UserAgent057 progress journal: $f (read it fully before continuing; rules are in CLAUDE.md).\"; grep -E \"DONE\" \"$f\" | tail -3 | cut -c1-400; grep -E \"^## Next\" \"$f\" | tail -1",
+            "timeout": 10,
+            "statusMessage": "Loading UserAgent057 handoff"
+          }
+        ]
+      }
+    ]
+  }
+}
