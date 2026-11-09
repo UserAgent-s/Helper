@@ -9,7 +9,7 @@ import Testing
         realtime: FakeLiveResponder,
         trigger: FakeAnswerTriggering
     ) -> AnswersModeController {
-        AnswersModeController(systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
+        AnswersModeController(captureHub: CaptureHub(system: systemAudio, microphone: FakeMicrophoneCapturing()), realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
     }
 
     @Test func shortQuestionProducesOneVisibleAnswer() async throws {
@@ -57,7 +57,7 @@ import Testing
         let repository = FakeQuestionAnswerRepository()
         let logger = QuestionAnswerLogger(localTranscribing: transcribing, repository: repository, answerModelID: "test")
         let controller = AnswersModeController(
-            systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" },
+            captureHub: CaptureHub(system: systemAudio, microphone: FakeMicrophoneCapturing()), realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" },
             questionAnswerLogger: logger
         )
 
@@ -119,7 +119,7 @@ import Testing
         let repository = FakeQuestionAnswerRepository()
         let logger = QuestionAnswerLogger(localTranscribing: transcribing, repository: repository, answerModelID: "test")
         let controller = AnswersModeController(
-            systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" },
+            captureHub: CaptureHub(system: systemAudio, microphone: FakeMicrophoneCapturing()), realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" },
             questionAnswerLogger: logger
         )
 

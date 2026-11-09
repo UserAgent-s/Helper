@@ -22,6 +22,11 @@ private actor FakeSystemAudioCapturing: SystemAudioCapturing {
     }
 }
 
+private struct SilentMicrophoneCapturing: MicrophoneCapturing {
+    func start() async throws -> AsyncStream<PCMAudioFrame> { AsyncStream { $0.finish() } }
+    func stop() async {}
+}
+
 private actor FakeLiveResponder: LiveResponder {
     private let stream: AsyncStream<RealtimeAnswerEvent>
     private let continuation: AsyncStream<RealtimeAnswerEvent>.Continuation
@@ -68,7 +73,7 @@ private actor FakeLiveResponder: LiveResponder {
     @Test func resettingAfterCompletedAnswerDoesNotRestartTheRealtimeSession() async throws {
         let systemAudio = FakeSystemAudioCapturing()
         let realtime = FakeLiveResponder()
-        let answersController = AnswersModeController(systemAudio: systemAudio, realtime: realtime, answerTrigger: ManualAnswerTrigger(), instructionsProvider: { "test" })
+        let answersController = AnswersModeController(captureHub: CaptureHub(system: systemAudio, microphone: SilentMicrophoneCapturing()), realtime: realtime, answerTrigger: ManualAnswerTrigger(), instructionsProvider: { "test" })
         let modeCoordinator = ModeCoordinator(controllers: [.answers: answersController])
         _ = await modeCoordinator.requestTransition(to: .answers)
 
@@ -93,7 +98,7 @@ private actor FakeLiveResponder: LiveResponder {
     @Test func resettingWhileCollectingContextResetsWithoutRestartingTheSession() async throws {
         let systemAudio = FakeSystemAudioCapturing()
         let realtime = FakeLiveResponder()
-        let answersController = AnswersModeController(systemAudio: systemAudio, realtime: realtime, answerTrigger: ManualAnswerTrigger(), instructionsProvider: { "test" })
+        let answersController = AnswersModeController(captureHub: CaptureHub(system: systemAudio, microphone: SilentMicrophoneCapturing()), realtime: realtime, answerTrigger: ManualAnswerTrigger(), instructionsProvider: { "test" })
         let modeCoordinator = ModeCoordinator(controllers: [.answers: answersController])
         _ = await modeCoordinator.requestTransition(to: .answers)
 

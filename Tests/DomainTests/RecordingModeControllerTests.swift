@@ -11,7 +11,7 @@ import Testing
         let repository = FakeMeetingRepository()
         await transcribing.setResult([TranscribedSegment(text: "привет", startMs: 0, endMs: 500, source: .local)])
 
-        let controller = RecordingModeController(systemAudio: systemAudio, microphone: microphone, transcribing: transcribing, repository: repository, chunkDurationSeconds: 3600)
+        let controller = RecordingModeController(captureHub: CaptureHub(system: systemAudio, microphone: microphone), transcribing: transcribing, repository: repository, chunkDurationSeconds: 3600)
         try await controller.start()
 
         await microphone.emit(PCMAudioFrame(samples: [0], sampleRate: 24000, channelCount: 1, capturedAt: Date(), source: .microphone))
@@ -35,7 +35,7 @@ import Testing
         let transcribing = FakeLocalTranscribing()
         let repository = FakeMeetingRepository()
 
-        let controller = RecordingModeController(systemAudio: systemAudio, microphone: microphone, transcribing: transcribing, repository: repository, chunkDurationSeconds: 3600)
+        let controller = RecordingModeController(captureHub: CaptureHub(system: systemAudio, microphone: microphone), transcribing: transcribing, repository: repository, chunkDurationSeconds: 3600)
         try await controller.start()
         await controller.stop()
 
@@ -55,7 +55,7 @@ import Testing
         let microphone = FakeMicrophoneCapturing()
         let transcribing = FakeLocalTranscribing()
         let repository = FakeMeetingRepository()
-        let controller = RecordingModeController(systemAudio: systemAudio, microphone: microphone, transcribing: transcribing, repository: repository)
+        let controller = RecordingModeController(captureHub: CaptureHub(system: systemAudio, microphone: microphone), transcribing: transcribing, repository: repository)
 
         try await controller.start()
         await controller.stop()
@@ -73,7 +73,7 @@ import Testing
         await transcribing.setError(TestError(message: "model not loaded"))
         let repository = FakeMeetingRepository()
 
-        let controller = RecordingModeController(systemAudio: systemAudio, microphone: microphone, transcribing: transcribing, repository: repository, chunkDurationSeconds: 0)
+        let controller = RecordingModeController(captureHub: CaptureHub(system: systemAudio, microphone: microphone), transcribing: transcribing, repository: repository, chunkDurationSeconds: 0)
         try await controller.start()
 
         await microphone.emit(PCMAudioFrame(samples: [0], sampleRate: 24000, channelCount: 1, capturedAt: Date(), source: .microphone))
@@ -94,7 +94,7 @@ import Testing
         let transcribing = SourceAwareFakeLocalTranscribing()
         let repository = FakeMeetingRepository()
 
-        let controller = RecordingModeController(systemAudio: systemAudio, microphone: microphone, transcribing: transcribing, repository: repository, chunkDurationSeconds: 0)
+        let controller = RecordingModeController(captureHub: CaptureHub(system: systemAudio, microphone: microphone), transcribing: transcribing, repository: repository, chunkDurationSeconds: 0)
         try await controller.start()
 
         await systemAudio.emit(PCMAudioFrame(samples: [0], sampleRate: 24000, channelCount: 1, capturedAt: Date(), source: .systemAudio))
@@ -120,7 +120,7 @@ import Testing
         let latency = FakeLatencyRecording()
 
         let controller = RecordingModeController(
-            systemAudio: systemAudio, microphone: microphone, transcribing: transcribing, repository: repository,
+            captureHub: CaptureHub(system: systemAudio, microphone: microphone), transcribing: transcribing, repository: repository,
             latencyRecording: latency, chunkDurationSeconds: 0, backpressureCapacity: 1
         )
         try await controller.start()
@@ -143,7 +143,7 @@ import Testing
         let audioRecording = FakeMeetingAudioRecording()
 
         let controller = RecordingModeController(
-            systemAudio: systemAudio, microphone: microphone, transcribing: transcribing, repository: repository,
+            captureHub: CaptureHub(system: systemAudio, microphone: microphone), transcribing: transcribing, repository: repository,
             audioRecording: audioRecording, isAudioStorageEnabled: { true }, chunkDurationSeconds: 3600
         )
         try await controller.start()
@@ -168,7 +168,7 @@ import Testing
         let audioRecording = FakeMeetingAudioRecording()
 
         let controller = RecordingModeController(
-            systemAudio: systemAudio, microphone: microphone, transcribing: transcribing, repository: repository,
+            captureHub: CaptureHub(system: systemAudio, microphone: microphone), transcribing: transcribing, repository: repository,
             audioRecording: audioRecording, isAudioStorageEnabled: { false }, chunkDurationSeconds: 3600
         )
         try await controller.start()

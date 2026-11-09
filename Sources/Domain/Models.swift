@@ -1,6 +1,6 @@
 import Foundation
 
-public enum AudioSourceKind: Sendable, Equatable {
+public enum AudioSourceKind: String, Sendable, Hashable, CaseIterable {
     case systemAudio
     case microphone
 }

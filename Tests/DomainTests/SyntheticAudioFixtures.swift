@@ -2,7 +2,7 @@ import Foundation
 @testable import Domain
 
 enum SyntheticAudioFixtures {
-    static func toneBurst(durationMs: Int, sampleRate: Int = 16_000, frequencyHz: Double = 440, source: AudioSourceKind = .systemAudio) -> [PCMAudioFrame] {
+    static func toneBurst(durationMs: Int, sampleRate: Int = 16_000, frequencyHz: Double = 440, amplitude: Double = 8000, source: AudioSourceKind = .systemAudio) -> [PCMAudioFrame] {
         let frameDurationMs = 20
         let frameCount = max(1, durationMs / frameDurationMs)
         let samplesPerFrame = sampleRate * frameDurationMs / 1000
@@ -14,7 +14,7 @@ enum SyntheticAudioFixtures {
             samples.reserveCapacity(samplesPerFrame)
             for _ in 0..<samplesPerFrame {
                 let phase = Double(sampleIndex) / Double(sampleRate) * frequencyHz * 2 * .pi
-                samples.append(Int16(sin(phase) * 8000))
+                samples.append(Int16(sin(phase) * amplitude))
                 sampleIndex += 1
             }
             frames.append(PCMAudioFrame(

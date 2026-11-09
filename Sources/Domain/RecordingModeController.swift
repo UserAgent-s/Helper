@@ -1,8 +1,11 @@
 import Foundation
 
 public actor RecordingModeController: ModeController {
-    private let systemAudio: any SystemAudioCapturing
-    private let microphone: any MicrophoneCapturing
+    public static let systemAudioConsumer = "recording.systemAudio"
+    public static let microphoneConsumer = "recording.microphone"
+
+    private let captureHub: CaptureHub
+    private let transcriptionFormat: any AudioFormatConverting
     private let transcribing: any LocalTranscribing
     private let repository: any MeetingRepository
     private let latencyRecording: (any LatencyRecording)?
@@ -17,8 +20,8 @@ public actor RecordingModeController: ModeController {
     private var microphoneProducerTask: Task<Void, Never>?
     private var systemAudioConsumerTask: Task<Void, Never>?
     private var microphoneConsumerTask: Task<Void, Never>?
-    private var systemAudioLease: ResourceLease?
-    private var microphoneLease: ResourceLease?
+    private var systemAudioSubscription: CaptureSubscription?
+    private var microphoneSubscription: CaptureSubscription?
 
     private var meetingID: MeetingID?
     private var systemAudioChannel: RecordingBackpressureChannel?
@@ -36,8 +39,8 @@ public actor RecordingModeController: ModeController {
     private let finishedMeetingContinuation: AsyncStream<MeetingID>.Continuation
 
     public init(
-        systemAudio: any SystemAudioCapturing,
-        microphone: any MicrophoneCapturing,
+        captureHub: CaptureHub,
+        transcriptionFormat: any AudioFormatConverting = PassthroughAudioFormatConverter(),
         transcribing: any LocalTranscribing,
         repository: any MeetingRepository,
         latencyRecording: (any LatencyRecording)? = nil,
@@ -47,8 +50,8 @@ public actor RecordingModeController: ModeController {
         overlapSeconds: Double = 1.5,
         backpressureCapacity: Int = 400
     ) {
-        self.systemAudio = systemAudio
-        self.microphone = microphone
+        self.captureHub = captureHub
+        self.transcriptionFormat = transcriptionFormat
         self.transcribing = transcribing
         self.repository = repository
         self.latencyRecording = latencyRecording
@@ -89,25 +92,23 @@ public actor RecordingModeController: ModeController {
         systemAudioPipeline = systemPipeline
         microphonePipeline = micPipeline
 
-        let sysFrames = try await systemAudio.start(scope: .defaultScope).frames
-        let systemAudio = self.systemAudio
-        systemAudioLease = ResourceLease(name: "systemAudio") { await systemAudio.stop() }
+        let systemSubscription = try await captureHub.acquire(.systemAudio, consumer: Self.systemAudioConsumer, policy: .unbounded)
+        systemAudioSubscription = systemSubscription
+        let micSubscription = try await captureHub.acquire(.microphone, consumer: Self.microphoneConsumer, policy: .unbounded)
+        microphoneSubscription = micSubscription
 
-        let micFrames = try await microphone.start()
-        let microphone = self.microphone
-        microphoneLease = ResourceLease(name: "microphone") { await microphone.stop() }
-
+        let transcriptionFormat = self.transcriptionFormat
         systemAudioProducerTask = Task {
-            for await frame in sysFrames {
+            for await frame in systemSubscription.frames {
                 if Task.isCancelled { break }
-                await systemChannel.send(frame)
+                await systemChannel.send(transcriptionFormat.convert(frame))
             }
             await systemChannel.finish()
         }
         microphoneProducerTask = Task {
-            for await frame in micFrames {
+            for await frame in micSubscription.frames {
                 if Task.isCancelled { break }
-                await micChannel.send(frame)
+                await micChannel.send(transcriptionFormat.convert(frame))
             }
             await micChannel.finish()
         }
@@ -124,8 +125,10 @@ public actor RecordingModeController: ModeController {
         systemAudioProducerTask?.cancel()
         microphoneProducerTask?.cancel()
 
-        await systemAudioLease?.release(); systemAudioLease = nil
-        await microphoneLease?.release(); microphoneLease = nil
+        if let systemAudioSubscription { await captureHub.release(systemAudioSubscription) }
+        if let microphoneSubscription { await captureHub.release(microphoneSubscription) }
+        systemAudioSubscription = nil
+        microphoneSubscription = nil
 
         await systemAudioProducerTask?.value; systemAudioProducerTask = nil
         await microphoneProducerTask?.value; microphoneProducerTask = nil

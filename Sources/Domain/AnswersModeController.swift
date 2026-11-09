@@ -1,23 +1,26 @@
 import Foundation
 
 public actor AnswersModeController: ModeController {
-    private let systemAudio: any SystemAudioCapturing
+    public static let realtimeConsumer = "answers.realtime"
+    public static let ringBufferConsumer = "answers.ringBuffer"
+
+    private let captureHub: CaptureHub
     private let realtime: any LiveResponder
     private let answerTrigger: any AnswerTriggering
-    private let preferredAudioSource: (any PreferredAudioSourceStoring)?
     private let instructionsProvider: @Sendable () async -> String
     private let answersRingBuffer: AnswersRingBuffer
     private let questionAnswerLogger: QuestionAnswerLogger?
     private let latencyRecording: (any LatencyRecording)?
 
     private var captureTask: Task<Void, Never>?
+    private var ringBufferTask: Task<Void, Never>?
+    private var realtimeSubscription: CaptureSubscription?
+    private var ringBufferSubscription: CaptureSubscription?
     private var eventsTask: Task<Void, Never>?
     private var triggerTask: Task<Void, Never>?
-    private var noticesTask: Task<Void, Never>?
     private var effectiveScope: SystemAudioScope?
     private var didStartPersistentListeners = false
     private var isRunning = false
-    private var captureLease: ResourceLease?
     private var realtimeLease: ResourceLease?
 
     private(set) public var turnPhase: AnswerTurnPhase = .collectingContext
@@ -31,22 +34,19 @@ public actor AnswersModeController: ModeController {
     private let failureContinuation: AsyncStream<String>.Continuation
 
     private let streamEventBroadcaster = AsyncBroadcaster<AnswerStreamEvent>()
-    private let captureNoticeBroadcaster = AsyncBroadcaster<CaptureNotice>()
 
     public init(
-        systemAudio: any SystemAudioCapturing,
+        captureHub: CaptureHub,
         realtime: any LiveResponder,
         answerTrigger: any AnswerTriggering,
-        preferredAudioSource: (any PreferredAudioSourceStoring)? = nil,
         instructionsProvider: @escaping @Sendable () async -> String,
         answersRingBuffer: AnswersRingBuffer = AnswersRingBuffer(),
         questionAnswerLogger: QuestionAnswerLogger? = nil,
         latencyRecording: (any LatencyRecording)? = nil
     ) {
-        self.systemAudio = systemAudio
+        self.captureHub = captureHub
         self.realtime = realtime
         self.answerTrigger = answerTrigger
-        self.preferredAudioSource = preferredAudioSource
         self.instructionsProvider = instructionsProvider
         self.answersRingBuffer = answersRingBuffer
         self.questionAnswerLogger = questionAnswerLogger
@@ -86,31 +86,25 @@ public actor AnswersModeController: ModeController {
         let realtime = self.realtime
         realtimeLease = ResourceLease(name: "realtime") { await realtime.stop() }
 
-        let requestedScope = await preferredAudioSource?.systemAudioScope() ?? .defaultScope
-        let capture = try await systemAudio.start(scope: requestedScope)
-        let frames = capture.frames
-        let systemAudio = self.systemAudio
-        captureLease = ResourceLease(name: "systemAudio") { await systemAudio.stop() }
-        effectiveScope = capture.effectiveScope
-        if let notice = capture.notice {
-            captureNoticeBroadcaster.yield(notice)
-        }
-        let captureNoticeBroadcaster = self.captureNoticeBroadcaster
-        let laterNotices = capture.laterNotices
-        noticesTask?.cancel()
-        noticesTask = Task {
-            for await notice in laterNotices {
-                captureNoticeBroadcaster.yield(notice)
+        let realtimeSubscription = try await captureHub.acquire(.systemAudio, consumer: Self.realtimeConsumer, policy: .bufferingNewest(250))
+        self.realtimeSubscription = realtimeSubscription
+        let ringBufferSubscription = try await captureHub.acquire(.systemAudio, consumer: Self.ringBufferConsumer, policy: .bufferingNewest(500))
+        self.ringBufferSubscription = ringBufferSubscription
+        effectiveScope = await captureHub.systemEffectiveScope
+
+        let answersRingBuffer = self.answersRingBuffer
+        ringBufferTask = Task {
+            for await frame in ringBufferSubscription.frames {
+                if Task.isCancelled { break }
+                await answersRingBuffer.append(frame)
             }
         }
 
-        let answersRingBuffer = self.answersRingBuffer
         let latencyRecording = self.latencyRecording
         captureTask = Task { [weak self, realtime] in
-            for await frame in frames {
+            for await frame in realtimeSubscription.frames {
                 if Task.isCancelled { break }
                 let callbackReceivedAt = Date()
-                await answersRingBuffer.append(frame)
                 await realtime.appendAudio(frame)
                 await latencyRecording?.record(.captureCallbackToSendMs(Int(Date().timeIntervalSince(callbackReceivedAt) * 1000)))
             }
@@ -142,7 +136,7 @@ public actor AnswersModeController: ModeController {
     public func stop() async {
         isRunning = false
         captureTask?.cancel(); captureTask = nil
-        noticesTask?.cancel(); noticesTask = nil
+        ringBufferTask?.cancel(); ringBufferTask = nil
         if let questionAnswerLogger, let activeResponseID {
             if turnPhase == .streaming {
                 await questionAnswerLogger.recordCancelled(responseID: activeResponseID)
@@ -150,7 +144,10 @@ public actor AnswersModeController: ModeController {
                 await questionAnswerLogger.discardBeforeValidAnswer(responseID: activeResponseID)
             }
         }
-        await captureLease?.release(); captureLease = nil
+        if let realtimeSubscription { await captureHub.release(realtimeSubscription) }
+        if let ringBufferSubscription { await captureHub.release(ringBufferSubscription) }
+        realtimeSubscription = nil
+        ringBufferSubscription = nil
         await realtimeLease?.release(); realtimeLease = nil
         turnPhase = .collectingContext
         activeResponseID = nil
@@ -161,7 +158,7 @@ public actor AnswersModeController: ModeController {
     }
 
     nonisolated public func captureNotices(subscriber: String = #fileID) -> AsyncStream<CaptureNotice> {
-        captureNoticeBroadcaster.subscribe(subscriber)
+        captureHub.notices.subscribe(subscriber)
     }
 
     public func currentEffectiveScope() -> SystemAudioScope? {

@@ -2,27 +2,12 @@ import Foundation
 import Testing
 @testable import Domain
 
-private actor StubAudioSourceStore: PreferredAudioSourceStoring {
-    var scope: SystemAudioScope
-
-    init(scope: SystemAudioScope) {
-        self.scope = scope
-    }
-
-    func preferredApplicationBundleID() async -> String? { scope.targetApplicationBundleID }
-    func setPreferredApplicationBundleID(_ bundleID: String?) async {}
-    func systemAudioScope() async -> SystemAudioScope { scope }
-    func setSystemAudioScope(_ scope: SystemAudioScope) async { self.scope = scope }
-}
-
 @Suite struct AnswersModeControllerTests {
 
     @Test func startRequestsStoredScope() async throws {
         let systemAudio = FakeSystemAudioCapturing()
-        let controller = AnswersModeController(
-            systemAudio: systemAudio, realtime: FakeLiveResponder(), answerTrigger: FakeAnswerTriggering(),
-            preferredAudioSource: StubAudioSourceStore(scope: .chromeOnlyPreset), instructionsProvider: { "test" }
-        )
+        let hub = CaptureHub(system: systemAudio, microphone: FakeMicrophoneCapturing(), scope: { .chromeOnlyPreset })
+        let controller = AnswersModeController(captureHub: hub, realtime: FakeLiveResponder(), answerTrigger: FakeAnswerTriggering(), instructionsProvider: { "test" })
         try await controller.start()
         #expect(await systemAudio.requestedScopes == [.chromeOnlyPreset])
         #expect(await controller.currentEffectiveScope() == .chromeOnlyPreset)
@@ -31,7 +16,7 @@ private actor StubAudioSourceStore: PreferredAudioSourceStoring {
 
     @Test func startWithoutStoreUsesWholeSystem() async throws {
         let systemAudio = FakeSystemAudioCapturing()
-        let controller = AnswersModeController(systemAudio: systemAudio, realtime: FakeLiveResponder(), answerTrigger: FakeAnswerTriggering(), instructionsProvider: { "test" })
+        let controller = AnswersModeController(captureHub: CaptureHub(system: systemAudio, microphone: FakeMicrophoneCapturing()), realtime: FakeLiveResponder(), answerTrigger: FakeAnswerTriggering(), instructionsProvider: { "test" })
         try await controller.start()
         #expect(await systemAudio.requestedScopes == [.defaultScope])
         await controller.stop()
@@ -40,10 +25,8 @@ private actor StubAudioSourceStore: PreferredAudioSourceStoring {
     @Test func fallbackNoticeDoesNotFailMode() async throws {
         let systemAudio = FakeSystemAudioCapturing()
         await systemAudio.configureFallback(notice: .fellBackToWholeSystem(missingBundleID: "com.google.Chrome"), effectiveScope: .defaultScope)
-        let controller = AnswersModeController(
-            systemAudio: systemAudio, realtime: FakeLiveResponder(), answerTrigger: FakeAnswerTriggering(),
-            preferredAudioSource: StubAudioSourceStore(scope: .chromeOnlyPreset), instructionsProvider: { "test" }
-        )
+        let hub = CaptureHub(system: systemAudio, microphone: FakeMicrophoneCapturing(), scope: { .chromeOnlyPreset })
+        let controller = AnswersModeController(captureHub: hub, realtime: FakeLiveResponder(), answerTrigger: FakeAnswerTriggering(), instructionsProvider: { "test" })
         let coordinator = ModeCoordinator(controllers: [.answers: controller])
         var notices = controller.captureNotices().makeAsyncIterator()
 
@@ -55,11 +38,79 @@ private actor StubAudioSourceStore: PreferredAudioSourceStoring {
         _ = await coordinator.requestTransition(to: .passive)
     }
 
+    @Test func answersUsesOneSystemStreamForBothConsumers() async throws {
+        let systemAudio = FakeSystemAudioCapturing()
+        let hub = CaptureHub(system: systemAudio, microphone: FakeMicrophoneCapturing())
+        let controller = AnswersModeController(captureHub: hub, realtime: FakeLiveResponder(), answerTrigger: FakeAnswerTriggering(), instructionsProvider: { "test" })
+        try await controller.start()
+        #expect(await systemAudio.startCallCount == 1)
+        #expect(await hub.activeSources == [.systemAudio])
+        await controller.stop()
+    }
+
+    @Test func answersNeverStartsMicrophone() async throws {
+        let microphone = FakeMicrophoneCapturing()
+        let hub = CaptureHub(system: FakeSystemAudioCapturing(), microphone: microphone)
+        let controller = AnswersModeController(captureHub: hub, realtime: FakeLiveResponder(), answerTrigger: FakeAnswerTriggering(), instructionsProvider: { "test" })
+        try await controller.start()
+        #expect(await microphone.startCalled == false)
+        await controller.stop()
+    }
+
+    @Test func passiveTearsDownCaptureNetworkAndWrites() async throws {
+        let answersSystemAudio = FakeSystemAudioCapturing()
+        let answersHub = CaptureHub(system: answersSystemAudio, microphone: FakeMicrophoneCapturing())
+        let realtime = FakeLiveResponder()
+        let answers = AnswersModeController(captureHub: answersHub, realtime: realtime, answerTrigger: FakeAnswerTriggering(), instructionsProvider: { "test" })
+        let answersCoordinator = ModeCoordinator(controllers: [.answers: answers])
+
+        _ = await answersCoordinator.requestTransition(to: .answers)
+        #expect(await answersHub.activeSources == [.systemAudio])
+        _ = await answersCoordinator.requestTransition(to: .passive)
+
+        #expect(await answersHub.activeSources.isEmpty)
+        #expect(await realtime.stopCallCount == 1)
+        #expect(await answersSystemAudio.stopCalled)
+
+        let recordingSystemAudio = FakeSystemAudioCapturing()
+        let microphone = FakeMicrophoneCapturing()
+        let recordingHub = CaptureHub(system: recordingSystemAudio, microphone: microphone)
+        let audioRecording = FakeMeetingAudioRecording()
+        let recording = RecordingModeController(
+            captureHub: recordingHub, transcribing: FakeLocalTranscribing(), repository: FakeMeetingRepository(),
+            audioRecording: audioRecording, isAudioStorageEnabled: { true }, chunkDurationSeconds: 3600
+        )
+        let recordingCoordinator = ModeCoordinator(controllers: [.recording: recording])
+
+        _ = await recordingCoordinator.requestTransition(to: .recording)
+        #expect(await recordingHub.activeSources == [.systemAudio, .microphone])
+        _ = await recordingCoordinator.requestTransition(to: .passive)
+
+        #expect(await recordingHub.activeSources.isEmpty)
+        #expect(await audioRecording.finishCallCount == 1)
+        #expect(await recordingSystemAudio.stopCalled)
+        #expect(await microphone.stopCalled)
+    }
+
+    @Test func recordingNeverCallsRealtime() async throws {
+        let hub = CaptureHub(system: FakeSystemAudioCapturing(), microphone: FakeMicrophoneCapturing())
+        let realtime = FakeLiveResponder()
+        let answers = AnswersModeController(captureHub: hub, realtime: realtime, answerTrigger: FakeAnswerTriggering(), instructionsProvider: { "test" })
+        let recording = RecordingModeController(captureHub: hub, transcribing: FakeLocalTranscribing(), repository: FakeMeetingRepository(), chunkDurationSeconds: 3600)
+        let coordinator = ModeCoordinator(controllers: [.answers: answers, .recording: recording])
+
+        _ = await coordinator.requestTransition(to: .recording)
+        _ = await coordinator.requestTransition(to: .passive)
+
+        #expect(await realtime.startCalled == false)
+        #expect(await realtime.appendedFrameCount == 0)
+    }
+
     @Test func exactlyOneVisibleAnswerWhenManualRacesAutomatic() async throws {
         let systemAudio = FakeSystemAudioCapturing()
         let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
-        let controller = AnswersModeController(systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
+        let controller = AnswersModeController(captureHub: CaptureHub(system: systemAudio, microphone: FakeMicrophoneCapturing()), realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
 
         try await controller.start()
 
@@ -87,7 +138,7 @@ private actor StubAudioSourceStore: PreferredAudioSourceStoring {
         let systemAudio = FakeSystemAudioCapturing()
         let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
-        let controller = AnswersModeController(systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
+        let controller = AnswersModeController(captureHub: CaptureHub(system: systemAudio, microphone: FakeMicrophoneCapturing()), realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
 
         try await controller.start()
 
@@ -107,7 +158,7 @@ private actor StubAudioSourceStore: PreferredAudioSourceStoring {
         let systemAudio = FakeSystemAudioCapturing()
         let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
-        let controller = AnswersModeController(systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
+        let controller = AnswersModeController(captureHub: CaptureHub(system: systemAudio, microphone: FakeMicrophoneCapturing()), realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
 
         try await controller.start()
         await trigger.fire()
@@ -126,7 +177,7 @@ private actor StubAudioSourceStore: PreferredAudioSourceStoring {
         let systemAudio = FakeSystemAudioCapturing()
         let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
-        let controller = AnswersModeController(systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
+        let controller = AnswersModeController(captureHub: CaptureHub(system: systemAudio, microphone: FakeMicrophoneCapturing()), realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
 
         try await controller.start()
 
@@ -149,7 +200,7 @@ private actor StubAudioSourceStore: PreferredAudioSourceStoring {
         let systemAudio = FakeSystemAudioCapturing()
         let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
-        let controller = AnswersModeController(systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
+        let controller = AnswersModeController(captureHub: CaptureHub(system: systemAudio, microphone: FakeMicrophoneCapturing()), realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
 
         try await controller.start()
         await realtime.emit(.waitingForQuestion)
@@ -166,7 +217,7 @@ private actor StubAudioSourceStore: PreferredAudioSourceStoring {
         let systemAudio = FakeSystemAudioCapturing()
         let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
-        let controller = AnswersModeController(systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
+        let controller = AnswersModeController(captureHub: CaptureHub(system: systemAudio, microphone: FakeMicrophoneCapturing()), realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
 
         let collector = StreamEventCollector()
         await collector.start(consuming: controller.streamEvents())
@@ -191,7 +242,7 @@ private actor StubAudioSourceStore: PreferredAudioSourceStoring {
         let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
         await realtime.setForceResponseError(TestError(message: "no_context"))
-        let controller = AnswersModeController(systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
+        let controller = AnswersModeController(captureHub: CaptureHub(system: systemAudio, microphone: FakeMicrophoneCapturing()), realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
 
         let collector = StreamEventCollector()
         await collector.start(consuming: controller.streamEvents())
@@ -212,7 +263,7 @@ private actor StubAudioSourceStore: PreferredAudioSourceStoring {
         let systemAudio = FakeSystemAudioCapturing()
         let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
-        let controller = AnswersModeController(systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
+        let controller = AnswersModeController(captureHub: CaptureHub(system: systemAudio, microphone: FakeMicrophoneCapturing()), realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
 
         let collector = StreamEventCollector()
         await collector.start(consuming: controller.streamEvents())
@@ -234,7 +285,7 @@ private actor StubAudioSourceStore: PreferredAudioSourceStoring {
         let systemAudio = FakeSystemAudioCapturing()
         let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
-        let controller = AnswersModeController(systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
+        let controller = AnswersModeController(captureHub: CaptureHub(system: systemAudio, microphone: FakeMicrophoneCapturing()), realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
 
         try await controller.start()
         await controller.stop()
@@ -251,7 +302,7 @@ private actor StubAudioSourceStore: PreferredAudioSourceStoring {
         let repository = FakeQuestionAnswerRepository()
         let logger = QuestionAnswerLogger(localTranscribing: transcribing, repository: repository, answerModelID: "test-model")
         let controller = AnswersModeController(
-            systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" },
+            captureHub: CaptureHub(system: systemAudio, microphone: FakeMicrophoneCapturing()), realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" },
             questionAnswerLogger: logger
         )
 
@@ -273,7 +324,7 @@ private actor StubAudioSourceStore: PreferredAudioSourceStoring {
         let repository = FakeQuestionAnswerRepository()
         let logger = QuestionAnswerLogger(localTranscribing: transcribing, repository: repository, answerModelID: "test-model")
         let controller = AnswersModeController(
-            systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" },
+            captureHub: CaptureHub(system: systemAudio, microphone: FakeMicrophoneCapturing()), realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" },
             questionAnswerLogger: logger
         )
 
@@ -303,7 +354,7 @@ private actor StubAudioSourceStore: PreferredAudioSourceStoring {
         let trigger = FakeAnswerTriggering()
         let latency = FakeLatencyRecording()
         let controller = AnswersModeController(
-            systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" },
+            captureHub: CaptureHub(system: systemAudio, microphone: FakeMicrophoneCapturing()), realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" },
             latencyRecording: latency
         )
 
@@ -323,7 +374,7 @@ private actor StubAudioSourceStore: PreferredAudioSourceStoring {
         let trigger = FakeAnswerTriggering()
         let latency = FakeLatencyRecording()
         let controller = AnswersModeController(
-            systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" },
+            captureHub: CaptureHub(system: systemAudio, microphone: FakeMicrophoneCapturing()), realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" },
             latencyRecording: latency
         )
 
@@ -351,7 +402,7 @@ private actor StubAudioSourceStore: PreferredAudioSourceStoring {
         let repository = FakeQuestionAnswerRepository()
         let logger = QuestionAnswerLogger(localTranscribing: transcribing, repository: repository, answerModelID: "test-model")
         let controller = AnswersModeController(
-            systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" },
+            captureHub: CaptureHub(system: systemAudio, microphone: FakeMicrophoneCapturing()), realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" },
             questionAnswerLogger: logger
         )
 
@@ -372,7 +423,7 @@ private actor StubAudioSourceStore: PreferredAudioSourceStoring {
         let systemAudio = FakeSystemAudioCapturing()
         let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
-        let controller = AnswersModeController(systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
+        let controller = AnswersModeController(captureHub: CaptureHub(system: systemAudio, microphone: FakeMicrophoneCapturing()), realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
 
         let collector = FailureCollector()
         await collector.start(consuming: controller.failures())
@@ -390,7 +441,7 @@ private actor StubAudioSourceStore: PreferredAudioSourceStoring {
         let systemAudio = FakeSystemAudioCapturing()
         let realtime = FakeLiveResponder()
         let trigger = FakeAnswerTriggering()
-        let controller = AnswersModeController(systemAudio: systemAudio, realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
+        let controller = AnswersModeController(captureHub: CaptureHub(system: systemAudio, microphone: FakeMicrophoneCapturing()), realtime: realtime, answerTrigger: trigger, instructionsProvider: { "test" })
 
         let collector = FailureCollector()
         await collector.start(consuming: controller.failures())

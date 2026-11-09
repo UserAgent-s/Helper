@@ -95,6 +95,7 @@ actor FakeSystemAudioCapturing: SystemAudioCapturing {
     private(set) var stopCalled = false
     var startError: TestError?
     private(set) var requestedScopes: [SystemAudioScope] = []
+    private(set) var startCallCount = 0
     var startNotice: CaptureNotice?
     var effectiveScopeOverride: SystemAudioScope?
 
@@ -104,6 +105,7 @@ actor FakeSystemAudioCapturing: SystemAudioCapturing {
 
     func start(scope: SystemAudioScope) async throws -> SystemAudioCaptureStart {
         startCalled = true
+        startCallCount += 1
         requestedScopes.append(scope)
         if let startError { throw startError }
         return SystemAudioCaptureStart(frames: stream, effectiveScope: effectiveScopeOverride ?? scope, notice: startNotice)
@@ -163,6 +165,7 @@ actor FakeLiveResponder: LiveResponder {
     private(set) var forceResponseCallCount = 0
     private(set) var resetContextCallCount = 0
     private(set) var appendedFrameCount = 0
+    private(set) var stopCallCount = 0
     var forceResponseError: TestError?
 
     init() {
@@ -199,6 +202,7 @@ actor FakeLiveResponder: LiveResponder {
     }
 
     func stop() async {
+        stopCallCount += 1
         stopCalled = true
         continuation.finish()
     }

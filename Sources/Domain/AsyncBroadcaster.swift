@@ -30,6 +30,15 @@ public final class AsyncBroadcaster<Element: Sendable>: Sendable {
     }
 
     public func subscribe(_ name: String = "anonymous", policy: BroadcastBufferPolicy = .unbounded) -> AsyncStream<Element> {
+        identifiedSubscription(name, policy: policy).stream
+    }
+
+    public func cancelSubscription(_ id: UUID) {
+        let continuation = state.withLock { s in s.subscribers.removeValue(forKey: id)?.continuation }
+        continuation?.finish()
+    }
+
+    public func identifiedSubscription(_ name: String = "anonymous", policy: BroadcastBufferPolicy = .unbounded) -> (id: UUID, stream: AsyncStream<Element>) {
         let bufferingPolicy: AsyncStream<Element>.Continuation.BufferingPolicy
         switch policy {
         case .unbounded: bufferingPolicy = .unbounded
@@ -45,7 +54,7 @@ public final class AsyncBroadcaster<Element: Sendable>: Sendable {
         }
         if snapshot.finished {
             continuation.finish()
-            return stream
+            return (id, stream)
         }
         continuation.onTermination = { [weak self] _ in
             self?.remove(id)
@@ -53,7 +62,7 @@ public final class AsyncBroadcaster<Element: Sendable>: Sendable {
         if let replay = snapshot.replay {
             continuation.yield(replay)
         }
-        return stream
+        return (id, stream)
     }
 
     public func yield(_ element: Element) {

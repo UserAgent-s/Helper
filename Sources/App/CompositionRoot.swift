@@ -16,9 +16,9 @@ final class CompositionRoot {
     let preferredAudioSource: any PreferredAudioSourceStoring
     let permissionsChecking: any PermissionsChecking
 
-    let answersSystemAudioCapturing: any SystemAudioCapturing
-    let recordingSystemAudioCapturing: any SystemAudioCapturing
+    let systemAudioCapturing: any SystemAudioCapturing
     let microphoneCapturing: any MicrophoneCapturing
+    let captureHub: CaptureHub
     let realtimeAnswering: any LiveResponder
     let localTranscribing: any LocalTranscribing
     let whisperKitTranscribing: WhisperKitTranscribing
@@ -57,9 +57,14 @@ final class CompositionRoot {
         let profileKnowledge: any ProfileKnowledgeProviding = LegacyBackgroundProfileProvider { [settingsStore] in settingsStore.backgroundContext }
         LocalizationCenter.shared.configure(with: settingsStore)
 
-        answersSystemAudioCapturing = ScreenCaptureKitSystemAudioCapturing(outputFormat: .realtimeStreaming, permissions: permissionsChecking)
-        recordingSystemAudioCapturing = ScreenCaptureKitSystemAudioCapturing(outputFormat: .whisperTranscription, permissions: permissionsChecking)
+        systemAudioCapturing = ScreenCaptureKitSystemAudioCapturing(outputFormat: .realtimeStreaming, permissions: permissionsChecking)
         microphoneCapturing = AVEngineMicrophoneCapturing(permissions: permissionsChecking)
+        let preferredAudioSource = self.preferredAudioSource
+        captureHub = CaptureHub(
+            system: systemAudioCapturing,
+            microphone: microphoneCapturing,
+            scope: { await preferredAudioSource.systemAudioScope() }
+        )
 
         let whisperKitTranscribing = WhisperKitTranscribing(modelID: settingsStore.whisperModelID)
         self.whisperKitTranscribing = whisperKitTranscribing
@@ -99,10 +104,9 @@ final class CompositionRoot {
         )
 
         let answersController = AnswersModeController(
-            systemAudio: answersSystemAudioCapturing,
+            captureHub: captureHub,
             realtime: realtimeAnswering,
             answerTrigger: manualAnswerTrigger,
-            preferredAudioSource: preferredAudioSource,
             instructionsProvider: { [profileKnowledge] in
                 RealtimeInstructions.system(for: settingsStore.answerLength, background: await profileKnowledge.realtimeDigest())
             },
@@ -111,8 +115,8 @@ final class CompositionRoot {
             latencyRecording: latencyRecording
         )
         let recordingController = RecordingModeController(
-            systemAudio: recordingSystemAudioCapturing,
-            microphone: microphoneCapturing,
+            captureHub: captureHub,
+            transcriptionFormat: WhisperFrameConverter(),
             transcribing: localTranscribing,
             repository: meetingRepository,
             latencyRecording: latencyRecording,

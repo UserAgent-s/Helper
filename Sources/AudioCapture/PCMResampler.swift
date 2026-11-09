@@ -86,3 +86,11 @@ public enum WhisperAudioFormatConverter {
         )
     }
 }
+
+public struct WhisperFrameConverter: AudioFormatConverting {
+    public init() {}
+
+    public func convert(_ frame: PCMAudioFrame) -> PCMAudioFrame {
+        WhisperAudioFormatConverter.convert(frame)
+    }
+}
