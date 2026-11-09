@@ -22,8 +22,8 @@ public final class SQLiteQuestionAnswerRepository: QuestionAnswerRepository, Sen
                 context_started_at, context_duration_ms, trigger_kind, answer_text, answer_status,
                 model_id, response_id, speech_end_to_first_delta_ms, first_delta_to_first_paint_ms,
                 response_total_ms, usage_tokens, estimated_cost_usd, created_at, updated_at,
-                question_transcription_model_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                question_transcription_model_id, session_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
                 question_text = excluded.question_text,
                 question_status = excluded.question_status,
@@ -35,7 +35,8 @@ public final class SQLiteQuestionAnswerRepository: QuestionAnswerRepository, Sen
                 usage_tokens = excluded.usage_tokens,
                 estimated_cost_usd = excluded.estimated_cost_usd,
                 updated_at = excluded.updated_at,
-                question_transcription_model_id = excluded.question_transcription_model_id
+                question_transcription_model_id = excluded.question_transcription_model_id,
+                session_id = COALESCE(qa_entries.session_id, excluded.session_id)
             """,
             [
                 .text(pair.id.uuidString),
@@ -58,8 +59,15 @@ public final class SQLiteQuestionAnswerRepository: QuestionAnswerRepository, Sen
                 .text(now),
                 .text(now),
                 pair.questionTranscriptionModelID.map(SQLiteValue.text) ?? .null,
+                pair.sessionID.map { .text($0.rawValue.uuidString) } ?? .null,
             ]
         )
+        if let sessionID = pair.sessionID {
+            try await connection.run(
+                "UPDATE meetings SET last_activity_at = MAX(COALESCE(last_activity_at, ''), ?) WHERE id = ?",
+                [.text(now), .text(sessionID.rawValue.uuidString)]
+            )
+        }
     }
 
     public func delete(id: UUID) async throws {
@@ -98,7 +106,7 @@ public final class SQLiteQuestionAnswerRepository: QuestionAnswerRepository, Sen
     static let columns = """
     id, asked_at, source_bundle_id, question_text, question_status, context_started_at, context_duration_ms,
     trigger_kind, answer_text, answer_status, model_id, response_id, speech_end_to_first_delta_ms,
-    first_delta_to_first_paint_ms, response_total_ms, usage_tokens, estimated_cost_usd, question_transcription_model_id
+    first_delta_to_first_paint_ms, response_total_ms, usage_tokens, estimated_cost_usd, question_transcription_model_id, session_id
     """
 
     static func rowMapper(_ row: SQLiteRow) -> QuestionAnswerPair {
@@ -120,7 +128,8 @@ public final class SQLiteQuestionAnswerRepository: QuestionAnswerRepository, Sen
             responseTotalMs: row.int(14),
             usageTokens: row.int(15),
             estimatedCostUSD: row.double(16),
-            status: AnswerRecordStatus(rawValueString: row.string(9) ?? "") ?? .completed
+            status: AnswerRecordStatus(rawValueString: row.string(9) ?? "") ?? .completed,
+            sessionID: row.string(18).flatMap(UUID.init(uuidString:)).map(SessionID.init(rawValue:))
         )
     }
 }

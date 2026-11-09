@@ -6,6 +6,7 @@ public actor SessionCoordinator: SessionControlling, SessionContextProviding {
     private let now: @Sendable () -> Date
     private let idleTimeout: TimeInterval
     private let idleCheckInterval: Duration
+    private let beforeFinalize: @Sendable () async -> Void
 
     private var state: SessionState = .idle {
         didSet { if state != oldValue { stateBroadcaster.yield(state) } }
@@ -16,6 +17,7 @@ public actor SessionCoordinator: SessionControlling, SessionContextProviding {
     private var idleLoop: Task<Void, Never>?
     private var tail: Task<Void, Never>?
     private var syncQueued = false
+    private var pendingCreation: Task<AssistantSession?, Never>?
 
     private let stateBroadcaster = AsyncBroadcaster<SessionState>(replayLatest: true, initial: .idle)
     private let eventBroadcaster = AsyncBroadcaster<SessionEvent>()
@@ -25,13 +27,15 @@ public actor SessionCoordinator: SessionControlling, SessionContextProviding {
         modes: any SessionModeDriving,
         now: @escaping @Sendable () -> Date = { Date() },
         idleTimeout: TimeInterval = 30 * 60,
-        idleCheckInterval: Duration = .seconds(60)
+        idleCheckInterval: Duration = .seconds(60),
+        beforeFinalize: @escaping @Sendable () async -> Void = {}
     ) {
         self.repository = repository
         self.modes = modes
         self.now = now
         self.idleTimeout = idleTimeout
         self.idleCheckInterval = idleCheckInterval
+        self.beforeFinalize = beforeFinalize
     }
 
     public var currentState: SessionState { state }
@@ -39,6 +43,17 @@ public actor SessionCoordinator: SessionControlling, SessionContextProviding {
     public var activeSessionID: SessionID? {
         if case .active(let id, _, _) = state { return id }
         return nil
+    }
+
+    public func sessionForCapture(mode: SessionSpanMode) async -> SessionID? {
+        switch state {
+        case .active(let id, _, _):
+            return id
+        case .finalizing:
+            return nil
+        case .idle:
+            return await createSession(kind: .assistant, mode: mode)
+        }
     }
 
     nonisolated public func stateUpdates(subscriber: String) -> AsyncStream<SessionState> {
@@ -123,7 +138,15 @@ public actor SessionCoordinator: SessionControlling, SessionContextProviding {
             return .success(id)
         }
         do {
-            let session = try await repository.create(kind: .assistant, mode: .answers, at: now())
+            let repository = self.repository
+            let at = now()
+            let session = try await repository.create(kind: .assistant, mode: .answers, at: at)
+            if case .active(let id, _, _) = state {
+                _ = try? await repository.deleteIfEmpty(sessionID: session.id)
+                _ = await modes.requestTransition(to: .answers)
+                await performSync()
+                return .success(id)
+            }
             activate(session.id, startedAt: session.startedAt, span: session.spans.first)
             eventBroadcaster.yield(.started(session.id, resumed: false))
             _ = await modes.requestTransition(to: .answers)
@@ -164,9 +187,12 @@ public actor SessionCoordinator: SessionControlling, SessionContextProviding {
         openSpan = nil
         passiveSince = nil
         _ = await modes.requestTransition(to: .passive)
+        await beforeFinalize()
         try? await repository.finish(sessionID: id, at: now())
+        let discarded = (try? await repository.deleteIfEmpty(sessionID: id)) ?? false
         state = .idle
         eventBroadcaster.yield(.stopped(id, reason: reason))
+        if discarded { eventBroadcaster.yield(.discarded(id)) }
     }
 
     private func performToggleStar() async -> Result<StarToggleResult, any Error> {
@@ -230,9 +256,7 @@ public actor SessionCoordinator: SessionControlling, SessionContextProviding {
         case .finalizing:
             return
         case .idle:
-            guard let session = try? await repository.create(kind: .assistant, mode: mode, at: now()) else { return }
-            activate(session.id, startedAt: session.startedAt, span: session.spans.first)
-            eventBroadcaster.yield(.started(session.id, resumed: false))
+            _ = await createSession(kind: .assistant, mode: mode)
         case .active(let id, let startedAt, _):
             if let openSpan, openSpan.mode == mode { return }
             guard let span = try? await repository.resume(sessionID: id, mode: mode, at: now()) else { return }
@@ -247,6 +271,33 @@ public actor SessionCoordinator: SessionControlling, SessionContextProviding {
         openSpan = nil
         state = .active(sessionID: id, startedAt: startedAt, mode: nil)
         try? await repository.closeSpan(id: span.id, at: now(), reason: .modeChanged)
+    }
+
+    private func createSession(kind: SessionKind, mode: SessionSpanMode) async -> SessionID? {
+        let task: Task<AssistantSession?, Never>
+        let created: Bool
+        if let pendingCreation {
+            task = pendingCreation
+            created = false
+        } else {
+            let repository = self.repository
+            let at = now()
+            task = Task { try? await repository.create(kind: kind, mode: mode, at: at) }
+            pendingCreation = task
+            created = true
+        }
+        let session = await task.value
+        if created { pendingCreation = nil }
+        guard let session else { return activeSessionID }
+        if case .idle = state {
+            activate(session.id, startedAt: session.startedAt, span: session.spans.first)
+            eventBroadcaster.yield(.started(session.id, resumed: false))
+            return session.id
+        }
+        if activeSessionID != session.id, created {
+            _ = try? await repository.deleteIfEmpty(sessionID: session.id)
+        }
+        return activeSessionID
     }
 
     private func activate(_ id: SessionID, startedAt: Date, span: SessionSpan?) {

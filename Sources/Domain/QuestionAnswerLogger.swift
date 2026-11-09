@@ -17,6 +17,7 @@ public actor QuestionAnswerLogger {
     private let questionTranscriptionModelID: @Sendable () -> String?
     private let transcriptTimeout: Duration
     private let transcriptRetention: Int
+    private let sessions: (any SessionContextProviding)?
 
     private var drafts: [String: Draft] = [:]
     private var outcomes: [String: TranscriptOutcome] = [:]
@@ -28,13 +29,15 @@ public actor QuestionAnswerLogger {
         answerModelID: String,
         questionTranscriptionModelID: @escaping @Sendable () -> String? = { nil },
         transcriptTimeout: Duration = .seconds(20),
-        transcriptRetention: Int = 256
+        transcriptRetention: Int = 256,
+        sessions: (any SessionContextProviding)? = nil
     ) {
         self.repository = repository
         self.answerModelID = answerModelID
         self.questionTranscriptionModelID = questionTranscriptionModelID
         self.transcriptTimeout = transcriptTimeout
         self.transcriptRetention = transcriptRetention
+        self.sessions = sessions
     }
 
     public func flush() async {
@@ -47,7 +50,9 @@ public actor QuestionAnswerLogger {
         sourceAppBundleID: String?,
         contextWindowStartedAt: Date,
         questionItemIDs: [String]
-    ) {
+    ) async {
+        guard drafts[responseID] == nil else { return }
+        let sessionID = await sessions?.activeSessionID
         guard drafts[responseID] == nil else { return }
 
         let now = Date()
@@ -62,7 +67,8 @@ public actor QuestionAnswerLogger {
             answerModelID: answerModelID,
             questionTranscriptionModelID: questionTranscriptionModelID(),
             responseID: responseID,
-            status: .answerStreaming
+            status: .answerStreaming,
+            sessionID: sessionID
         )
         drafts[responseID] = Draft(pair: pair, questionItemIDs: questionItemIDs)
         persist(pair)

@@ -11,7 +11,7 @@ private final class StubMeetingRepository: MeetingRepository, @unchecked Sendabl
     }
 
     func createMeeting(startedAt: Date, sourceAppBundleID: String?) async throws -> MeetingID { meeting.id }
-    func appendSegment(_ segment: TranscribedSegment, meetingID: MeetingID) async throws {}
+    func appendSegment(_ segment: TranscribedSegment, meetingID: MeetingID, capturedAt: Date?) async throws {}
     func finish(meetingID: MeetingID, endedAt: Date) async throws {}
     func reconcileInterruptedMeetings() async throws -> [MeetingID] { [] }
     func fetch(meetingID: MeetingID) async throws -> Meeting {

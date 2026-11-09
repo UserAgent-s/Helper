@@ -29,10 +29,11 @@ final class MeetingFolderExporter: @unchecked Sendable {
         try? markdown.write(to: folder.appendingPathComponent("transcript.md"), atomically: true, encoding: .utf8)
 
         guard let audioSourceDirectory, fileManager.fileExists(atPath: audioSourceDirectory.path) else { return }
-        for fileName in ["mic.wav", "system.wav"] {
+        let names = (try? fileManager.contentsOfDirectory(atPath: audioSourceDirectory.path)) ?? []
+        for fileName in names.filter({ $0.hasSuffix(".wav") }).sorted() {
             let source = audioSourceDirectory.appendingPathComponent(fileName)
-            guard fileManager.fileExists(atPath: source.path) else { continue }
             let destination = folder.appendingPathComponent(fileName)
+            guard !fileManager.fileExists(atPath: destination.path) else { continue }
             try? fileManager.copyItem(at: source, to: destination)
         }
     }

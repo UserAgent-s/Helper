@@ -8,6 +8,8 @@ public actor RecordingModeController: ModeController {
     private let transcriptionFormat: any AudioFormatConverting
     private let transcribing: any LocalTranscribing
     private let repository: any MeetingRepository
+    private let sessions: (any SessionContextProviding)?
+    private let now: @Sendable () -> Date
     private let latencyRecording: (any LatencyRecording)?
     private let audioRecording: (any MeetingAudioRecording)?
     private let isAudioStorageEnabled: @Sendable () -> Bool
@@ -24,6 +26,8 @@ public actor RecordingModeController: ModeController {
     private var microphoneSubscription: CaptureSubscription?
 
     private var meetingID: MeetingID?
+    private var ownsMeeting = false
+    private var recordingStartedAt: Date?
     private(set) var ingestedFrameCountForTesting = 0
     private var systemAudioChannel: RecordingBackpressureChannel?
     private var microphoneChannel: RecordingBackpressureChannel?
@@ -44,6 +48,8 @@ public actor RecordingModeController: ModeController {
         transcriptionFormat: any AudioFormatConverting = PassthroughAudioFormatConverter(),
         transcribing: any LocalTranscribing,
         repository: any MeetingRepository,
+        sessions: (any SessionContextProviding)? = nil,
+        now: @escaping @Sendable () -> Date = { Date() },
         latencyRecording: (any LatencyRecording)? = nil,
         audioRecording: (any MeetingAudioRecording)? = nil,
         isAudioStorageEnabled: @escaping @Sendable () -> Bool = { false },
@@ -55,6 +61,8 @@ public actor RecordingModeController: ModeController {
         self.transcriptionFormat = transcriptionFormat
         self.transcribing = transcribing
         self.repository = repository
+        self.sessions = sessions
+        self.now = now
         self.latencyRecording = latencyRecording
         self.audioRecording = audioRecording
         self.isAudioStorageEnabled = isAudioStorageEnabled
@@ -67,8 +75,17 @@ public actor RecordingModeController: ModeController {
     }
 
     public func start() async throws {
-        let meetingID = try await repository.createMeeting(startedAt: Date(), sourceAppBundleID: nil)
+        let startedAt = now()
+        let meetingID: MeetingID
+        if let sessionID = await sessions?.sessionForCapture(mode: .recording) {
+            meetingID = sessionID
+            ownsMeeting = false
+        } else {
+            meetingID = try await repository.createMeeting(startedAt: startedAt, sourceAppBundleID: nil)
+            ownsMeeting = true
+        }
         self.meetingID = meetingID
+        recordingStartedAt = startedAt
 
         audioRecordingActive = audioRecording != nil && isAudioStorageEnabled()
         if audioRecordingActive {
@@ -149,8 +166,12 @@ public actor RecordingModeController: ModeController {
         }
 
         if let meetingID {
-            let finishedSuccessfully = (try? await repository.finish(meetingID: meetingID, endedAt: Date())) != nil
-            if finishedSuccessfully {
+            if ownsMeeting {
+                let finishedSuccessfully = (try? await repository.finish(meetingID: meetingID, endedAt: now())) != nil
+                if finishedSuccessfully {
+                    finishedMeetingContinuation.yield(meetingID)
+                }
+            } else {
                 finishedMeetingContinuation.yield(meetingID)
             }
         }
@@ -161,6 +182,8 @@ public actor RecordingModeController: ModeController {
         }
 
         meetingID = nil
+        ownsMeeting = false
+        recordingStartedAt = nil
         systemAudioChannel = nil
         microphoneChannel = nil
         systemAudioPipeline = nil
@@ -197,7 +220,8 @@ public actor RecordingModeController: ModeController {
         do {
             let segments = try await pipeline.flush()
             for segment in segments {
-                try await repository.appendSegment(segment, meetingID: meetingID)
+                let capturedAt = ownsMeeting ? nil : recordingStartedAt?.addingTimeInterval(Double(segment.startMs) / 1000)
+                try await repository.appendSegment(segment, meetingID: meetingID, capturedAt: capturedAt)
                 transcriptContinuation.yield(segment)
             }
         } catch {

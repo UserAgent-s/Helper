@@ -214,6 +214,40 @@ public final class SQLiteSessionRepository: SessionRepository, Sendable {
         return ids.compactMap(UUID.init(uuidString:)).map(SessionID.init(rawValue:))
     }
 
+    public func appendUtterance(_ utterance: SessionUtterance, sessionID: SessionID) async throws {
+        let stamp = Self.format(utterance.capturedAt ?? Date())
+        let key = Self.key(sessionID)
+        try await connection.transaction([
+            (
+                """
+                INSERT INTO utterances (id, meeting_id, source, started_ms, ended_ms, text, language, confidence, created_at, speaker, origin, captured_at, translation_text, translation_lang)
+                SELECT ?, id, ?, offset_ms, offset_ms, ?, ?, NULL, ?, ?, ?, ?, ?, ?
+                FROM (SELECT id, MAX(0, CAST(ROUND((julianday(?) - julianday(started_at)) * 86400000) AS INTEGER)) AS offset_ms FROM meetings WHERE id = ?)
+                """,
+                [
+                    .text(utterance.id),
+                    .text(utterance.speaker == .me ? "local" : "remote"),
+                    .text(utterance.text),
+                    utterance.language.map(SQLiteValue.text) ?? .null,
+                    .text(Self.format(Date())),
+                    .text(utterance.speaker.rawValue),
+                    .text(utterance.origin.rawValue),
+                    .text(stamp),
+                    utterance.translationText.map(SQLiteValue.text) ?? .null,
+                    utterance.translationLanguage.map(SQLiteValue.text) ?? .null,
+                    .text(stamp),
+                    .text(key),
+                ]
+            ),
+            ("UPDATE meetings SET last_activity_at = ? WHERE id = ?", [.text(stamp), .text(key)]),
+        ])
+    }
+
+    public func deleteIfEmpty(sessionID: SessionID) async throws -> Bool {
+        try await connection.ensureReady()
+        return try await connection.deleteSessionIfEmpty(Self.key(sessionID))
+    }
+
     private static func key(_ id: SessionID) -> String {
         id.rawValue.uuidString
     }
@@ -334,6 +368,26 @@ public final class SQLiteSessionRepository: SessionRepository, Sendable {
 }
 
 extension SQLiteDatabase {
+    func deleteSessionIfEmpty(_ key: String) throws -> Bool {
+        var deleted = 0
+        try withTransaction {
+            deleted = try run(
+                """
+                DELETE FROM meetings WHERE id = ?
+                AND NOT EXISTS (SELECT 1 FROM utterances WHERE meeting_id = meetings.id)
+                AND NOT EXISTS (SELECT 1 FROM qa_entries WHERE session_id = meetings.id)
+                AND NOT EXISTS (SELECT 1 FROM bookmarks WHERE session_id = meetings.id)
+                AND NOT EXISTS (SELECT 1 FROM screen_contexts WHERE session_id = meetings.id)
+                AND NOT EXISTS (SELECT 1 FROM deep_expansions WHERE session_id = meetings.id)
+                AND NOT EXISTS (SELECT 1 FROM session_spans WHERE session_id = meetings.id AND mode = 'recording')
+                AND pinned = 0
+                """,
+                [.text(key)]
+            )
+        }
+        return deleted > 0
+    }
+
     func transaction(_ statements: [(String, [SQLiteValue])]) throws {
         try ensureReady()
         guard !statements.isEmpty else { return }

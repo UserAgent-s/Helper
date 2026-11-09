@@ -193,4 +193,76 @@ import Testing
         }
         #expect(try await repository.purge(olderThan: at(1_000), excluding: nil) == [active.id])
     }
+
+    @Test func utterancesAreStoredWithSpeakerOriginWallClockAndOffset() async throws {
+        let (repository, database) = makeRepository()
+        let session = try await repository.create(kind: .assistant, mode: .answers, at: at(0))
+        try await repository.appendUtterance(SessionUtterance(id: "utt_1", speaker: .them, origin: .realtimeInput, text: "Почему Кафка?", capturedAt: at(12), language: "ru"), sessionID: session.id)
+        try await repository.appendUtterance(SessionUtterance(id: "utt_2", speaker: .me, origin: .meChannel, text: "Из-за ретеншна", capturedAt: at(15)), sessionID: session.id)
+        let detail = try #require(try await repository.detail(sessionID: session.id))
+        #expect(detail.utterances.map(\.id) == ["utt_1", "utt_2"])
+        #expect(detail.utterances.map(\.speaker) == [.them, .me])
+        #expect(detail.utterances.map(\.origin) == [.realtimeInput, .meChannel])
+        #expect(detail.utterances.map(\.capturedAt) == [at(12), at(15)])
+        #expect(try await repository.session(id: session.id)?.lastActivityAt == at(15))
+        let meetings = SQLiteMeetingRepository(database: database)
+        let segments = try await meetings.fetch(meetingID: session.id).segments
+        #expect(segments.map(\.startMs) == [12_000, 15_000])
+        #expect(segments.map(\.source) == [.remote, .local])
+    }
+
+    @Test func emptySessionIsDeletedButContentOrRecordingKeepsIt() async throws {
+        let (repository, database) = makeRepository()
+        let empty = try await repository.create(kind: .assistant, mode: .answers, at: at(0))
+        #expect(try await repository.deleteIfEmpty(sessionID: empty.id))
+        #expect(try await repository.session(id: empty.id) == nil)
+
+        let spoken = try await repository.create(kind: .assistant, mode: .answers, at: at(0))
+        try await repository.appendUtterance(SessionUtterance(id: "utt_x", speaker: .them, origin: .realtimeInput, text: "Вопрос", capturedAt: at(1)), sessionID: spoken.id)
+        #expect(try await repository.deleteIfEmpty(sessionID: spoken.id) == false)
+
+        let answered = try await repository.create(kind: .assistant, mode: .answers, at: at(0))
+        try await insertAnswer(database, session: answered.id, askedAt: at(2), question: "Что такое WAL?")
+        #expect(try await repository.deleteIfEmpty(sessionID: answered.id) == false)
+
+        let recorded = try await repository.create(kind: .assistant, mode: .recording, at: at(0))
+        #expect(try await repository.deleteIfEmpty(sessionID: recorded.id) == false)
+
+        let pinned = try await repository.create(kind: .assistant, mode: .answers, at: at(0))
+        try await repository.setPinned(sessionID: pinned.id, pinned: true)
+        #expect(try await repository.deleteIfEmpty(sessionID: pinned.id) == false)
+    }
+
+    @Test func savedAnswerKeepsSessionIDAndBumpsActivity() async throws {
+        let (repository, database) = makeRepository()
+        let session = try await repository.create(kind: .assistant, mode: .answers, at: at(0))
+        let answers = SQLiteQuestionAnswerRepository(database: database)
+        var pair = QuestionAnswerPair(askedAt: at(30), sourceAppBundleID: nil, contextWindowStartedAt: at(20), contextWindowDurationMs: 10_000, triggerKind: .manual, answerText: "", answerModelID: "m", responseID: "r1", status: .answerStreaming, sessionID: session.id)
+        try await answers.save(pair)
+        pair.answerText = "Ответ"
+        pair.status = .completed
+        pair.sessionID = nil
+        try await answers.save(pair)
+        let detail = try #require(try await repository.detail(sessionID: session.id))
+        #expect(detail.questionAnswers.map(\.answerText) == ["Ответ"])
+        #expect(detail.questionAnswers.first?.sessionID == session.id)
+        #expect(try await repository.latestCompletedAnswerID(sessionID: session.id) == pair.id)
+        let activity = try #require(try await repository.session(id: session.id)?.lastActivityAt)
+        #expect(activity > at(0))
+    }
+
+    @Test func recordingSegmentInSessionUsesWallClockOffset() async throws {
+        let (repository, database) = makeRepository()
+        let session = try await repository.create(kind: .assistant, mode: .answers, at: at(0))
+        let meetings = SQLiteMeetingRepository(database: database)
+        try await meetings.appendSegment(TranscribedSegment(text: "в записи", startMs: 500, endMs: 1_500, source: .remote), meetingID: session.id, capturedAt: at(60))
+        try await repository.appendUtterance(SessionUtterance(id: "utt_a", speaker: .me, origin: .meChannel, text: "раньше", capturedAt: at(10)), sessionID: session.id)
+        let detail = try #require(try await repository.detail(sessionID: session.id))
+        #expect(detail.utterances.map(\.text) == ["раньше", "в записи"])
+        #expect(detail.utterances.last?.origin == .whisperLocal)
+        #expect(detail.utterances.last?.capturedAt == at(60))
+        let segments = try await meetings.fetch(meetingID: session.id).segments
+        #expect(segments.map(\.startMs) == [10_000, 60_000])
+        #expect(segments.last?.endMs == 61_000)
+    }
 }

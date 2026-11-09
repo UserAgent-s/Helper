@@ -106,6 +106,33 @@ actor InMemorySessionRepository: SessionRepository {
     func purge(olderThan date: Date, excluding active: SessionID?) async throws -> [SessionID] {
         []
     }
+
+    private(set) var utterances: [SessionID: [SessionUtterance]] = [:]
+    private(set) var discardedSessions: [SessionID] = []
+    var failAppend = false
+
+    func setFailAppend(_ value: Bool) {
+        failAppend = value
+    }
+
+    func appendUtterance(_ utterance: SessionUtterance, sessionID: SessionID) async throws {
+        if failAppend { throw SessionCoordinatorError.unknownSession }
+        guard sessions[sessionID] != nil else { throw SessionCoordinatorError.unknownSession }
+        utterances[sessionID, default: []].append(utterance)
+        if let at = utterance.capturedAt { sessions[sessionID]?.lastActivityAt = at }
+    }
+
+    func deleteIfEmpty(sessionID: SessionID) async throws -> Bool {
+        guard let session = sessions[sessionID], !session.pinned else { return false }
+        let hasContent = !(utterances[sessionID] ?? []).isEmpty
+            || !(completedAnswers[sessionID] ?? []).isEmpty
+            || storedBookmarks.contains { $0.sessionID == sessionID }
+            || session.spans.contains { $0.mode == .recording }
+        guard !hasContent else { return false }
+        sessions[sessionID] = nil
+        discardedSessions.append(sessionID)
+        return true
+    }
 }
 
 actor FakeSessionModes: SessionModeDriving {

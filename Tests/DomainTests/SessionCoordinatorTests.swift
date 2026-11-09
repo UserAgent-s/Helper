@@ -18,6 +18,10 @@ import Testing
             await coordinator.startObserving()
         }
 
+        func addContent(_ id: SessionID) async throws {
+            try await repository.appendUtterance(SessionUtterance(id: "utt_\(UUID().uuidString)", speaker: .them, origin: .realtimeInput, text: "вопрос", capturedAt: clock.now), sessionID: id)
+        }
+
         func session(_ id: SessionID) async throws -> AssistantSession {
             try #require(try await repository.session(id: id))
         }
@@ -48,6 +52,7 @@ import Testing
         await harness.observe()
         let events = harness.coordinator.events(subscriber: "test")
         let id = try await harness.coordinator.start()
+        try await harness.addContent(id)
         harness.clock.advance(120)
         await harness.coordinator.stop()
 
@@ -109,6 +114,7 @@ import Testing
         await harness.observe()
         let events = harness.coordinator.events(subscriber: "test")
         let id = try await harness.coordinator.start()
+        try await harness.addContent(id)
         await harness.modes.externalSwitch(to: .passive)
         await waitUntil { await isActive(harness.coordinator, mode: nil) }
 
@@ -141,8 +147,10 @@ import Testing
         let harness = Harness()
         await harness.observe()
         let first = try await harness.coordinator.start()
+        try await harness.addContent(first)
         await harness.coordinator.stop()
         let second = try await harness.coordinator.start()
+        try await harness.addContent(second)
         #expect(first != second)
 
         harness.clock.advance(300)

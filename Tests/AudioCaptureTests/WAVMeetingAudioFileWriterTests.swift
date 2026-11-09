@@ -37,6 +37,21 @@ import Testing
         #expect(systemFile.frameCount == systemSamples.count)
     }
 
+    @Test func secondRecordingInSameSessionKeepsFirstFiles() async throws {
+        let baseDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: baseDirectory) }
+        let writer = WAVMeetingAudioFileWriter(baseDirectory: baseDirectory)
+        let sessionID = MeetingID()
+        for samples in [[Int16](arrayLiteral: 1, 2, 3), [Int16](arrayLiteral: 4, 5)] {
+            await writer.start(meetingID: sessionID)
+            await writer.write(PCMAudioFrame(samples: samples, sampleRate: 16000, channelCount: 1, capturedAt: Date(), source: .microphone))
+            await writer.finish()
+        }
+        let directory = baseDirectory.appendingPathComponent(sessionID.rawValue.uuidString, isDirectory: true)
+        #expect(try AVAudioFileTestReader(url: directory.appendingPathComponent("mic.wav")).frameCount == 3)
+        #expect(try AVAudioFileTestReader(url: directory.appendingPathComponent("mic-2.wav")).frameCount == 2)
+    }
+
     @Test func emptyFrameIsIgnored() async throws {
         let baseDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: baseDirectory) }

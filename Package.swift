@@ -122,7 +122,7 @@ let package = Package(
         ),
         .testTarget(
             name: "RealtimeClientTests",
-            dependencies: ["RealtimeClient"],
+            dependencies: ["RealtimeClient", "Persistence"],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
         .testTarget(

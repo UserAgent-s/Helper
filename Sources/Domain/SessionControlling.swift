@@ -22,6 +22,7 @@ public enum SessionStopReason: String, Sendable, Equatable {
 public enum SessionEvent: Sendable, Equatable {
     case started(SessionID, resumed: Bool)
     case stopped(SessionID, reason: SessionStopReason)
+    case discarded(SessionID)
     case bookmarkAdded(SessionBookmark)
     case bookmarkRemoved(id: String, sessionID: SessionID)
 }

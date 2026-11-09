@@ -372,8 +372,11 @@ actor FakeMeetingRepository: MeetingRepository {
         return id
     }
 
-    func appendSegment(_ segment: TranscribedSegment, meetingID: MeetingID) async throws {
+    private(set) var appendedCapturedAt: [Date?] = []
+
+    func appendSegment(_ segment: TranscribedSegment, meetingID: MeetingID, capturedAt: Date?) async throws {
         appendedSegments.append((meetingID, segment))
+        appendedCapturedAt.append(capturedAt)
     }
 
     func finish(meetingID: MeetingID, endedAt: Date) async throws {

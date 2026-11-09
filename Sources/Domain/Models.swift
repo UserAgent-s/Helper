@@ -136,6 +136,7 @@ public struct QuestionAnswerPair: Sendable, Equatable, Identifiable {
     public var usageTokens: Int?
     public var estimatedCostUSD: Double?
     public var status: AnswerRecordStatus
+    public var sessionID: SessionID?
 
     public init(
         id: UUID = UUID(),
@@ -155,7 +156,8 @@ public struct QuestionAnswerPair: Sendable, Equatable, Identifiable {
         responseTotalMs: Int? = nil,
         usageTokens: Int? = nil,
         estimatedCostUSD: Double? = nil,
-        status: AnswerRecordStatus
+        status: AnswerRecordStatus,
+        sessionID: SessionID? = nil
     ) {
         self.id = id
         self.askedAt = askedAt
@@ -175,6 +177,7 @@ public struct QuestionAnswerPair: Sendable, Equatable, Identifiable {
         self.usageTokens = usageTokens
         self.estimatedCostUSD = estimatedCostUSD
         self.status = status
+        self.sessionID = sessionID
     }
 }
 

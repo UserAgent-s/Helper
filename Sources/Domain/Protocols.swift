@@ -30,7 +30,7 @@ public protocol LocalTranscribing: Sendable {
 
 public protocol MeetingRepository: Sendable {
     func createMeeting(startedAt: Date, sourceAppBundleID: String?) async throws -> MeetingID
-    func appendSegment(_ segment: TranscribedSegment, meetingID: MeetingID) async throws
+    func appendSegment(_ segment: TranscribedSegment, meetingID: MeetingID, capturedAt: Date?) async throws
     func finish(meetingID: MeetingID, endedAt: Date) async throws
     func reconcileInterruptedMeetings() async throws -> [MeetingID]
     func fetch(meetingID: MeetingID) async throws -> Meeting
@@ -38,6 +38,12 @@ public protocol MeetingRepository: Sendable {
     func search(query: String) async throws -> [Meeting]
     func delete(meetingID: MeetingID) async throws
     func deleteAll() async throws
+}
+
+extension MeetingRepository {
+    public func appendSegment(_ segment: TranscribedSegment, meetingID: MeetingID) async throws {
+        try await appendSegment(segment, meetingID: meetingID, capturedAt: nil)
+    }
 }
 
 public protocol SessionRepository: Sendable {
@@ -55,6 +61,8 @@ public protocol SessionRepository: Sendable {
     func setTitle(sessionID: SessionID, title: String, source: SessionTitleSource) async throws
     func setPinned(sessionID: SessionID, pinned: Bool) async throws
     func purge(olderThan date: Date, excluding active: SessionID?) async throws -> [SessionID]
+    func appendUtterance(_ utterance: SessionUtterance, sessionID: SessionID) async throws
+    func deleteIfEmpty(sessionID: SessionID) async throws -> Bool
 }
 
 public protocol QuestionAnswerRepository: Sendable {

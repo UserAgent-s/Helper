@@ -37,15 +37,25 @@ public actor WAVMeetingAudioFileWriter: MeetingAudioRecording {
         switch source {
         case .microphone:
             if let microphoneFile { return microphoneFile }
-            let file = try Self.makeFile(at: directory.appendingPathComponent("mic.wav"), sampleRate: sampleRate, channelCount: channelCount)
+            let file = try Self.makeFile(at: Self.freshURL(in: directory, stem: "mic"), sampleRate: sampleRate, channelCount: channelCount)
             microphoneFile = file
             return file
         case .systemAudio:
             if let systemFile { return systemFile }
-            let file = try Self.makeFile(at: directory.appendingPathComponent("system.wav"), sampleRate: sampleRate, channelCount: channelCount)
+            let file = try Self.makeFile(at: Self.freshURL(in: directory, stem: "system"), sampleRate: sampleRate, channelCount: channelCount)
             systemFile = file
             return file
         }
+    }
+
+    static func freshURL(in directory: URL, stem: String) -> URL {
+        let first = directory.appendingPathComponent("\(stem).wav")
+        guard FileManager.default.fileExists(atPath: first.path) else { return first }
+        var index = 2
+        while FileManager.default.fileExists(atPath: directory.appendingPathComponent("\(stem)-\(index).wav").path) {
+            index += 1
+        }
+        return directory.appendingPathComponent("\(stem)-\(index).wav")
     }
 
     private static func makeFile(at url: URL, sampleRate: Int, channelCount: Int) throws -> AVAudioFile {

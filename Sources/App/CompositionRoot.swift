@@ -42,6 +42,9 @@ final class CompositionRoot {
     let database: SQLiteDatabase
 
     let questionAnswerLogger: QuestionAnswerLogger
+    let sessionRepository: any SessionRepository
+    let sessionCoordinator: SessionCoordinator
+    let sessionRecorder: SessionRecorder
 
     let recordingModeController: RecordingModeController
 
@@ -111,6 +114,9 @@ final class CompositionRoot {
         meetingRepository = SQLiteMeetingRepository(database: database)
         questionAnswerRepository = SQLiteQuestionAnswerRepository(database: database)
         summaryRepository = SQLiteSummaryRepository(database: database)
+        let sessionRepository = SQLiteSessionRepository(database: database)
+        self.sessionRepository = sessionRepository
+        let sessionContext = SessionContextRelay()
         secretStoring = UserDefaultsSecretStore()
         summaryGenerating = OpenAIResponsesSummaryClient(
             secretStoring: secretStoring,
@@ -136,7 +142,8 @@ final class CompositionRoot {
         questionAnswerLogger = QuestionAnswerLogger(
             repository: questionAnswerRepository,
             answerModelID: OpenAIRealtimeAnswerClient.modelID,
-            questionTranscriptionModelID: { OpenAIRealtimeAnswerClient.transcriptionModelID }
+            questionTranscriptionModelID: { OpenAIRealtimeAnswerClient.transcriptionModelID },
+            sessions: sessionContext
         )
 
         let meTranscription = OpenAIRealtimeTranscriptionClient(
@@ -167,6 +174,7 @@ final class CompositionRoot {
             transcriptionFormat: WhisperFrameConverter(),
             transcribing: localTranscribing,
             repository: meetingRepository,
+            sessions: sessionContext,
             latencyRecording: latencyRecording,
             audioRecording: meetingAudioRecording,
             isAudioStorageEnabled: { [settingsStore] in settingsStore.audioStorageEnabled }
@@ -179,6 +187,25 @@ final class CompositionRoot {
             ],
             latencyRecording: latencyRecording
         )
+
+        let sessionRecorder = SessionRecorder(repository: sessionRepository, sessions: sessionContext)
+        self.sessionRecorder = sessionRecorder
+        let questionAnswerLogger = self.questionAnswerLogger
+        let sessionCoordinator = SessionCoordinator(
+            repository: sessionRepository,
+            modes: modeCoordinator,
+            beforeFinalize: {
+                await questionAnswerLogger.flush()
+                await sessionRecorder.flush()
+            }
+        )
+        self.sessionCoordinator = sessionCoordinator
+        let answerTranscripts = answersController.transcriptEvents(subscriber: "sessionRecorder")
+        Task {
+            await sessionContext.bind(sessionCoordinator)
+            await sessionRecorder.attach(answerTranscripts)
+            await sessionCoordinator.startObserving()
+        }
 
         modeViewModel = ModeSwitcherViewModel(
             modeCoordinator: modeCoordinator,

@@ -1129,4 +1129,32 @@ M1 по коду закрыт (S1.1–S1.7). Ручной чек-лист M1 в 
 - Решение о гонке. События режима приходят асинхронно и могут устареть: при подписке приходит повтор начального `passive`, а `ModeCoordinator` публикует `initialPassive` в начале каждого перехода. Первая версия обрабатывала каждое событие как есть, и тесты поймали, что она закрывала только что открытый span. Поэтому событие теперь только ставит в очередь сверку, а сверка читает фактический `currentModeState`; переходные фазы игнорируются. Все операции (start, stop, resume, звёзды, сверка, автостоп) выполняются последовательно через цепочку задач, как `tail` в `ModeCoordinator`. Подряд идущие сверки сливаются в одну.
 - `SessionRepository` получил методы `bookmarks(sessionID:)` и `latestCompletedAnswerID(sessionID:)` (только `answer_status = completed`).
 - Тесты `SessionCoordinatorTests` (11, стабильны в 5 прогонах подряд) идут на `InMemorySessionRepository`, `FakeSessionModes` и `TestClock` из `Tests/DomainTests/SessionTestSupport.swift`. Это все сценарии из плана, а также `activeModeNeverAutoStops` и `markMomentStoresTrimmedNote`.
-- Ещё не подключено к `CompositionRoot`: подключение будет вместе с записью (S4.4) и управлением (S4.5).
+- Подключено к `CompositionRoot` в S4.4; команды управления добавит S4.5.
+
+### S4.4 SessionRecorder: всё содержимое привязано к активной сессии
+
+- `Sources/Domain/SessionRecorder.swift` — actor, который подписан на `AnswersModeController.transcriptEvents` (там и «Собеседник» из Realtime, и «Я» из канала «Я»). Он пишет только финальные непустые события через `SessionRepository.appendUtterance`:
+  - `speaker`: `them` или `me`;
+  - `origin`: `realtime_input` или `me_channel`;
+  - `captured_at`: настенное время получения финала (инжектированный `now`).
+  Записи идут последовательно через цепочку задач. Повтор того же `speaker:itemID` пропускается; помнятся последние 512. Без активной сессии событие отбрасывается и учитывается в счётчике. Ошибка записи не останавливает следующие.
+- `SQLiteSessionRepository.appendUtterance` в одной транзакции вставляет строку и обновляет `meetings.last_activity_at`. `started_ms` и `ended_ms` считаются как смещение от `meetings.started_at` через `julianday`, поэтому экспорт и `fetch(meetingID:)` показывают время от начала сессии. `source` пишется `local` для «Я» и `remote` для «Собеседника», чтобы старые потребители (экспорт, саммари) различали говорящих.
+- `QuestionAnswerPair.sessionID` и колонка `qa_entries.session_id`. Логгер получает `SessionContextProviding` и читает сессию в `beginDraft` (метод стал `async`; повторная проверка черновика после `await` защищает от гонки). Первая версия читала сессию в фоновой задаче, и тест поймал, что сессия, закрытая сразу после начала ответа, терялась. При сохранении `last_activity_at` сессии сдвигается вперёд.
+- `RecordingModeController` получил `sessions` и `now`. При старте он берёт `sessionForCapture(mode: .recording)`. Если сессия есть, сегменты пишутся в неё с `capturedAt = старт записи + startMs`, встреча не создаётся и не завершается контроллером (`finishedMeetings` всё равно отдаёт id для автоэкспорта). Если сессии нет, всё работает как раньше. `MeetingRepository.appendSegment` получил параметр `capturedAt`; старый вызов без него остался расширением протокола.
+- `SessionCoordinator`:
+  - `sessionForCapture(mode:)` создаёт сессию сразу, не дожидаясь сверки режима. Создание общее для этого метода и автостарта (`pendingCreation`), поэтому вторая сессия не появляется.
+  - Перед завершением вызывается `beforeFinalize`: в приложении это `flush` логгера и рекордера. После `finish` вызывается `deleteIfEmpty`, и если сессия пустая, после `.stopped` приходит событие `.discarded(id)`.
+  - `deleteIfEmpty` удаляет сессию одним `DELETE … NOT EXISTS` в транзакции. Не удаляются закреплённые сессии, сессии с любым содержимым и сессии с отрезком `recording` (у них может быть WAV).
+- `SessionContextRelay` разрывает цикл зависимостей в `CompositionRoot`: логгер и запись создаются раньше `ModeCoordinator`, а координатор сессий — после него. Реле привязывается к координатору в стартовой задаче. До привязки запись работает в старом режиме без сессии.
+- Несколько отрезков `recording` в одной сессии раньше перезаписали бы `mic.wav` и `system.wav`. Теперь `WAVMeetingAudioFileWriter` берёт свободное имя (`mic-2.wav` и т. д.), а экспорт копирует все `.wav` из папки.
+- Сегменты встречи и стенограмма сессии сортируются по `captured_at`, затем по `started_ms`.
+- Документы: `product-contract.md` и `privacy.md` (полная стенограмма хранится только внутри сессии, пустые сессии удаляются), дополнение S4.4 в ADR 0006.
+- Тесты:
+  - `SessionRecorderTests`: 6;
+  - `SessionFinalizationTests`: 5 (удаление пустой сессии, сброс перед проверкой, закладка и `recording` сохраняют сессию, захват берёт активную сессию, параллельные захваты дают одну сессию);
+  - `SessionAttachedWritersTests`: 4 (запись в сессию без своей встречи, запись без сессии, Q&A с id сессии и без него);
+  - `SQLiteSessionRepositoryTests`: +4;
+  - `WAVMeetingAudioFileWriterTests`: +1;
+  - интеграция с `FakeRealtimeWebSocketTransport` и SQLite в памяти (`SessionPersistenceIntegrationTests`): `answeredQuestionPersistedWithSessionID` и `transcriptSegmentsPersistedWithSpeaker`. Для этого `RealtimeClientTests` зависит от `Persistence`.
+  - В трёх старых тестах `SessionCoordinatorTests` в сессию добавлена реплика, иначе пустая сессия удалялась бы при остановке.
+

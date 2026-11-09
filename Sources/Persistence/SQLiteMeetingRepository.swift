@@ -33,8 +33,39 @@ public final class SQLiteMeetingRepository: MeetingRepository, Sendable {
         return id
     }
 
-    public func appendSegment(_ segment: TranscribedSegment, meetingID: MeetingID) async throws {
+    public func appendSegment(_ segment: TranscribedSegment, meetingID: MeetingID, capturedAt: Date?) async throws {
         try await connection.ensureReady()
+        let meetingKey = meetingID.rawValue.uuidString
+        let speaker = segment.source == .local ? Speaker.me.rawValue : Speaker.them.rawValue
+        let created = ISO8601DateFormatter().string(from: Date())
+        if let capturedAt {
+            let stamp = ISO8601DateFormatter().string(from: capturedAt)
+            let durationMs = max(0, segment.endMs - segment.startMs)
+            try await connection.transaction([
+                (
+                    """
+                    INSERT INTO utterances (id, meeting_id, source, started_ms, ended_ms, text, language, confidence, created_at, speaker, origin, captured_at)
+                    SELECT ?, id, ?, offset_ms, offset_ms + ?, ?, ?, ?, ?, ?, 'whisper_local', ?
+                    FROM (SELECT id, MAX(0, CAST(ROUND((julianday(?) - julianday(started_at)) * 86400000) AS INTEGER)) AS offset_ms FROM meetings WHERE id = ?)
+                    """,
+                    [
+                        .text(UUID().uuidString),
+                        .text(segment.source.rawValueString),
+                        .int(durationMs),
+                        .text(segment.text),
+                        segment.language.map(SQLiteValue.text) ?? .null,
+                        segment.confidence.map(SQLiteValue.double) ?? .null,
+                        .text(created),
+                        .text(speaker),
+                        .text(stamp),
+                        .text(stamp),
+                        .text(meetingKey),
+                    ]
+                ),
+                ("UPDATE meetings SET last_activity_at = ? WHERE id = ?", [.text(stamp), .text(meetingKey)]),
+            ])
+            return
+        }
         try await connection.run(
             """
             INSERT INTO utterances (id, meeting_id, source, started_ms, ended_ms, text, language, confidence, created_at, speaker, origin, captured_at)
@@ -43,17 +74,17 @@ public final class SQLiteMeetingRepository: MeetingRepository, Sendable {
             """,
             [
                 .text(UUID().uuidString),
-                .text(meetingID.rawValue.uuidString),
+                .text(meetingKey),
                 .text(segment.source.rawValueString),
                 .int(segment.startMs),
                 .int(segment.endMs),
                 .text(segment.text),
                 segment.language.map(SQLiteValue.text) ?? .null,
                 segment.confidence.map(SQLiteValue.double) ?? .null,
-                .text(ISO8601DateFormatter().string(from: Date())),
-                .text(segment.source == .local ? Speaker.me.rawValue : Speaker.them.rawValue),
+                .text(created),
+                .text(speaker),
                 .int(segment.startMs),
-                .text(meetingID.rawValue.uuidString),
+                .text(meetingKey),
             ]
         )
     }
@@ -151,7 +182,7 @@ public final class SQLiteMeetingRepository: MeetingRepository, Sendable {
 
     private func fetchSegments(meetingID: MeetingID) async throws -> [TranscribedSegment] {
         try await connection.query(
-            "SELECT source, started_ms, ended_ms, text, language, confidence FROM utterances WHERE meeting_id = ? ORDER BY started_ms",
+            "SELECT source, started_ms, ended_ms, text, language, confidence FROM utterances WHERE meeting_id = ? ORDER BY COALESCE(captured_at, ''), started_ms, rowid",
             [.text(meetingID.rawValue.uuidString)],
             map: { row in
                 TranscribedSegment(
