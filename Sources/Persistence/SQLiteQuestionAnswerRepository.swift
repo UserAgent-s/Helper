@@ -90,15 +90,14 @@ public final class SQLiteQuestionAnswerRepository: QuestionAnswerRepository, Sen
     }
 
     public func search(query: String) async throws -> [QuestionAnswerPair] {
-        try await connection.ensureReady()
-        let sanitized = query.replacingOccurrences(of: "\"", with: "")
+        guard let fts = try await FTSQueryBuilder.build(query, database: connection) else { return [] }
         return try await connection.query(
             """
             SELECT \(Self.columns) FROM qa_entries
-            WHERE rowid IN (SELECT rowid FROM qa_entries_fts WHERE qa_entries_fts MATCH ?)
+            WHERE rowid IN (\(FTSQueryBuilder.rowids(index: "qa_entries", fts)))
             ORDER BY asked_at DESC
             """,
-            [.text("\"\(sanitized)\"")],
+            FTSQueryBuilder.parameters(fts),
             map: Self.rowMapper
         )
     }

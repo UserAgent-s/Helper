@@ -267,6 +267,7 @@ private actor FrameCounter {
         #expect(await microphone.startedOptions.map(\.voiceProcessing) == [false])
 
         await microphone.emit(frame(1))
+        await waitUntil { await counter.values.count == 1 }
         await state.set(.builtInSpeakers)
         await hub.handleDeviceChange(.defaultOutputChanged)
         await microphone.emit(frame(2))

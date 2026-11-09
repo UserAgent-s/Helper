@@ -152,13 +152,14 @@ public final class SQLiteMeetingRepository: MeetingRepository, Sendable {
     }
 
     public func search(query: String) async throws -> [Meeting] {
-        try await connection.ensureReady()
+        guard let fts = try await FTSQueryBuilder.build(query, database: connection) else { return [] }
         let matchingMeetingIDs = try await connection.query(
             """
-            SELECT DISTINCT meeting_id FROM utterances
-            WHERE rowid IN (SELECT rowid FROM utterances_fts WHERE utterances_fts MATCH ?)
+            SELECT id FROM meetings
+            WHERE id IN (SELECT meeting_id FROM utterances WHERE rowid IN (\(FTSQueryBuilder.rowids(index: "utterances", fts))))
+            ORDER BY started_at DESC
             """,
-            [.text(Self.ftsQuery(from: query))],
+            FTSQueryBuilder.parameters(fts),
             map: { row in row.string(0) }
         ).compactMap { $0 }
 
@@ -195,11 +196,6 @@ public final class SQLiteMeetingRepository: MeetingRepository, Sendable {
                 )
             }
         )
-    }
-
-    private static func ftsQuery(from raw: String) -> String {
-        let sanitized = raw.replacingOccurrences(of: "\"", with: "")
-        return "\"\(sanitized)\""
     }
 
     private struct PartialMeeting {
