@@ -226,7 +226,7 @@ struct ModeSwitcherView: View {
     private var privacyIndicatorText: String {
         switch viewModel.currentMode {
         case .passive: loc("Passive: ничего не захватывается")
-        case .answers: loc("Answers: системный звук уходит в OpenAI Realtime API")
+        case .answers: loc("Answers: системный звук и ваши реплики с микрофона уходят в OpenAI Realtime API")
         case .recording: loc("Recording: аудио обрабатывается только локально")
         }
     }

@@ -20,7 +20,8 @@ const NOTICE_TEXT = {
   capture_fell_back_whole_system: "Приложение не найдено, захватывается весь системный звук.",
   capture_restarted: "Захват звука перезапущен.",
   microphone_fell_back: "Микрофон переключён на запасной.",
-  output_route_changed: "Изменился вывод звука."
+  output_route_changed: "Изменился вывод звука.",
+  me_channel_unavailable: "Канал «Я» недоступен: ответы работают без ваших реплик."
 };
 
 function levelPercent(level) {

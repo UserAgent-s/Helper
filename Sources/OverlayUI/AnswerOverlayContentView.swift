@@ -70,6 +70,8 @@ struct AnswerOverlayContentView: View {
             return loc("Выбранный микрофон недоступен, пишу с") + " «\(to)»"
         case .outputRouteChanged(let route):
             return loc("Вывод звука:") + " " + routeText(route)
+        case .meTranscriptionUnavailable:
+            return loc("Канал «Я» недоступен, ответы продолжают работать без ваших реплик")
         }
     }
 

@@ -166,6 +166,13 @@ import Testing
         #expect(await sink.types.filter { $0 == "transcript.delta" }.count == 2)
     }
 
+    @Test func meChannelNoticeAndMeTranscriptMapToWire() {
+        #expect(CompanionWireMapping.notice(.meTranscriptionUnavailable(reason: "reconnect_exhausted")) == NoticeInfo(code: "me_channel_unavailable", severity: .warning, args: ["reason": "reconnect_exhausted"]))
+        let line = CompanionWireMapping.transcript(TranscriptEvent(speaker: .me, itemID: "me_1", text: "Я бы начал с профилирования", language: "ru", isFinal: true))
+        #expect(line.speaker == .me)
+        #expect(line.isFinal)
+    }
+
     @Test func transcriptKeepsBoundedTail() async throws {
         let (bridge, feeds, sink) = await makeBridge()
         for index in 0..<(CompanionBridge.transcriptLimit + 5) {

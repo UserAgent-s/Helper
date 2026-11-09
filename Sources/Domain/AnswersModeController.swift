@@ -9,11 +9,14 @@ public actor AnswersModeController: ModeController {
     private let instructionsProvider: @Sendable () async -> String
     private let questionAnswerLogger: QuestionAnswerLogger?
     private let latencyRecording: (any LatencyRecording)?
+    private let meChannel: MeTranscriptionSink?
+    private let isMeChannelEnabled: @Sendable () -> Bool
 
     private var captureTask: Task<Void, Never>?
     private var realtimeSubscription: CaptureSubscription?
     private var eventsTask: Task<Void, Never>?
     private var triggerTask: Task<Void, Never>?
+    private var meTranscriptsTask: Task<Void, Never>?
     private var effectiveScope: SystemAudioScope?
     private var didStartPersistentListeners = false
     private var isRunning = false
@@ -40,7 +43,9 @@ public actor AnswersModeController: ModeController {
         answerTrigger: any AnswerTriggering,
         instructionsProvider: @escaping @Sendable () async -> String,
         questionAnswerLogger: QuestionAnswerLogger? = nil,
-        latencyRecording: (any LatencyRecording)? = nil
+        latencyRecording: (any LatencyRecording)? = nil,
+        meChannel: MeTranscriptionSink? = nil,
+        isMeChannelEnabled: @escaping @Sendable () -> Bool = { true }
     ) {
         self.captureHub = captureHub
         self.realtime = realtime
@@ -48,6 +53,8 @@ public actor AnswersModeController: ModeController {
         self.instructionsProvider = instructionsProvider
         self.questionAnswerLogger = questionAnswerLogger
         self.latencyRecording = latencyRecording
+        self.meChannel = meChannel
+        self.isMeChannelEnabled = isMeChannelEnabled
         (self.failureStream, self.failureContinuation) = AsyncStream<String>.makeStream()
     }
 
@@ -67,6 +74,24 @@ public actor AnswersModeController: ModeController {
                 await self?.handleManualTrigger()
             }
         }
+        if let meChannel {
+            let transcripts = meChannel.transcripts(subscriber: "answers")
+            meTranscriptsTask = Task { [weak self] in
+                for await transcript in transcripts {
+                    if Task.isCancelled { break }
+                    await self?.forwardMeTranscript(transcript)
+                }
+            }
+        }
+    }
+
+    private func forwardMeTranscript(_ transcript: TranscriptEvent) {
+        guard isRunning else { return }
+        transcriptBroadcaster.yield(transcript)
+    }
+
+    public var isMeChannelRunning: Bool {
+        get async { await meChannel?.isRunning ?? false }
     }
 
     public func start() async throws {
@@ -102,6 +127,9 @@ public actor AnswersModeController: ModeController {
 
         startPersistentListenersIfNeeded()
         isRunning = true
+        if let meChannel, isMeChannelEnabled() {
+            await meChannel.start()
+        }
     }
 
     public func resetContext() async {
@@ -122,6 +150,7 @@ public actor AnswersModeController: ModeController {
 
     public func stop() async {
         isRunning = false
+        await meChannel?.stop()
         captureTask?.cancel(); captureTask = nil
         if let questionAnswerLogger, let activeResponseID {
             if turnPhase == .streaming {
@@ -248,6 +277,7 @@ public actor AnswersModeController: ModeController {
         case .questionContext(let id, let itemIDs):
             questionItemIDsByResponse[id] = itemIDs
         case .transcript(let transcript):
+            await meChannel?.noteRemoteTranscript(transcript)
             transcriptBroadcaster.yield(transcript)
             await questionAnswerLogger?.recordTranscript(transcript)
         case .transcriptFailed(let itemID):

@@ -139,6 +139,17 @@ final class CompositionRoot {
             questionTranscriptionModelID: { OpenAIRealtimeAnswerClient.transcriptionModelID }
         )
 
+        let meTranscription = OpenAIRealtimeTranscriptionClient(
+            transport: URLSessionRealtimeWebSocketTransport(logger: realtimeDiagLog),
+            credentialProviding: DirectKeyCredentialProvider(secretStoring: secretStoring),
+            redactedLog: realtimeDiagLog
+        )
+        let meChannel = MeTranscriptionSink(
+            captureHub: captureHub,
+            transcriber: meTranscription,
+            responder: realtimeAnswering,
+            redactedLog: realtimeDiagLog
+        )
         let answersController = AnswersModeController(
             captureHub: captureHub,
             realtime: realtimeAnswering,
@@ -147,7 +158,9 @@ final class CompositionRoot {
                 RealtimeInstructions.system(for: settingsStore.answerLength, background: await profileKnowledge.realtimeDigest())
             },
             questionAnswerLogger: questionAnswerLogger,
-            latencyRecording: latencyRecording
+            latencyRecording: latencyRecording,
+            meChannel: meChannel,
+            isMeChannelEnabled: { [settingsStore] in settingsStore.meChannelEnabled }
         )
         let recordingController = RecordingModeController(
             captureHub: captureHub,

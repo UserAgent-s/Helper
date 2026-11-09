@@ -152,6 +152,10 @@ actor FakeMicrophoneCapturing: MicrophoneCapturing {
         continuation.finish()
     }
 
+    func setStartError(_ error: TestError?) {
+        startError = error
+    }
+
     func emit(_ frame: PCMAudioFrame) {
         continuation.yield(frame)
     }
@@ -174,7 +178,11 @@ actor FakeLiveResponder: LiveResponder {
 
     nonisolated var capabilities: ProviderCapabilities { [.serverVAD, .textInjection, .manualResponse, .streamingText] }
 
-    func injectContext(_ context: InjectedContext) async throws {}
+    private(set) var injectedContexts: [InjectedContext] = []
+
+    func injectContext(_ context: InjectedContext) async throws {
+        injectedContexts.append(context)
+    }
 
     func setForceResponseError(_ error: TestError?) {
         forceResponseError = error

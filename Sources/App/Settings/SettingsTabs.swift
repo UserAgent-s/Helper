@@ -114,6 +114,10 @@ struct AudioSettingsTab: View {
                     : loc("Канал «Я» пишет микрофон без эхоподавления: при наушниках оно не нужно."))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
+                Toggle(loc("Канал «Я»: распознавать мои реплики в режиме Answers"), isOn: $viewModel.meChannelEnabled)
+                Text(loc("Микрофон отправляется в OpenAI только во время ваших реплик. Пока громко звучит собеседник, реплика не открывается."))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
             Section(loc("Микрофон")) {
                 Picker(loc("Микрофон"), selection: Binding(

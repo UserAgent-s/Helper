@@ -28,6 +28,7 @@ final class AppSettingsStore: @unchecked Sendable {
         static let backgroundContext = "com.local.UserAgent057.settings.backgroundContext"
         static let deviceRole = "com.local.UserAgent057.settings.device.role"
         static let outputRoutePolicy = "com.local.UserAgent057.settings.audio.outputRoutePolicy"
+        static let meChannelEnabled = "com.local.UserAgent057.settings.audio.meChannelEnabled"
         static let systemAudioBackend = "com.local.UserAgent057.settings.developer.systemAudioBackend"
         static let companionServerEnabled = "com.local.UserAgent057.settings.companion.serverEnabled"
         static let companionPort = "com.local.UserAgent057.settings.companion.port"
@@ -123,6 +124,11 @@ final class AppSettingsStore: @unchecked Sendable {
     var outputRoutePolicy: OutputRoutePolicy {
         get { OutputRoutePolicy(rawValue: defaults.string(forKey: Keys.outputRoutePolicy) ?? "") ?? .auto }
         set { defaults.set(newValue.rawValue, forKey: Keys.outputRoutePolicy) }
+    }
+
+    var meChannelEnabled: Bool {
+        get { defaults.object(forKey: Keys.meChannelEnabled) as? Bool ?? true }
+        set { defaults.set(newValue, forKey: Keys.meChannelEnabled) }
     }
 
     var companionServerEnabled: Bool {

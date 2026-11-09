@@ -84,6 +84,8 @@ public enum CompanionWireMapping {
             NoticeInfo(code: "microphone_fell_back", severity: .warning, args: ["to": to, "reason": microphoneReason(reason)])
         case .outputRouteChanged(let route):
             NoticeInfo(code: "output_route_changed", severity: route == .builtInSpeakers ? .warning : .info, args: ["route": routeKind(route)])
+        case .meTranscriptionUnavailable(let reason):
+            NoticeInfo(code: "me_channel_unavailable", severity: .warning, args: ["reason": reason])
         }
     }
 

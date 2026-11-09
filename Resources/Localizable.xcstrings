@@ -1405,29 +1405,6 @@
         }
       }
     },
-    "Answers: системный звук уходит в OpenAI Realtime API": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Answers: системный звук уходит в OpenAI Realtime API"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Answers: system audio goes to the OpenAI Realtime API"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Answers: системний звук надсилається до OpenAI Realtime API"
-          }
-        }
-      }
-    },
     "API-ключ OpenAI": {
       "extractionState": "manual",
       "localizations": {
@@ -3563,6 +3540,98 @@
           "stringUnit": {
             "state": "translated",
             "value": "Перериває генерацію і видаляє накопичений контекст"
+          }
+        }
+      }
+    },
+    "Answers: системный звук и ваши реплики с микрофона уходят в OpenAI Realtime API": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answers: system audio and your microphone remarks go to the OpenAI Realtime API"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answers: системный звук и ваши реплики с микрофона уходят в OpenAI Realtime API"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answers: системний звук і ваші репліки з мікрофона йдуть в OpenAI Realtime API"
+          }
+        }
+      }
+    },
+    "Канал «Я» недоступен, ответы продолжают работать без ваших реплик": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The “Me” channel is unavailable; answers keep working without your remarks"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Канал «Я» недоступен, ответы продолжают работать без ваших реплик"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Канал «Я» недоступний, відповіді працюють без ваших реплік"
+          }
+        }
+      }
+    },
+    "Канал «Я»: распознавать мои реплики в режиме Answers": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“Me” channel: transcribe my remarks in Answers mode"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Канал «Я»: распознавать мои реплики в режиме Answers"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Канал «Я»: розпізнавати мої репліки в режимі Answers"
+          }
+        }
+      }
+    },
+    "Микрофон отправляется в OpenAI только во время ваших реплик. Пока громко звучит собеседник, реплика не открывается.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The microphone is sent to OpenAI only while you speak. While the other side is loud, a remark does not open."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Микрофон отправляется в OpenAI только во время ваших реплик. Пока громко звучит собеседник, реплика не открывается."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Мікрофон надсилається в OpenAI лише під час ваших реплік. Поки гучно звучить співрозмовник, репліка не відкривається."
           }
         }
       }

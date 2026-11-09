@@ -90,6 +90,11 @@ final class AudioSettingsViewModel {
         MicrophoneProfile.me.voiceProcessing(route: currentRoute, policy: outputRoutePolicy)
     }
 
+    var meChannelEnabled: Bool {
+        get { settingsStore.meChannelEnabled }
+        set { settingsStore.meChannelEnabled = newValue }
+    }
+
     var echoRisk: Bool {
         OutputRouteClassifier.echoRisk(currentRoute, policy: outputRoutePolicy)
     }
