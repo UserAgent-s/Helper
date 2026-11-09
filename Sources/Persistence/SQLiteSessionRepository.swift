@@ -133,11 +133,7 @@ public final class SQLiteSessionRepository: SessionRepository, Sendable {
             key,
             map: SQLiteQuestionAnswerRepository.rowMapper
         )
-        let bookmarks = try await connection.query(
-            "SELECT id, session_id, kind, qa_entry_id, marked_at, note FROM bookmarks WHERE session_id = ? ORDER BY marked_at, rowid",
-            key,
-            map: Self.bookmarkMapper
-        )
+        let bookmarks = try await bookmarks(sessionID: sessionID)
         let expansions = try await connection.query(
             "SELECT id, qa_entry_id, requested_at, model_id, status, text FROM deep_expansions WHERE session_id = ? ORDER BY requested_at, rowid",
             key,
@@ -168,6 +164,24 @@ public final class SQLiteSessionRepository: SessionRepository, Sendable {
             ),
             ("UPDATE meetings SET last_activity_at = MAX(COALESCE(last_activity_at, ''), ?) WHERE id = ?", [.text(stamp), .text(Self.key(bookmark.sessionID))]),
         ])
+    }
+
+    public func bookmarks(sessionID: SessionID) async throws -> [SessionBookmark] {
+        try await connection.ensureReady()
+        return try await connection.query(
+            "SELECT id, session_id, kind, qa_entry_id, marked_at, note FROM bookmarks WHERE session_id = ? ORDER BY marked_at, rowid",
+            [.text(Self.key(sessionID))],
+            map: Self.bookmarkMapper
+        )
+    }
+
+    public func latestCompletedAnswerID(sessionID: SessionID) async throws -> UUID? {
+        try await connection.ensureReady()
+        return try await connection.query(
+            "SELECT id FROM qa_entries WHERE session_id = ? AND answer_status = ? ORDER BY asked_at DESC, rowid DESC LIMIT 1",
+            [.text(Self.key(sessionID)), .text(AnswerRecordStatus.completed.rawValueString)],
+            map: { $0.string(0).flatMap(UUID.init(uuidString:)) }
+        ).first ?? nil
     }
 
     public func removeBookmark(id: String) async throws {

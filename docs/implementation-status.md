@@ -1110,3 +1110,23 @@ M1 по коду закрыт (S1.1–S1.7). Ручной чек-лист M1 в 
   - title и pinned;
   - purge (pinned, активная, открытая и свежая сессии остаются, Q&A удаляется каскадом).
 - Ещё не подключено к приложению: запись в сессии начнётся в S4.3 и S4.4.
+
+### S4.3 SessionCoordinator: Start/Stop/Resume, автостарт, автостоп, звёзды
+
+- `Sources/Domain/SessionCoordinator.swift` — actor с состояниями `idle`, `active(sessionID, startedAt, mode?)` и `finalizing(sessionID)`. Пока режим passive, `mode` равен nil. Состояние раздаётся через `AsyncBroadcaster<SessionState>` (replayLatest), события `started`, `stopped`, `bookmarkAdded` и `bookmarkRemoved` — через `events(subscriber:)`.
+- Протоколы:
+  - `SessionControlling` (`Sources/Domain/SessionControlling.swift`): start, stop, resume, toggleStarLastAnswer, markMoment и оба потока; его использует веб, меню и хоткеи в S4.5;
+  - `SessionContextProviding`: `activeSessionID`; его использует запись в S4.4;
+  - `SessionModeDriving`: `requestTransition`, `modeStates` и `currentModeState`. `ModeCoordinator` поддерживает его через расширение.
+- Поведение:
+  - `start` создаёт сессию с открытым span `answers` и переводит режим в answers. Повторный start возвращает текущую сессию.
+  - `stop` переводит режим в passive, закрывает span с причиной `stopped` и завершает сессию.
+  - `resume` завершает другую активную сессию, добавляет span к выбранной и включает answers.
+  - Если answers или recording включились без сессии (из меню или хоткеем), сессия создаётся сама. Смена режима закрывает span и открывает новый в той же сессии.
+  - Ошибка режима, при старте или во время работы, сессию не закрывает: span закрывается, отсчёт простоя начинается.
+  - Автостоп срабатывает через 30 минут в passive; время берётся из инжектированного `now`, проверка `checkIdle` идёт раз в 60 с.
+  - Звезда ставится на последний завершённый Q&A сессии (`SessionRepository.latestCompletedAnswerID`); повторное нажатие снимает её. `markMoment` обрезает пробелы в заметке.
+- Решение о гонке. События режима приходят асинхронно и могут устареть: при подписке приходит повтор начального `passive`, а `ModeCoordinator` публикует `initialPassive` в начале каждого перехода. Первая версия обрабатывала каждое событие как есть, и тесты поймали, что она закрывала только что открытый span. Поэтому событие теперь только ставит в очередь сверку, а сверка читает фактический `currentModeState`; переходные фазы игнорируются. Все операции (start, stop, resume, звёзды, сверка, автостоп) выполняются последовательно через цепочку задач, как `tail` в `ModeCoordinator`. Подряд идущие сверки сливаются в одну.
+- `SessionRepository` получил методы `bookmarks(sessionID:)` и `latestCompletedAnswerID(sessionID:)` (только `answer_status = completed`).
+- Тесты `SessionCoordinatorTests` (11, стабильны в 5 прогонах подряд) идут на `InMemorySessionRepository`, `FakeSessionModes` и `TestClock` из `Tests/DomainTests/SessionTestSupport.swift`. Это все сценарии из плана, а также `activeModeNeverAutoStops` и `markMomentStoresTrimmedNote`.
+- Ещё не подключено к `CompositionRoot`: подключение будет вместе с записью (S4.4) и управлением (S4.5).

@@ -49,6 +49,8 @@ public protocol SessionRepository: Sendable {
     func headers(limit: Int, after cursor: SessionCursor?) async throws -> SessionPage
     func detail(sessionID: SessionID) async throws -> SessionDetail?
     func addBookmark(_ bookmark: SessionBookmark) async throws
+    func bookmarks(sessionID: SessionID) async throws -> [SessionBookmark]
+    func latestCompletedAnswerID(sessionID: SessionID) async throws -> UUID?
     func removeBookmark(id: String) async throws
     func setTitle(sessionID: SessionID, title: String, source: SessionTitleSource) async throws
     func setPinned(sessionID: SessionID, pinned: Bool) async throws
