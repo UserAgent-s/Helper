@@ -51,6 +51,7 @@ public actor CompanionBridge: CompanionHubDelegate {
     private var levels: [WireAudioSource: LevelInfo] = [:]
     private var levelSentAt: [WireAudioSource: ContinuousClock.Instant] = [:]
     private var notices: [NoticeInfo] = []
+    private var overlayEnabled = true
     private var publisher: (@Sendable (ServerEvent) async -> Void)?
     private var tasks: [Task<Void, Never>] = []
     private let outgoing: AsyncStream<ServerEvent>
@@ -104,6 +105,12 @@ public actor CompanionBridge: CompanionHubDelegate {
         self.publisher = publisher
     }
 
+    public func setOverlayEnabled(_ enabled: Bool) async {
+        guard enabled != overlayEnabled else { return }
+        overlayEnabled = enabled
+        outgoingContinuation.yield(.stateSnapshot(await snapshot()))
+    }
+
     public func snapshot() async -> StateSnapshot {
         StateSnapshot(
             mode: modeInfo,
@@ -112,7 +119,7 @@ public actor CompanionBridge: CompanionHubDelegate {
             levels: WireAudioSource.allCases.compactMap { levels[$0] },
             notices: notices,
             session: nil,
-            overlayEnabled: true,
+            overlayEnabled: overlayEnabled,
             capabilities: Self.capabilities
         )
     }

@@ -37,7 +37,7 @@ final class CompositionRoot {
     let latencyRecording: InMemoryLatencyRecorder
     let settingsStore: AppSettingsStore
     let recordingsDirectory: URL
-    private var desktopExportTask: Task<Void, Never>?
+    private var meetingExportTask: Task<Void, Never>?
     private var retentionSweepTask: Task<Void, Never>?
     let database: SQLiteDatabase
 
@@ -55,6 +55,8 @@ final class CompositionRoot {
     let companionBridge: CompanionBridge
     let companionService: CompanionService
     let modeActivityGuard = ModeActivityGuard()
+    let overlaySwitch = OverlaySwitch()
+    let exportsDirectory: URL
     let companionPairingViewModel: CompanionPairingViewModel
 
     init() {
@@ -115,7 +117,9 @@ final class CompositionRoot {
         recordingsDirectory = Self.recordingsDirectoryURL()
         let meetingAudioRecording = WAVMeetingAudioFileWriter(baseDirectory: recordingsDirectory)
 
-        let realtimeDiagLog = Self.makeRealtimeDiagLogger()
+        let realtimeDiagLog = Self.makeRealtimeDiagLogger(
+            url: AppFileLocations.realtimeDiagnosticsLog(library: AppFileLocations.userDirectory(.libraryDirectory))
+        )
         realtimeAnswering = OpenAIRealtimeAnswerClient(
             transport: URLSessionRealtimeWebSocketTransport(logger: realtimeDiagLog),
             credentialProviding: DirectKeyCredentialProvider(secretStoring: secretStoring),
@@ -198,7 +202,12 @@ final class CompositionRoot {
         let sleepStates = modeCoordinator.stateUpdates(subscriber: "modeActivityGuard")
         let modeActivityGuard = self.modeActivityGuard
         Task { await modeActivityGuard.start(states: sleepStates) }
+        let overlayEnabled = overlaySwitch.isEnabled
+        overlaySwitch.observe { enabled in
+            Task { await companionBridge.setOverlayEnabled(enabled) }
+        }
         Task {
+            await companionBridge.setOverlayEnabled(overlayEnabled)
             await companionBridge.start(feeds: companionFeeds)
             if settingsStore.companionServerEnabled {
                 _ = try? await companionService.start()
@@ -210,6 +219,8 @@ final class CompositionRoot {
             summaryGenerating: summaryGenerating,
             summaryRepository: summaryRepository
         )
+        let exportsDirectory = AppFileLocations.exportsDirectory(documents: AppFileLocations.userDirectory(.documentDirectory))
+        self.exportsDirectory = exportsDirectory
         let settingsViewModel = SettingsViewModel(
             settingsStore: settingsStore,
             secretStoring: secretStoring,
@@ -221,7 +232,9 @@ final class CompositionRoot {
             ),
             permissionsChecking: permissionsChecking,
             recordingsDirectory: recordingsDirectory,
-            companionService: companionService
+            companionService: companionService,
+            overlaySwitch: overlaySwitch,
+            exportsDirectory: exportsDirectory
         )
         self.settingsViewModel = settingsViewModel
         companionPairingViewModel = CompanionPairingViewModel(
@@ -239,12 +252,14 @@ final class CompositionRoot {
             }
         }
 
-        let desktopMeetingExporter = DesktopMeetingExporter(meetingRepository: meetingRepository, baseDirectory: Self.desktopDirectoryURL())
-        let recordingsDirectory = self.recordingsDirectory
-        desktopExportTask = Task {
+        let autoExporter = MeetingAutoExporter(
+            isEnabled: { [settingsStore] in settingsStore.meetingAutoExportEnabled },
+            exporter: MeetingFolderExporter(meetingRepository: meetingRepository, baseDirectory: exportsDirectory),
+            recordingsDirectory: recordingsDirectory
+        )
+        meetingExportTask = Task {
             for await meetingID in recordingController.finishedMeetings() {
-                let audioDirectory = recordingsDirectory.appendingPathComponent(meetingID.rawValue.uuidString, isDirectory: true)
-                await desktopMeetingExporter.export(meetingID: meetingID, audioSourceDirectory: audioDirectory)
+                await autoExporter.meetingFinished(meetingID)
             }
         }
     }
@@ -266,12 +281,9 @@ final class CompositionRoot {
         return directory
     }
 
-    private static func desktopDirectoryURL() -> URL {
-        FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first ?? FileManager.default.temporaryDirectory
-    }
-
-    private static func makeRealtimeDiagLogger() -> @Sendable (String) -> Void {
-        let path = "/tmp/ma_realtime_diag.log"
+    private static func makeRealtimeDiagLogger(url: URL) -> @Sendable (String) -> Void {
+        try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let path = url.path
         let lock = NSLock()
         return { message in
             lock.lock()

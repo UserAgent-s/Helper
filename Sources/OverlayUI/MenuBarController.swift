@@ -9,6 +9,7 @@ final class MenuBarController: NSObject {
     private let overlayViewModel: AnswerOverlayViewModel
     private let modeViewModel: ModeSwitcherViewModel
     private let navigationState: AppNavigationState
+    private let overlaySwitch: OverlaySwitch
 
     private let statusLabelItem: NSMenuItem
     private let passiveItem: NSMenuItem
@@ -18,14 +19,16 @@ final class MenuBarController: NSObject {
     private let historyItem: NSMenuItem
     private let settingsItem: NSMenuItem
     private let pairingItem: NSMenuItem
+    private let overlayItem: NSMenuItem
     private let languageMenuItem: NSMenuItem
     private let quitItem: NSMenuItem
     private var languageOptionItems: [AppLanguage: NSMenuItem] = [:]
 
-    init(overlayViewModel: AnswerOverlayViewModel, modeViewModel: ModeSwitcherViewModel, navigationState: AppNavigationState) {
+    init(overlayViewModel: AnswerOverlayViewModel, modeViewModel: ModeSwitcherViewModel, navigationState: AppNavigationState, overlaySwitch: OverlaySwitch) {
         self.overlayViewModel = overlayViewModel
         self.modeViewModel = modeViewModel
         self.navigationState = navigationState
+        self.overlaySwitch = overlaySwitch
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusLabelItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
@@ -36,12 +39,13 @@ final class MenuBarController: NSObject {
         historyItem = NSMenuItem(title: "", action: #selector(Self.openHistoryTapped), keyEquivalent: "")
         settingsItem = NSMenuItem(title: "", action: #selector(Self.openSettingsTapped), keyEquivalent: "")
         pairingItem = NSMenuItem(title: "", action: #selector(Self.openPairingTapped), keyEquivalent: "")
+        overlayItem = NSMenuItem(title: "", action: #selector(Self.toggleOverlayTapped), keyEquivalent: "")
         languageMenuItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
         quitItem = NSMenuItem(title: "", action: #selector(Self.quitTapped), keyEquivalent: "q")
         super.init()
 
         statusLabelItem.isEnabled = false
-        [passiveItem, answersItem, recordingItem, forceAnswerItem, historyItem, settingsItem, pairingItem, quitItem].forEach { $0.target = self }
+        [passiveItem, answersItem, recordingItem, forceAnswerItem, historyItem, settingsItem, pairingItem, overlayItem, quitItem].forEach { $0.target = self }
 
         let languageSubmenu = NSMenu()
         for language in AppLanguage.allCases {
@@ -61,6 +65,7 @@ final class MenuBarController: NSObject {
         menu.addItem(recordingItem)
         menu.addItem(.separator())
         menu.addItem(forceAnswerItem)
+        menu.addItem(overlayItem)
         menu.addItem(.separator())
         menu.addItem(historyItem)
         menu.addItem(settingsItem)
@@ -73,6 +78,7 @@ final class MenuBarController: NSObject {
         observeOverlayState()
         observeModeState()
         observeLanguage()
+        observeOverlaySwitch()
     }
 
     @objc private func selectPassiveTapped() { modeViewModel.select(.passive) }
@@ -82,6 +88,7 @@ final class MenuBarController: NSObject {
     @objc private func openHistoryTapped() { navigationState.isShowingHistory = true }
     @objc private func openSettingsTapped() { navigationState.isShowingSettings = true }
     @objc private func openPairingTapped() { navigationState.requestPairing() }
+    @objc private func toggleOverlayTapped() { overlaySwitch.setEnabled(!overlaySwitch.isEnabled) }
     @objc private func quitTapped() { modeViewModel.terminate() }
 
     @objc private func languageTapped(_ sender: NSMenuItem) {
@@ -110,6 +117,7 @@ final class MenuBarController: NSObject {
         historyItem.title = loc("Открыть историю")
         settingsItem.title = loc("Настройки")
         pairingItem.title = loc("Подключить устройство…")
+        overlayItem.title = loc("Оверлей на этом Mac")
         languageMenuItem.title = loc("Язык")
         quitItem.title = loc("Завершить UserAgent057")
         syncModeState()
@@ -183,6 +191,22 @@ final class MenuBarController: NSObject {
             }
         }
         syncEnabledState()
+    }
+
+    private func observeOverlaySwitch() {
+        withObservationTracking {
+            _ = overlaySwitch.isEnabled
+        } onChange: { [weak self] in
+            Task { @MainActor in
+                self?.syncOverlayItem()
+                self?.observeOverlaySwitch()
+            }
+        }
+        syncOverlayItem()
+    }
+
+    private func syncOverlayItem() {
+        overlayItem.state = overlaySwitch.isEnabled ? .on : .off
     }
 
     private func observeLanguage() {

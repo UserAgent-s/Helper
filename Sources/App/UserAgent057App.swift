@@ -93,11 +93,12 @@ final class OverlayCoordinator {
     private let menuBarController: MenuBarController
 
     init(root: CompositionRoot) {
-        windowController = AnswerOverlayWindowController(viewModel: root.answerOverlayViewModel)
+        windowController = AnswerOverlayWindowController(viewModel: root.answerOverlayViewModel, overlaySwitch: root.overlaySwitch)
         menuBarController = MenuBarController(
             overlayViewModel: root.answerOverlayViewModel,
             modeViewModel: root.modeViewModel,
-            navigationState: root.navigationState
+            navigationState: root.navigationState,
+            overlaySwitch: root.overlaySwitch
         )
     }
 }

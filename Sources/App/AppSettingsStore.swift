@@ -32,6 +32,7 @@ final class AppSettingsStore: @unchecked Sendable {
         static let companionServerEnabled = "com.local.UserAgent057.settings.companion.serverEnabled"
         static let companionPort = "com.local.UserAgent057.settings.companion.port"
         static let companionLoopbackOnly = "com.local.UserAgent057.settings.companion.loopbackOnly"
+        static let meetingAutoExportEnabled = "com.local.UserAgent057.settings.export.autoExportEnabled"
     }
 
     init(defaults: UserDefaults = .standard) {
@@ -46,6 +47,11 @@ final class AppSettingsStore: @unchecked Sendable {
     var summaryModelID: String {
         get { defaults.string(forKey: Keys.summaryModelID) ?? SummaryModelCatalog.defaultModelID }
         set { defaults.set(newValue, forKey: Keys.summaryModelID) }
+    }
+
+    var meetingAutoExportEnabled: Bool {
+        get { defaults.bool(forKey: Keys.meetingAutoExportEnabled) }
+        set { defaults.set(newValue, forKey: Keys.meetingAutoExportEnabled) }
     }
 
     var audioStorageEnabled: Bool {

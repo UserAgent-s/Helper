@@ -2,7 +2,7 @@ import Domain
 import Foundation
 import Summary
 
-final class DesktopMeetingExporter: @unchecked Sendable {
+final class MeetingFolderExporter: @unchecked Sendable {
     private let meetingRepository: any MeetingRepository
     private let baseDirectory: URL
     private let fileManager: FileManager

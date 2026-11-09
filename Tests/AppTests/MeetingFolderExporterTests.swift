@@ -26,7 +26,7 @@ private final class StubMeetingRepository: MeetingRepository, @unchecked Sendabl
 
 private enum SQLiteStubError: Error { case notFound }
 
-@Suite struct DesktopMeetingExporterTests {
+@Suite struct MeetingFolderExporterTests {
 
     @Test func exportWritesMarkdownTranscriptIntoDatedFolder() async throws {
         let meetingID = MeetingID()
@@ -40,11 +40,11 @@ private enum SQLiteStubError: Error { case notFound }
 
         let tempBase = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: tempBase) }
-        let exporter = DesktopMeetingExporter(meetingRepository: repository, baseDirectory: tempBase)
+        let exporter = MeetingFolderExporter(meetingRepository: repository, baseDirectory: tempBase)
 
         await exporter.export(meetingID: meetingID)
 
-        let expectedFolder = tempBase.appendingPathComponent(DesktopMeetingExporter.folderName(for: startedAt), isDirectory: true)
+        let expectedFolder = tempBase.appendingPathComponent(MeetingFolderExporter.folderName(for: startedAt), isDirectory: true)
         let transcriptURL = expectedFolder.appendingPathComponent("transcript.md")
         #expect(FileManager.default.fileExists(atPath: transcriptURL.path))
 
@@ -68,10 +68,10 @@ private enum SQLiteStubError: Error { case notFound }
         try FileManager.default.createDirectory(at: audioSource, withIntermediateDirectories: true)
         try Data("fake wav".utf8).write(to: audioSource.appendingPathComponent("mic.wav"))
 
-        let exporter = DesktopMeetingExporter(meetingRepository: repository, baseDirectory: tempBase)
+        let exporter = MeetingFolderExporter(meetingRepository: repository, baseDirectory: tempBase)
         await exporter.export(meetingID: meetingID, audioSourceDirectory: audioSource)
 
-        let expectedFolder = tempBase.appendingPathComponent(DesktopMeetingExporter.folderName(for: startedAt), isDirectory: true)
+        let expectedFolder = tempBase.appendingPathComponent(MeetingFolderExporter.folderName(for: startedAt), isDirectory: true)
         #expect(FileManager.default.fileExists(atPath: expectedFolder.appendingPathComponent("mic.wav").path))
         #expect(!FileManager.default.fileExists(atPath: expectedFolder.appendingPathComponent("system.wav").path))
     }

@@ -16,6 +16,8 @@ final class SettingsViewModel {
     private let permissionsChecking: any PermissionsChecking
     private let recordingsDirectory: URL
     private let overlayPreferences = OverlayPreferencesStore()
+    private let overlaySwitch: OverlaySwitch
+    private let exportsDirectory: URL?
     private let companionService: CompanionService?
     private(set) var companionPort: UInt16?
     private(set) var companionStartFailed = false
@@ -75,6 +77,16 @@ final class SettingsViewModel {
         set { settingsStore.backgroundContext = newValue }
     }
 
+    var overlayEnabled: Bool {
+        get { overlaySwitch.isEnabled }
+        set { overlaySwitch.setEnabled(newValue) }
+    }
+
+    var meetingAutoExportEnabled: Bool {
+        get { settingsStore.meetingAutoExportEnabled }
+        set { settingsStore.meetingAutoExportEnabled = newValue }
+    }
+
     var overlayStyle: OverlayStyle {
         get { overlayPreferences.style }
         set { overlayPreferences.style = newValue }
@@ -131,9 +143,13 @@ final class SettingsViewModel {
         audio: AudioSettingsViewModel,
         permissionsChecking: any PermissionsChecking,
         recordingsDirectory: URL,
-        companionService: CompanionService? = nil
+        companionService: CompanionService? = nil,
+        overlaySwitch: OverlaySwitch? = nil,
+        exportsDirectory: URL? = nil
     ) {
         self.companionService = companionService
+        self.overlaySwitch = overlaySwitch ?? OverlaySwitch()
+        self.exportsDirectory = exportsDirectory
         self.companionServerEnabled = settingsStore.companionServerEnabled
         self.companionPortText = String(settingsStore.companionPort)
         self.companionLoopbackOnly = settingsStore.companionLoopbackOnly
@@ -299,6 +315,12 @@ final class SettingsViewModel {
 
     func openRecordingsFolder() {
         NSWorkspace.shared.open(recordingsDirectory)
+    }
+
+    func openExportsFolder() {
+        guard let exportsDirectory else { return }
+        try? FileManager.default.createDirectory(at: exportsDirectory, withIntermediateDirectories: true)
+        NSWorkspace.shared.open(exportsDirectory)
     }
 
     func refreshPermissionStatuses() async {

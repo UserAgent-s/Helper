@@ -5,42 +5,89 @@ import OverlayReducer
 
 @MainActor
 final class AnswerOverlayWindowController: NSObject {
-    private var panel: AnswerOverlayPanel
-    private var hosting: NSHostingView<AnswerOverlayContentView>
+    private var panel: AnswerOverlayPanel?
+    private var hosting: NSHostingView<AnswerOverlayContentView>?
     private let viewModel: AnswerOverlayViewModel
     private let preferences: OverlayPreferencesStore
+    private let overlaySwitch: OverlaySwitch
     private let hotKeyManager = GlobalHotKeyManager()
     private var manuallyHidden = false
     private var appliedStyle: OverlayStyle
     private var appliedFontFamily: OverlayFontFamily
     private var escMonitor: Any?
+    private var switchObserver: UUID?
 
-    init(viewModel: AnswerOverlayViewModel, preferences: OverlayPreferencesStore = OverlayPreferencesStore()) {
+    var hasPanel: Bool { panel != nil }
+
+    init(
+        viewModel: AnswerOverlayViewModel,
+        preferences: OverlayPreferencesStore = OverlayPreferencesStore(),
+        overlaySwitch: OverlaySwitch? = nil,
+        registersHotKeys: Bool = true
+    ) {
         self.viewModel = viewModel
         self.preferences = preferences
+        self.overlaySwitch = overlaySwitch ?? OverlaySwitch(preferences: preferences)
         appliedStyle = preferences.style
         appliedFontFamily = preferences.fontFamily
-        panel = Self.makePanel(style: appliedStyle)
-        hosting = NSHostingView(rootView: AnswerOverlayContentView(viewModel: viewModel, style: appliedStyle, fontFamily: appliedFontFamily) { _ in })
         super.init()
 
-        panel.alphaValue = preferences.opacity
-
-        hosting.rootView = AnswerOverlayContentView(viewModel: viewModel, style: appliedStyle, fontFamily: appliedFontFamily) { [weak self] _ in
-            self?.copyFinalAnswerToPasteboard()
+        if registersHotKeys {
+            hotKeyManager.register(preferences.forceAnswerHotKey) { [weak viewModel] in
+                viewModel?.forceAnswerNow()
+            }
+            hotKeyManager.register(preferences.toggleOverlayHotKey) { [weak self] in
+                self?.toggleManualVisibility()
+            }
         }
+
+        switchObserver = self.overlaySwitch.observe { [weak self] enabled in
+            self?.applyEnabled(enabled)
+        }
+        applyEnabled(self.overlaySwitch.isEnabled)
+        observeState()
+    }
+
+    func tearDown() {
+        if let switchObserver {
+            overlaySwitch.removeObserver(switchObserver)
+        }
+        switchObserver = nil
+        hotKeyManager.removeAll()
+        destroyPanel()
+    }
+
+    private func applyEnabled(_ enabled: Bool) {
+        if enabled {
+            guard panel == nil else { return }
+            appliedStyle = preferences.style
+            appliedFontFamily = preferences.fontFamily
+            buildPanel()
+            syncVisibility()
+            resizeToFitContent()
+        } else {
+            destroyPanel()
+        }
+    }
+
+    private func buildPanel() {
+        let panel = Self.makePanel(style: appliedStyle)
+        panel.alphaValue = preferences.opacity
+        let hosting = NSHostingView(rootView: AnswerOverlayContentView(viewModel: viewModel, style: appliedStyle, fontFamily: appliedFontFamily) { [weak self] _ in
+            self?.copyFinalAnswerToPasteboard()
+        })
+        self.panel = panel
+        self.hosting = hosting
         attachHosting()
         installEscMonitorIfNeeded()
+    }
 
-        hotKeyManager.register(preferences.forceAnswerHotKey) { [weak viewModel] in
-            viewModel?.forceAnswerNow()
-        }
-        hotKeyManager.register(preferences.toggleOverlayHotKey) { [weak self] in
-            self?.toggleManualVisibility()
-        }
-
-        observeState()
-        resizeToFitContent()
+    private func destroyPanel() {
+        removeEscMonitor()
+        panel?.orderOut(nil)
+        panel?.contentView = nil
+        panel = nil
+        hosting = nil
     }
 
     func forceAnswerNow() {
@@ -48,6 +95,7 @@ final class AnswerOverlayWindowController: NSObject {
     }
 
     private func toggleManualVisibility() {
+        guard panel != nil else { return }
         manuallyHidden.toggle()
         syncVisibility()
     }
@@ -67,31 +115,25 @@ final class AnswerOverlayWindowController: NSObject {
     }
 
     private func rebuildPanelIfPreferencesChanged() {
+        guard let current = panel else { return }
         let desiredStyle = preferences.style
         let desiredFontFamily = preferences.fontFamily
         guard desiredStyle != appliedStyle || desiredFontFamily != appliedFontFamily else { return }
 
-        let wasVisible = panel.isVisible
-        removeEscMonitor()
-        panel.orderOut(nil)
-
+        let wasVisible = current.isVisible
+        destroyPanel()
         appliedStyle = desiredStyle
         appliedFontFamily = desiredFontFamily
-        panel = Self.makePanel(style: appliedStyle)
-        panel.alphaValue = preferences.opacity
-        hosting = NSHostingView(rootView: AnswerOverlayContentView(viewModel: viewModel, style: appliedStyle, fontFamily: appliedFontFamily) { [weak self] _ in
-            self?.copyFinalAnswerToPasteboard()
-        })
-        attachHosting()
-        installEscMonitorIfNeeded()
+        buildPanel()
 
-        if wasVisible {
+        if wasVisible, let panel {
             resizeToFitContent()
             panel.orderFrontRegardless()
         }
     }
 
     private func attachHosting() {
+        guard let panel, let hosting else { return }
         switch appliedStyle {
         case .fullscreen:
             hosting.sizingOptions = []
@@ -124,7 +166,7 @@ final class AnswerOverlayWindowController: NSObject {
     private func resizeToFitContent() {
         rebuildPanelIfPreferencesChanged()
 
-        guard let screen = NSScreen.main else { return }
+        guard let panel, let hosting, let screen = NSScreen.main else { return }
 
         switch appliedStyle {
         case .fullscreen:
@@ -146,6 +188,7 @@ final class AnswerOverlayWindowController: NSObject {
 
     private func syncVisibility() {
         rebuildPanelIfPreferencesChanged()
+        guard let panel else { return }
 
         let shouldShow = viewModel.state.visibility != .hidden && !manuallyHidden
         if shouldShow {
@@ -159,7 +202,7 @@ final class AnswerOverlayWindowController: NSObject {
     }
 
     private func positionPanelIfNeeded() {
-        guard let screen = NSScreen.main else { return }
+        guard let panel, let screen = NSScreen.main else { return }
 
         if appliedStyle == .pinned {
             let origin = OverlayGeometry.pinnedOrigin(for: panel.frame.size, screenFrame: screen.frame)

@@ -317,6 +317,13 @@ struct SessionsDataSettingsTab: View {
                     .foregroundStyle(.secondary)
                 Button(loc("Открыть папку с записями")) { viewModel.openRecordingsFolder() }
             }
+            Section(loc("Экспорт встреч")) {
+                Toggle(loc("Автоматически экспортировать встречу после записи"), isOn: $viewModel.meetingAutoExportEnabled)
+                Text(loc("Выключено по умолчанию. Транскрипт и аудио попадают в ~/Documents/UserAgent057/Exports. Рабочий стол не используется."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Button(loc("Открыть папку экспорта")) { viewModel.openExportsFolder() }
+            }
             Section(loc("Срок хранения истории")) {
                 Picker(loc("Хранить"), selection: $viewModel.historyRetentionDays) {
                     Text(loc("Бессрочно")).tag(0)
@@ -385,6 +392,11 @@ struct AppearanceSettingsTab: View {
     var body: some View {
         Form {
             Section(loc("Оверлей ответов")) {
+                Toggle(loc("Показывать оверлей на этом Mac"), isOn: $viewModel.overlayEnabled)
+                    .accessibilityIdentifier("settings.overlayEnabled")
+                Text(loc("Выключите, если показываете экран: ответы будут видны только в веб-панели на втором устройстве. Иконка в строке меню и окна приложения остаются на месте."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 Picker(loc("Стиль оверлея"), selection: $viewModel.overlayStyle) {
                     Text(loc("Прикреплено к вырезу")).tag(OverlayStyle.pinned)
                     Text(loc("Плавающее окно")).tag(OverlayStyle.floating)

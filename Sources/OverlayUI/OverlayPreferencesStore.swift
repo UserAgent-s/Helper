@@ -18,10 +18,16 @@ final class OverlayPreferencesStore {
         static let toggleHotKey = "com.local.UserAgent057.overlay.toggleHotKey"
         static let style = "com.local.UserAgent057.overlay.style"
         static let fontFamily = "com.local.UserAgent057.overlay.fontFamily"
+        static let enabled = "com.local.UserAgent057.overlay.enabled"
     }
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+    }
+
+    var isOverlayEnabled: Bool {
+        get { defaults.object(forKey: Keys.enabled) as? Bool ?? true }
+        set { defaults.set(newValue, forKey: Keys.enabled) }
     }
 
     var position: OverlayPosition {

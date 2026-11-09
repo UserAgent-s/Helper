@@ -863,3 +863,16 @@ M1 по коду закрыт (S1.1–S1.7). Ручной чек-лист M1 в 
   - `CompanionPairingViewModelTests` в AppTests (7): маска и QR, истечение и новый код, автозакрытие после первого сопряжения, предложение включить сервер, отсутствие LAN-адреса, флаг явного открытия, порт по умолчанию и loopback.
 - XCUITest: новый таргет `UserAgent057UITests` (`Tests/UITests`) и `make ui-test`, в verify-fast не входит. Тесты: окно не появляется при запуске; ⇧⌘P открывает окно, Esc закрывает. На этом Mac запуск упёрся в «Timed out while enabling automation mode»: режим автоматизации macOS требует подтверждения владельца, сам я его не включал. Владелец запускает `make ui-test` и подтверждает запрос.
 - Ручная проверка критерия «меньше 30 с от нажатия до живой панели» — в чек-листе владельца.
+
+### S2.9 Режим второго экрана: оверлей на Mac можно выключить
+
+- OverlayUI: `OverlayPreferencesStore.isOverlayEnabled` (ключ `overlay.enabled`, по умолчанию true); `OverlaySwitch` (`@Observable`, сохраняет значение и рассылает его подписчикам). `AnswerOverlayWindowController` создаёт `AnswerOverlayPanel` только при включённом оверлее, при выключении снимает его (`orderOut`, без `close`, чтобы не попасть на `isReleasedWhenClosed`), при включении создаёт заново. Горячие клавиши регистрируются независимо от панели: «Ответить сейчас» работает и без оверлея. Переключатель видимости при отсутствии панели ничего не делает.
+- Переключатели: «Показывать оверлей на этом Mac» во вкладке «Внешний вид» (`settings.overlayEnabled`) и пункт «Оверлей на этом Mac» с галочкой в меню статуса. Иконка в строке меню и окна приложения остаются.
+- Bridge: `CompanionBridge.setOverlayEnabled(_:)` пишет значение в `StateSnapshot.overlayEnabled` (раньше там было жёстко true) и при изменении рассылает свежий snapshot. Поток событий в веб-панель от оверлея не зависит.
+- Автоэкспорт встреч выключен по умолчанию (`settings.export.autoExportEnabled`). `DesktopMeetingExporter` переименован в `MeetingFolderExporter`, папка экспорта — `~/Documents/UserAgent057/Exports`, рабочий стол не используется. Решение принимает `MeetingAutoExporter`; переключатель и «Открыть папку экспорта» находятся во вкладке «Сессии и данные». Явный экспорт из истории (`NSSavePanel`) не менялся.
+- Диагностический лог Realtime перенесён из `/tmp/ma_realtime_diag.log` в `~/Library/Logs/UserAgent057/realtime_diag.log` (`AppFileLocations`).
+- Тесты:
+  - `OverlaySecondScreenTests` в AppTests (5): по умолчанию включено и сохраняется; при выключенном оверлее контроллер не создаёт панель, а переключение создаёт и снимает её; при включённом панель есть; `noDesktopWriteByDefault` на временном каталоге; пути экспорта и лога;
+  - `OverlayToggleBridgeTests` (1): snapshot отражает выключение, ответ при этом доходит до веб-панели, повторная установка того же значения ничего не рассылает.
+- XCUITest `OverlaySettingUITests` (переключатель во «Внешнем виде») собирается в `make ui-test`; запуск ждёт разрешения режима автоматизации от владельца, как и в S2.8.
+- Под полной нагрузкой verify-fast один раз упали `OpenAIRealtimeAnswerClientTests.contextFullyClearedAfterVisibleAnswerCompletes` и `AnswerOverlayViewModelTests.resettingWhileCollectingContext…`. Модули этим шагом не затронуты, отдельно оба прошли 5 из 5, повторный verify-fast зелёный. Это гонки по времени, как и с `CaptureHubTests` в S2.8.

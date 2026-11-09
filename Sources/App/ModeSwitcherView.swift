@@ -127,6 +127,7 @@ struct ModeSwitcherView: View {
                     Text(loc("Файл будет содержать тексты реплик и ответов. Не отправляйте его, если встречи конфиденциальны."))
                 }
                 Button(loc("Настройки")) { navigationState.isShowingSettings = true }
+                    .accessibilityIdentifier("main.openSettings")
                 Button(loc("История")) { navigationState.isShowingHistory = true }
             }
             Picker(loc("Режим"), selection: Binding(
