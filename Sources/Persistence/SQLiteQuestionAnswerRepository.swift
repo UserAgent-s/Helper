@@ -95,13 +95,13 @@ public final class SQLiteQuestionAnswerRepository: QuestionAnswerRepository, Sen
         )
     }
 
-    private static let columns = """
+    static let columns = """
     id, asked_at, source_bundle_id, question_text, question_status, context_started_at, context_duration_ms,
     trigger_kind, answer_text, answer_status, model_id, response_id, speech_end_to_first_delta_ms,
     first_delta_to_first_paint_ms, response_total_ms, usage_tokens, estimated_cost_usd, question_transcription_model_id
     """
 
-    private static func rowMapper(_ row: SQLiteRow) -> QuestionAnswerPair {
+    static func rowMapper(_ row: SQLiteRow) -> QuestionAnswerPair {
         return QuestionAnswerPair(
             id: UUID(uuidString: row.string(0) ?? "") ?? UUID(),
             askedAt: row.string(1).flatMap { ISO8601DateFormatter().date(from: $0) } ?? Date(),

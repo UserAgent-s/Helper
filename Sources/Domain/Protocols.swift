@@ -40,6 +40,21 @@ public protocol MeetingRepository: Sendable {
     func deleteAll() async throws
 }
 
+public protocol SessionRepository: Sendable {
+    func create(kind: SessionKind, mode: SessionSpanMode, at date: Date) async throws -> AssistantSession
+    func resume(sessionID: SessionID, mode: SessionSpanMode, at date: Date) async throws -> SessionSpan
+    func closeSpan(id: String, at date: Date, reason: SessionSpanEndReason) async throws
+    func finish(sessionID: SessionID, at date: Date) async throws
+    func session(id: SessionID) async throws -> AssistantSession?
+    func headers(limit: Int, after cursor: SessionCursor?) async throws -> SessionPage
+    func detail(sessionID: SessionID) async throws -> SessionDetail?
+    func addBookmark(_ bookmark: SessionBookmark) async throws
+    func removeBookmark(id: String) async throws
+    func setTitle(sessionID: SessionID, title: String, source: SessionTitleSource) async throws
+    func setPinned(sessionID: SessionID, pinned: Bool) async throws
+    func purge(olderThan date: Date, excluding active: SessionID?) async throws -> [SessionID]
+}
+
 public protocol QuestionAnswerRepository: Sendable {
 
     func save(_ pair: QuestionAnswerPair) async throws

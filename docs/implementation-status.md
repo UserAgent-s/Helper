@@ -1080,3 +1080,33 @@ M1 по коду закрыт (S1.1–S1.7). Ручной чек-лист M1 в 
 - Открытые вопросы:
   - `RetentionSweeper` по-прежнему удаляет Q&A по `asked_at`, а не через сессию; это переходит в S4.9;
   - строка продуктового контракта «полный разговор не сохраняется» меняется в S4.4, когда появится запись стенограммы в сессии.
+
+### S4.2 Модель сессии и SQLiteSessionRepository
+
+- `Sources/Domain/AssistantSession.swift` описывает модель сессии:
+  - `SessionID = MeetingID`: сессия хранится строкой `meetings`;
+  - перечисления `SessionKind`, `SessionSpanMode` (строится из `AppMode`, passive даёт nil), `SessionSpanEndReason`, `SessionTitleSource`, `UtteranceOrigin` (`realtime_input`, `me_channel`, `whisper_local`) и `BookmarkKind`;
+  - типы данных `SessionSpan`, `AssistantSession`, `SessionHeader` (только счётчики Q&A и звёзд, без стенограммы), `SessionCursor` и `SessionPage`;
+  - записи содержимого `SessionBookmark`, `SessionUtterance`, `SessionScreenContext`, `SessionExpansion` и `SessionDetail`.
+- Состояние сессии хранится в `MeetingStatus`: `recording` означает активную сессию, `completed` — завершённую. Отдельной колонки статуса нет. `reconcileInterruptedMeetings` после падения переводит открытые сессии в `interrupted`, а `resume` возвращает их в `recording`.
+- В `Domain/Protocols.swift` добавлен протокол `SessionRepository` с методами `create`, `resume`, `closeSpan`, `finish`, `session`, `headers(limit:after:)`, `detail`, `addBookmark` и `removeBookmark`, `setTitle`, `setPinned` и `purge(olderThan:excluding:)`.
+- Как это реализовано в `Sources/Persistence/SQLiteSessionRepository.swift`:
+  - каждая запись идёт одной транзакцией через новый `SQLiteDatabase.transaction([(sql, params)])`;
+  - `resume` в том же режиме при открытом span идемпотентен; в другом режиме он закрывает текущий span с `modeChanged` и открывает новый;
+  - `finish` закрывает открытые span с причиной `stopped`;
+  - `closeSpan` срабатывает только на открытом span, повторный вызов ничего не меняет;
+  - пагинация по ключу (`started_at DESC, id DESC`, курсор — пара started_at и id) устойчива к вставкам и к одинаковому времени старта;
+  - `purge` удаляет только завершённые, незакреплённые и не активные сессии, у которых `last_activity_at` старше порога; дочерние строки и FTS чистит каскад из S4.1;
+  - `SQLiteQuestionAnswerRepository.columns` и `rowMapper` открыты внутри модуля, чтобы `detail` собирал `QuestionAnswerPair` тем же маппером.
+- Время хранится в ISO8601 с точностью до секунды, как и во всей базе. `create` и `resume` возвращают значения, уже округлённые до этой точности, так что они совпадают с тем, что потом читается из базы.
+- Тесты `SQLiteSessionRepositoryTests` (9):
+  - create;
+  - resume в том же и в другом режиме;
+  - повторный closeSpan;
+  - finish, затем resume;
+  - пагинация из трёх страниц с одинаковым временем старта и счётчиками;
+  - `headersDoNotLoadSegments` (заголовки работают даже после `DROP TABLE utterances`);
+  - detail с упорядоченными репликами, Q&A, раскрытием, экраном и звездой, а также удалением закладки;
+  - title и pinned;
+  - purge (pinned, активная, открытая и свежая сессии остаются, Q&A удаляется каскадом).
+- Ещё не подключено к приложению: запись в сессии начнётся в S4.3 и S4.4.
