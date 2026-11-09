@@ -973,3 +973,34 @@ M1 по коду закрыт (S1.1–S1.7). Ручной чек-лист M1 в 
   - правила в инструкциях.
 
   `LanguageEvalCatalogTests` проверяет покрытие контекстных кейсов. Тестовые двойники `LiveResponder` переведены на новую сигнатуру.
+
+### S3.3 OpenAIRealtimeTranscriptionClient для «Я»
+
+- Domain: `MeTranscribing` (`start(languages:) -> AsyncStream<TranscriptDelta>`, `appendAudio`, `commitTurn`, `statusUpdates`, `stop`) и `MeTranscriptionStatus` (`connecting`, `live`, `reconnecting(attempt:)`, `unavailable(reason:)`, `stopped`). В контракте нет событий OpenAI (риск P0 из v3), он подходит и для другого провайдера. `StreamingTranscriber` из S0.7 не расширялся: «Я» нужен явный `commitTurn` по клиентскому VAD, а у общего стримингового транскрибера его нет.
+- API сверен с актуальной документацией OpenAI (guide «Realtime transcription»):
+  - URL `wss://api.openai.com/v1/realtime?intent=transcription` без `model`: с `model` создаётся conversation-сессия, и она не принимает transcription update;
+  - `session.update` с `type: "transcription"`, `audio.input.format` `audio/pcm` 24 кГц, `transcription.model = gpt-live-transcribe`, `languages: [ru, en]` (у этой модели множественное поле, `language` не отправляется), `delay: "low"`;
+  - `turn_detection: null` пишется явно (`encodeNil`): `gpt-live-transcribe` не поддерживает server VAD;
+  - commit отправляет приложение по своему VAD;
+  - порядок completed между ходами не гарантирован, сопоставление идёт по `item_id`;
+  - модель не возвращает язык, временные метки и confidence.
+- `OpenAIRealtimeTranscriptionClient` (actor) работает на своём транспорте, отдельно от основной сессии.
+  - Дельты накапливаются по `item_id`, наружу уходит полный текст item. `completed` даёт финальный текст, повтор игнорируется. `failed` финализирует item с накопленным частичным текстом, поздний `completed` после этого игнорируется.
+  - Commit уходит только из `commitTurn()`. Если с прошлого commit меньше 100 мс аудио (2400 сэмплов при 24 кГц), вместо commit отправляется `input_audio_buffer.clear`: сервер отклоняет слишком короткий буфер.
+  - Кадры не 24 кГц моно не отправляются и считаются: формат обеспечивает `MicrophoneProfile.me` из S3.1.
+  - При обрыве (`closed` или `failed`) незавершённые items финализируются частичным текстом, а события старого соединения отсекаются по номеру поколения. Переподключение идёт в отдельной задаче: backoff 0,5 с × 2^n, максимум 8 с, джиттер до 20%, 5 попыток. Каждая попытка заново отправляет `session.update`.
+  - После исчерпания попыток статус становится `unavailable(reconnect_exhausted)`, поток дельт завершается, append и commit ничего не делают. Это деградация до режима «без Я», уведомление по статусу покажет S3.4. Основная Realtime-сессия этим не затрагивается.
+- `RealtimeClientEvent`: `.inputAudioBufferCommit` и `.transcriptionSessionUpdate(TranscriptionSessionConfig)`. Декодирование delta, completed и failed уже было (S1.7).
+- Тесты `OpenAIRealtimeTranscriptionClientTests` (9, fake transport, 10 из 10 прогонов зелёные):
+  - JSON сессии и URL;
+  - commit только по сигналу, короткий буфер → clear;
+  - другая частота не отправляется;
+  - delta и completed вперемешку и не по порядку сопоставляются по `item_id`, дубль игнорируется;
+  - failed → финал с частичным текстом;
+  - обрыв → reconnecting → live, повторный session.update, частичное финализировано, аудио после реконнекта уходит, основная сессия с соседним транспортом не тронута;
+  - исчерпание → `unavailable` и завершение потока;
+  - без ключа → `notAuthenticated` и `unavailable(connect_failed)`;
+  - stop закрывает транспорт и не переподключается.
+
+  `AnswersModeControllerTests.answersNeverStartsLocalWhisper` проверяет, что в answers не вызывается `LocalTranscribing`: `RealtimeClient` зависит только от `Domain`, `AnswersModeController` не получает `LocalTranscribing`.
+- В приложение клиент ещё не подключён: канал «Я» (VAD, эхо-гейт, вставка `[Я]` через S3.2) собирается в S3.4. Ротация сессии при лимите 60 минут (CO из v3) не входит в S3.3 и остаётся открытой для обеих сессий.

@@ -92,6 +92,23 @@ import Testing
         #expect(await microphone.stopCalled)
     }
 
+    @Test func answersNeverStartsLocalWhisper() async throws {
+        let systemAudio = FakeSystemAudioCapturing()
+        let hub = CaptureHub(system: systemAudio, microphone: FakeMicrophoneCapturing())
+        let whisper = FakeLocalTranscribing()
+        let answers = AnswersModeController(captureHub: hub, realtime: FakeLiveResponder(), answerTrigger: FakeAnswerTriggering(), instructionsProvider: { "test" })
+        let recording = RecordingModeController(captureHub: hub, transcribing: whisper, repository: FakeMeetingRepository(), chunkDurationSeconds: 1)
+        let coordinator = ModeCoordinator(controllers: [.answers: answers, .recording: recording])
+
+        _ = await coordinator.requestTransition(to: .answers)
+        for _ in 0..<50 { await systemAudio.emit(PCMAudioFrame(samples: Array(repeating: 1, count: 2_400), sampleRate: 24_000, channelCount: 1, capturedAt: Date(), source: .systemAudio)) }
+        try await Task.sleep(for: .milliseconds(30))
+        _ = await coordinator.requestTransition(to: .passive)
+
+        #expect(await whisper.transcribeCallCount == 0)
+        #expect(await whisper.receivedFrameBatches.isEmpty)
+    }
+
     @Test func recordingNeverCallsRealtime() async throws {
         let hub = CaptureHub(system: FakeSystemAudioCapturing(), microphone: FakeMicrophoneCapturing())
         let realtime = FakeLiveResponder()

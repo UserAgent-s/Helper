@@ -46,6 +46,10 @@ final class FakeRealtimeWebSocketTransport: RealtimeWebSocketTransport, @uncheck
         withLockedState { currentContinuation }?.yield(.serverEvent(event))
     }
 
+    func emitFailed(_ reason: String) {
+        withLockedState { currentContinuation }?.yield(.failed(reason))
+    }
+
     func emitClosed(reason: String?) {
         withLockedState { currentContinuation }?.yield(.closed(reason: reason))
     }
@@ -67,6 +71,8 @@ extension RealtimeClientEvent {
         case .conversationItemDelete: "conversation.item.delete"
         case .conversationItemCreate: "conversation.item.create"
         case .inputAudioBufferClear: "input_audio_buffer.clear"
+        case .inputAudioBufferCommit: "input_audio_buffer.commit"
+        case .transcriptionSessionUpdate: "session.update"
         }
     }
 }

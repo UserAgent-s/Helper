@@ -22,3 +22,19 @@ public protocol StreamingTranscriber: Sendable {
     func appendAudio(_ frame: PCMAudioFrame) async
     func stop() async
 }
+
+public enum MeTranscriptionStatus: Sendable, Equatable {
+    case connecting
+    case live
+    case reconnecting(attempt: Int)
+    case unavailable(reason: String)
+    case stopped
+}
+
+public protocol MeTranscribing: Sendable {
+    func start(languages: [String]) async throws -> AsyncStream<TranscriptDelta>
+    func appendAudio(_ frame: PCMAudioFrame) async
+    func commitTurn() async
+    func statusUpdates() -> AsyncStream<MeTranscriptionStatus>
+    func stop() async
+}

@@ -8,6 +8,8 @@ public enum RealtimeClientEvent: Encodable, Sendable {
     case conversationItemDelete(itemID: String)
     case conversationItemCreate(ConversationItemPayload)
     case inputAudioBufferClear
+    case inputAudioBufferCommit
+    case transcriptionSessionUpdate(TranscriptionSessionConfig)
 
     private enum CodingKeys: String, CodingKey {
         case type, session, audio, response, item
@@ -38,7 +40,42 @@ public enum RealtimeClientEvent: Encodable, Sendable {
             try container.encodeIfPresent(payload.previousItemID, forKey: .previousItemID)
         case .inputAudioBufferClear:
             try container.encode("input_audio_buffer.clear", forKey: .type)
+        case .inputAudioBufferCommit:
+            try container.encode("input_audio_buffer.commit", forKey: .type)
+        case .transcriptionSessionUpdate(let session):
+            try container.encode("session.update", forKey: .type)
+            try container.encode(session, forKey: .session)
         }
+    }
+}
+
+public struct TranscriptionSessionConfig: Encodable, Sendable, Equatable {
+    let model: String
+    let rate: Int
+    let languages: [String]
+    let delay: String
+
+    private enum CodingKeys: String, CodingKey { case type, audio }
+    private enum AudioKeys: String, CodingKey { case input }
+    private enum InputKeys: String, CodingKey {
+        case format, transcription
+        case turnDetection = "turn_detection"
+    }
+    private enum TranscriptionKeys: String, CodingKey { case model, languages, delay }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode("transcription", forKey: .type)
+        var audio = container.nestedContainer(keyedBy: AudioKeys.self, forKey: .audio)
+        var input = audio.nestedContainer(keyedBy: InputKeys.self, forKey: .input)
+        try input.encode(AudioFormatConfig(rate: rate), forKey: .format)
+        var transcription = input.nestedContainer(keyedBy: TranscriptionKeys.self, forKey: .transcription)
+        try transcription.encode(model, forKey: .model)
+        if !languages.isEmpty {
+            try transcription.encode(languages, forKey: .languages)
+        }
+        try transcription.encode(delay, forKey: .delay)
+        try input.encodeNil(forKey: .turnDetection)
     }
 }
 
