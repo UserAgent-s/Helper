@@ -8,11 +8,11 @@ private actor FakeSystemAudioCapturing: SystemAudioCapturing {
     private(set) var startCallCount = 0
     private(set) var stopCallCount = 0
 
-    func start(targetApplicationBundleID: String?) async throws -> AsyncStream<PCMAudioFrame> {
+    func start(scope: SystemAudioScope) async throws -> SystemAudioCaptureStart {
         startCallCount += 1
         let (stream, continuation) = AsyncStream<PCMAudioFrame>.makeStream()
         self.continuation = continuation
-        return stream
+        return SystemAudioCaptureStart(frames: stream, effectiveScope: scope)
     }
 
     func stop() async {

@@ -3,7 +3,7 @@ import Domain
 public struct InactiveSystemAudioCapturing: SystemAudioCapturing {
     public init() {}
 
-    public func start(targetApplicationBundleID: String?) async throws -> AsyncStream<PCMAudioFrame> {
+    public func start(scope: SystemAudioScope) async throws -> SystemAudioCaptureStart {
         throw BootstrapUnavailableError.notYetImplemented("SystemAudioCapturing подключается на этапе 03")
     }
 

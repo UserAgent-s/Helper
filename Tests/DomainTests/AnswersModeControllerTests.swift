@@ -2,7 +2,58 @@ import Foundation
 import Testing
 @testable import Domain
 
+private actor StubAudioSourceStore: PreferredAudioSourceStoring {
+    var scope: SystemAudioScope
+
+    init(scope: SystemAudioScope) {
+        self.scope = scope
+    }
+
+    func preferredApplicationBundleID() async -> String? { scope.targetApplicationBundleID }
+    func setPreferredApplicationBundleID(_ bundleID: String?) async {}
+    func systemAudioScope() async -> SystemAudioScope { scope }
+    func setSystemAudioScope(_ scope: SystemAudioScope) async { self.scope = scope }
+}
+
 @Suite struct AnswersModeControllerTests {
+
+    @Test func startRequestsStoredScope() async throws {
+        let systemAudio = FakeSystemAudioCapturing()
+        let controller = AnswersModeController(
+            systemAudio: systemAudio, realtime: FakeLiveResponder(), answerTrigger: FakeAnswerTriggering(),
+            preferredAudioSource: StubAudioSourceStore(scope: .chromeOnlyPreset), instructionsProvider: { "test" }
+        )
+        try await controller.start()
+        #expect(await systemAudio.requestedScopes == [.chromeOnlyPreset])
+        #expect(await controller.currentEffectiveScope() == .chromeOnlyPreset)
+        await controller.stop()
+    }
+
+    @Test func startWithoutStoreUsesWholeSystem() async throws {
+        let systemAudio = FakeSystemAudioCapturing()
+        let controller = AnswersModeController(systemAudio: systemAudio, realtime: FakeLiveResponder(), answerTrigger: FakeAnswerTriggering(), instructionsProvider: { "test" })
+        try await controller.start()
+        #expect(await systemAudio.requestedScopes == [.defaultScope])
+        await controller.stop()
+    }
+
+    @Test func fallbackNoticeDoesNotFailMode() async throws {
+        let systemAudio = FakeSystemAudioCapturing()
+        await systemAudio.configureFallback(notice: .fellBackToWholeSystem(missingBundleID: "com.google.Chrome"), effectiveScope: .defaultScope)
+        let controller = AnswersModeController(
+            systemAudio: systemAudio, realtime: FakeLiveResponder(), answerTrigger: FakeAnswerTriggering(),
+            preferredAudioSource: StubAudioSourceStore(scope: .chromeOnlyPreset), instructionsProvider: { "test" }
+        )
+        let coordinator = ModeCoordinator(controllers: [.answers: controller])
+        var notices = controller.captureNotices().makeAsyncIterator()
+
+        let result = await coordinator.requestTransition(to: .answers)
+
+        #expect(result == .succeeded(.answers))
+        #expect(await notices.next() == .fellBackToWholeSystem(missingBundleID: "com.google.Chrome"))
+        #expect(await controller.currentEffectiveScope() == .defaultScope)
+        _ = await coordinator.requestTransition(to: .passive)
+    }
 
     @Test func exactlyOneVisibleAnswerWhenManualRacesAutomatic() async throws {
         let systemAudio = FakeSystemAudioCapturing()

@@ -5,7 +5,7 @@ public enum BootstrapUnavailableError: Error, Sendable, Equatable {
 }
 
 public protocol SystemAudioCapturing: Sendable {
-    func start(targetApplicationBundleID: String?) async throws -> AsyncStream<PCMAudioFrame>
+    func start(scope: SystemAudioScope) async throws -> SystemAudioCaptureStart
     func stop() async
 }
 

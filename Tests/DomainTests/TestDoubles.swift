@@ -94,15 +94,24 @@ actor FakeSystemAudioCapturing: SystemAudioCapturing {
     private(set) var startCalled = false
     private(set) var stopCalled = false
     var startError: TestError?
+    private(set) var requestedScopes: [SystemAudioScope] = []
+    var startNotice: CaptureNotice?
+    var effectiveScopeOverride: SystemAudioScope?
 
     init() {
         (stream, continuation) = AsyncStream<PCMAudioFrame>.makeStream()
     }
 
-    func start(targetApplicationBundleID: String?) async throws -> AsyncStream<PCMAudioFrame> {
+    func start(scope: SystemAudioScope) async throws -> SystemAudioCaptureStart {
         startCalled = true
+        requestedScopes.append(scope)
         if let startError { throw startError }
-        return stream
+        return SystemAudioCaptureStart(frames: stream, effectiveScope: effectiveScopeOverride ?? scope, notice: startNotice)
+    }
+
+    func configureFallback(notice: CaptureNotice, effectiveScope: SystemAudioScope) {
+        startNotice = notice
+        effectiveScopeOverride = effectiveScope
     }
 
     func stop() async {

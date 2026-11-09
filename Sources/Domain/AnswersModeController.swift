@@ -13,6 +13,8 @@ public actor AnswersModeController: ModeController {
     private var captureTask: Task<Void, Never>?
     private var eventsTask: Task<Void, Never>?
     private var triggerTask: Task<Void, Never>?
+    private var noticesTask: Task<Void, Never>?
+    private var effectiveScope: SystemAudioScope?
     private var didStartPersistentListeners = false
     private var isRunning = false
     private var captureLease: ResourceLease?
@@ -29,6 +31,7 @@ public actor AnswersModeController: ModeController {
     private let failureContinuation: AsyncStream<String>.Continuation
 
     private let streamEventBroadcaster = AsyncBroadcaster<AnswerStreamEvent>()
+    private let captureNoticeBroadcaster = AsyncBroadcaster<CaptureNotice>()
 
     public init(
         systemAudio: any SystemAudioCapturing,
@@ -83,10 +86,23 @@ public actor AnswersModeController: ModeController {
         let realtime = self.realtime
         realtimeLease = ResourceLease(name: "realtime") { await realtime.stop() }
 
-        let targetApplicationBundleID = await preferredAudioSource?.preferredApplicationBundleID()
-        let frames = try await systemAudio.start(targetApplicationBundleID: targetApplicationBundleID)
+        let requestedScope = await preferredAudioSource?.systemAudioScope() ?? .defaultScope
+        let capture = try await systemAudio.start(scope: requestedScope)
+        let frames = capture.frames
         let systemAudio = self.systemAudio
         captureLease = ResourceLease(name: "systemAudio") { await systemAudio.stop() }
+        effectiveScope = capture.effectiveScope
+        if let notice = capture.notice {
+            captureNoticeBroadcaster.yield(notice)
+        }
+        let captureNoticeBroadcaster = self.captureNoticeBroadcaster
+        let laterNotices = capture.laterNotices
+        noticesTask?.cancel()
+        noticesTask = Task {
+            for await notice in laterNotices {
+                captureNoticeBroadcaster.yield(notice)
+            }
+        }
 
         let answersRingBuffer = self.answersRingBuffer
         let latencyRecording = self.latencyRecording
@@ -126,6 +142,7 @@ public actor AnswersModeController: ModeController {
     public func stop() async {
         isRunning = false
         captureTask?.cancel(); captureTask = nil
+        noticesTask?.cancel(); noticesTask = nil
         if let questionAnswerLogger, let activeResponseID {
             if turnPhase == .streaming {
                 await questionAnswerLogger.recordCancelled(responseID: activeResponseID)
@@ -140,6 +157,15 @@ public actor AnswersModeController: ModeController {
         activeResponseTrigger = nil
         responseStartedAt = nil
         streamingText = ""
+        effectiveScope = nil
+    }
+
+    nonisolated public func captureNotices(subscriber: String = #fileID) -> AsyncStream<CaptureNotice> {
+        captureNoticeBroadcaster.subscribe(subscriber)
+    }
+
+    public func currentEffectiveScope() -> SystemAudioScope? {
+        effectiveScope
     }
 
     nonisolated public func failures() -> AsyncStream<String> {
@@ -176,7 +202,7 @@ public actor AnswersModeController: ModeController {
             }
             if isFirstDelta, let questionAnswerLogger {
                 let snapshot = await answersRingBuffer.snapshot()
-                let sourceAppBundleID = await preferredAudioSource?.preferredApplicationBundleID()
+                let sourceAppBundleID = effectiveScope?.targetApplicationBundleID
                 await questionAnswerLogger.beginDraft(
                     responseID: id,
                     triggerKind: activeResponseTrigger ?? .automatic,

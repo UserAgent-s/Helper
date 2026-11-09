@@ -11,8 +11,10 @@ public final class AnswerOverlayViewModel {
 
     public private(set) var state: AnswerOverlayState = .initial
     public private(set) var showNoContextToast = false
+    public private(set) var captureNotice: CaptureNotice?
 
     private var toastTask: Task<Void, Never>?
+    private var captureNoticeTask: Task<Void, Never>?
 
     public init(
         modeCoordinator: ModeCoordinator,
@@ -37,6 +39,21 @@ public final class AnswerOverlayViewModel {
                 }
                 self.apply(.answerStream(event))
             }
+        }
+        Task { [weak self] in
+            for await notice in answersController.captureNotices() {
+                self?.flashCaptureNotice(notice)
+            }
+        }
+    }
+
+    private func flashCaptureNotice(_ notice: CaptureNotice) {
+        captureNotice = notice
+        captureNoticeTask?.cancel()
+        captureNoticeTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(6))
+            guard !Task.isCancelled else { return }
+            self?.captureNotice = nil
         }
     }
 

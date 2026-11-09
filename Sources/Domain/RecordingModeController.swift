@@ -89,7 +89,7 @@ public actor RecordingModeController: ModeController {
         systemAudioPipeline = systemPipeline
         microphonePipeline = micPipeline
 
-        let sysFrames = try await systemAudio.start(targetApplicationBundleID: nil)
+        let sysFrames = try await systemAudio.start(scope: .defaultScope).frames
         let systemAudio = self.systemAudio
         systemAudioLease = ResourceLease(name: "systemAudio") { await systemAudio.stop() }
 

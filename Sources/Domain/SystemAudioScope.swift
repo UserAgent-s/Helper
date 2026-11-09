@@ -3,7 +3,8 @@ public enum SystemAudioScope: Codable, Sendable, Equatable {
     case application(bundleID: String, fallbackToWholeSystem: Bool)
 
     public static let defaultScope = SystemAudioScope.wholeSystem(excludingBundleIDs: [])
-    public static let chromeOnlyPreset = SystemAudioScope.application(bundleID: "com.google.Chrome", fallbackToWholeSystem: true)
+    public static let chromeBundleID = "com.google.Chrome"
+    public static let chromeOnlyPreset = SystemAudioScope.application(bundleID: chromeBundleID, fallbackToWholeSystem: true)
 
     public var targetApplicationBundleID: String? {
         switch self {

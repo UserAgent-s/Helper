@@ -1,5 +1,6 @@
 import SwiftUI
 import OverlayReducer
+import Domain
 
 struct AnswerOverlayContentView: View {
     var viewModel: AnswerOverlayViewModel
@@ -49,9 +50,21 @@ struct AnswerOverlayContentView: View {
             if viewModel.showNoContextToast {
                 toast(loc("Нет контекста для ответа"))
                     .accessibilityLabel(loc("Нет контекста для ответа"))
+            } else if let notice = viewModel.captureNotice {
+                toast(Self.text(for: notice))
+                    .accessibilityLabel(Self.text(for: notice))
             }
         }
         .background(containerBackground)
+    }
+
+    static func text(for notice: CaptureNotice) -> String {
+        switch notice {
+        case .fellBackToWholeSystem(let missingBundleID):
+            return "«\(missingBundleID)» " + loc("не запущено, слушаю весь системный звук")
+        case .systemCaptureRestarted:
+            return loc("Захват системного звука перезапущен")
+        }
     }
 
     @ViewBuilder
