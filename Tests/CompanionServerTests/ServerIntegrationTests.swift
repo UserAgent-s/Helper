@@ -337,6 +337,15 @@ struct ServerFixture {
         #expect(String(decoding: body, as: UTF8.self).contains("app.js"))
         #expect(try await server.http("/app.js").0.value(forHTTPHeaderField: "Content-Type")?.hasPrefix("text/javascript") == true)
         #expect(try await server.http("/app.css").0.statusCode == 200)
+        for module in ["/protocol.js", "/store.js", "/ui.js"] {
+            let (response, _) = try await server.http(module)
+            #expect(response.statusCode == 200)
+            #expect(response.value(forHTTPHeaderField: "Content-Type")?.hasPrefix("text/javascript") == true)
+            #expect(response.value(forHTTPHeaderField: "Content-Security-Policy")?.contains("default-src 'self'") == true)
+        }
+        #expect(try await server.http("/index.html").0.statusCode == 200)
+        #expect(try await server.http("/missing.js").0.statusCode == 404)
+        #expect(try await server.http("/../Package.swift").0.statusCode == 404)
         #expect(try await server.http("/healthz").0.statusCode == 200)
         #expect(try await server.http("/missing").0.statusCode == 404)
     }

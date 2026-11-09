@@ -4,10 +4,68 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>UserAgent057</title>
+<link rel="icon" href="data:,">
 <link rel="stylesheet" href="/app.css">
+<script type="module" src="/app.js"></script>
 </head>
 <body>
-<main id="app"><p>UserAgent057</p></main>
-<script src="/app.js"></script>
+<header class="bar">
+<div class="status">
+<span id="connection" class="dot" data-status="idle"></span>
+<span id="connection-label" class="muted">не подключено</span>
+<span id="mode-label" class="mode-label">Пассивный · ожидание</span>
+</div>
+<div class="levels">
+<div id="level-system" class="level"><span class="level-name">Они</span><span class="track"><span class="fill"></span></span></div>
+<div id="level-me" class="level"><span class="level-name">Я</span><span class="track"><span class="fill"></span></span></div>
+</div>
+<div class="modes" role="group" aria-label="Режим">
+<button type="button" data-mode="passive" aria-pressed="false">Пассив</button>
+<button type="button" data-mode="answers" aria-pressed="false">Ответы</button>
+<button type="button" data-mode="recording" aria-pressed="false">Запись</button>
+</div>
+<div class="actions">
+<button type="button" id="answer-now" class="primary" disabled>Ответить <kbd>A</kbd></button>
+<button type="button" id="reset" disabled>Сброс <kbd>R</kbd></button>
+</div>
+</header>
+<div id="banner" class="banner" role="alert" hidden>
+<span id="banner-text"></span>
+<button type="button" id="banner-close" aria-label="Скрыть">×</button>
+</div>
+<section id="pairing" class="pairing" hidden>
+<h2>Сопряжение</h2>
+<p class="muted">На Mac откройте «Подключить устройство…» и введите код или отсканируйте QR.</p>
+<form id="pairing-form" autocomplete="off">
+<label>Код<input id="pairing-code" name="code" inputmode="text" maxlength="64" required></label>
+<label>Имя устройства<input id="pairing-name" name="name" maxlength="64" value="Браузер"></label>
+<button type="submit" class="primary">Подключить</button>
+</form>
+</section>
+<main class="layout">
+<section class="panel answer-panel">
+<h2>Ответ <span id="answer-status" class="muted"></span></h2>
+<div id="answer" class="answer" aria-live="polite"></div>
+<p class="hint muted"><kbd>1</kbd>–<kbd>9</kbd> выбрать и скопировать пункт, <kbd>[</kbd> <kbd>]</kbd> соседний пункт, <kbd>C</kbd> копировать выбранный</p>
+</section>
+<section class="panel transcript-panel">
+<h2>Стенограмма</h2>
+<ol id="transcript" class="transcript"></ol>
+</section>
+<aside class="panel side-panel">
+<section>
+<h2>Claude</h2>
+<p class="muted">Раскрытие пунктов появится позже.</p>
+</section>
+<section>
+<h2>История</h2>
+<p class="muted">История ответов появится позже.</p>
+</section>
+<section>
+<h2>Уведомления</h2>
+<ul id="notices" class="notices"></ul>
+</section>
+</aside>
+</main>
 </body>
 </html>

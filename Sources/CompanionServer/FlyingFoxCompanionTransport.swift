@@ -152,14 +152,11 @@ struct CompanionHTTPHandler: HTTPHandler {
             return response
         case "/healthz":
             return Self.response(.ok, body: "ok")
-        case "/", "/index.html":
-            return Self.asset("index", "html", contentType: "text/html; charset=utf-8")
-        case "/app.js":
-            return Self.asset("app", "js", contentType: "text/javascript; charset=utf-8")
-        case "/app.css":
-            return Self.asset("app", "css", contentType: "text/css; charset=utf-8")
         default:
-            return Self.response(.notFound, body: "not found")
+            guard let asset = CompanionWebAssets.asset(forPath: request.path) else {
+                return Self.response(.notFound, body: "not found")
+            }
+            return Self.response(.ok, data: asset.data, contentType: asset.contentType)
         }
     }
 
@@ -168,13 +165,6 @@ struct CompanionHTTPHandler: HTTPHandler {
         case .ip4(let ip, _), .ip6(let ip, _): ip
         default: nil
         }
-    }
-
-    static func asset(_ name: String, _ ext: String, contentType: String) -> HTTPResponse {
-        guard let url = Bundle.module.url(forResource: name, withExtension: ext, subdirectory: "Web"),
-              let data = try? Data(contentsOf: url)
-        else { return response(.notFound, body: "not found") }
-        return response(.ok, data: data, contentType: contentType)
     }
 
     static func response(_ status: HTTPStatusCode, body: String) -> HTTPResponse {
