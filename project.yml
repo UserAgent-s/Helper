@@ -19,6 +19,8 @@ targets:
     type: application
     platform: macOS
     deploymentTarget: "14.0"
+    configFiles:
+      Debug: Config/DevSigning.xcconfig
     sources:
       - path: Sources/App
       - path: Sources/OverlayUI
@@ -47,6 +49,8 @@ targets:
         Debug:
           SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
           ONLY_ACTIVE_ARCH: YES
+          CODE_SIGN_IDENTITY: $(UA057_DEV_CODE_SIGN_IDENTITY)
+          CODE_SIGN_STYLE: Manual
         Release:
           SWIFT_ACTIVE_COMPILATION_CONDITIONS: RELEASE
           ONLY_ACTIVE_ARCH: NO

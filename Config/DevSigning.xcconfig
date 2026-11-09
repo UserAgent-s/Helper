@@ -1,0 +1,2 @@
+UA057_DEV_CODE_SIGN_IDENTITY = -
+#include? "DevSigning.local.xcconfig"

@@ -43,3 +43,6 @@ build/
 
 # macOS
 .DS_Store
+
+# Local dev signing identity (scripts/make-dev-signing-identity.sh)
+Config/DevSigning.local.xcconfig

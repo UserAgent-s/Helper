@@ -2,7 +2,7 @@ XCODEGEN_VERSION := 2.45.4
 DERIVED_DATA := build/DerivedData
 XCODEBUILD_FLAGS := -project UserAgent057.xcodeproj -scheme UserAgent057 -destination 'platform=macOS,arch=arm64' -derivedDataPath $(DERIVED_DATA) CODE_SIGNING_ALLOWED=NO
 
-.PHONY: verify-fast verify-real lint-no-comments build test xcode-test ui-test check-tools
+.PHONY: verify-fast verify-real lint-no-comments build test xcode-test ui-test check-tools dev-identity signing-status
 
 verify-fast: check-tools lint-no-comments build test xcode-test
 
@@ -28,6 +28,13 @@ xcode-test:
 ui-test:
 	xcodegen generate --quiet
 	xcodebuild -project UserAgent057.xcodeproj -scheme UserAgent057UITests -destination 'platform=macOS,arch=arm64' -derivedDataPath $(DERIVED_DATA)-ui test
+
+dev-identity:
+	scripts/make-dev-signing-identity.sh
+	xcodegen generate --quiet
+
+signing-status:
+	@scripts/signing-status.sh $(APP)
 
 verify-real:
 	@if [ -z "$$OPENAI_API_KEY" ]; then \

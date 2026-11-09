@@ -47,6 +47,8 @@ xcodebuild -project UserAgent057.xcodeproj -scheme UserAgent057 -destination 'pl
 xcodebuild -project UserAgent057.xcodeproj -scheme UserAgent057 -destination 'platform=macOS' test
 ```
 
+Чтобы брандмауэр и Keychain не спрашивали разрешения после каждой сборки, один раз выполните `make dev-identity`. Команда создаёт локальный сертификат подписи «UserAgent057 Local Dev», и Debug подписывается им, а не ad-hoc. Без сертификата сборка тоже работает. Подробности — в `docs/troubleshooting.md`, проверка — `make signing-status`.
+
 ## Сборка и тесты доменного пакета (без Xcode)
 
 ```bash
