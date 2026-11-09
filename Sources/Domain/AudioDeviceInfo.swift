@@ -76,6 +76,29 @@ public struct MicrophoneCaptureOptions: Sendable, Equatable {
     }
 }
 
+public enum MicrophoneProfile: String, Sendable, Equatable, CaseIterable {
+    case me
+    case recording
+
+    public var sampleRate: Int {
+        switch self {
+        case .me: 24_000
+        case .recording: 16_000
+        }
+    }
+
+    public func voiceProcessing(route: OutputRoute, policy: OutputRoutePolicy) -> Bool {
+        switch self {
+        case .me: OutputRouteClassifier.echoRisk(route, policy: policy)
+        case .recording: false
+        }
+    }
+
+    public func options(deviceUID: String?, route: OutputRoute, policy: OutputRoutePolicy) -> MicrophoneCaptureOptions {
+        MicrophoneCaptureOptions(deviceUID: deviceUID, sampleRate: sampleRate, voiceProcessing: voiceProcessing(route: route, policy: policy))
+    }
+}
+
 public struct MicrophoneStartPlan: Sendable, Equatable {
     public var options: MicrophoneCaptureOptions
     public var notice: CaptureNotice?

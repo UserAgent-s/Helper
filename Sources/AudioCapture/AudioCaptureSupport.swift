@@ -17,6 +17,7 @@ public enum AudioCaptureError: Error, Sendable, Equatable {
     case noDisplayAvailable
     case targetApplicationNotFound(String)
     case microphoneDeviceUnavailable(String)
+    case voiceProcessingUnavailable(String)
     case systemAudioTapFailed(String)
 }
 

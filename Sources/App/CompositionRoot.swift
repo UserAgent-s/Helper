@@ -83,8 +83,13 @@ final class CompositionRoot {
             system: systemAudioCapturing,
             microphone: avMicrophone,
             scope: { await preferredAudioSource.systemAudioScope() },
-            microphonePlan: {
-                MicrophoneDeviceResolver.plan(await preferredAudioSource.microphoneSelection(), catalog: audioDeviceCatalog)
+            microphonePlan: { [settingsStore] profile in
+                MicrophoneDeviceResolver.plan(
+                    await preferredAudioSource.microphoneSelection(),
+                    catalog: audioDeviceCatalog,
+                    profile: profile,
+                    routePolicy: settingsStore.outputRoutePolicy
+                )
             }
         )
         self.captureHub = captureHub
@@ -228,7 +233,8 @@ final class CompositionRoot {
                 store: preferredAudioSource,
                 catalog: audioDeviceCatalog,
                 settingsStore: settingsStore,
-                levels: captureHub.levels.subscribe("audioSettings", policy: .bufferingNewest(8))
+                levels: captureHub.levels.subscribe("audioSettings", policy: .bufferingNewest(8)),
+                onMicrophonePlanChanged: { Task { await captureHub.refreshMicrophonePlan() } }
             ),
             permissionsChecking: permissionsChecking,
             recordingsDirectory: recordingsDirectory,

@@ -31,10 +31,16 @@ public enum MicrophoneDeviceResolver {
         return (fallback, .microphoneFellBack(from: rejected.from, to: fallback.name, reason: rejected.reason))
     }
 
-    public static func plan(_ selection: MicrophoneSelection, catalog: any AudioDeviceCataloging, sampleRate: Int = 16_000) -> MicrophoneStartPlan {
+    public static func plan(
+        _ selection: MicrophoneSelection,
+        catalog: any AudioDeviceCataloging,
+        profile: MicrophoneProfile = .recording,
+        routePolicy: OutputRoutePolicy = .auto
+    ) -> MicrophoneStartPlan {
         let resolved = resolve(selection, devices: catalog.devices(), defaultInputUID: catalog.defaultInputUID())
+        let route = OutputRouteClassifier.classify(catalog.defaultOutputDevice())
         return MicrophoneStartPlan(
-            options: MicrophoneCaptureOptions(deviceUID: resolved.device?.uid, sampleRate: sampleRate),
+            options: profile.options(deviceUID: resolved.device?.uid, route: route, policy: routePolicy),
             notice: resolved.notice
         )
     }

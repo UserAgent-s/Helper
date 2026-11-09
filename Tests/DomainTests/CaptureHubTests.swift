@@ -79,6 +79,20 @@ private actor MutablePlan {
     }
 }
 
+private actor RouteState {
+    var route: OutputRoute = .wiredHeadphones
+    private(set) var requestedProfiles: [MicrophoneProfile] = []
+
+    func set(_ route: OutputRoute) {
+        self.route = route
+    }
+
+    func plan(_ profile: MicrophoneProfile) -> MicrophoneStartPlan {
+        requestedProfiles.append(profile)
+        return MicrophoneStartPlan(options: profile.options(deviceUID: "BuiltInMic", route: route, policy: .auto))
+    }
+}
+
 private func frame(_ value: Int16) -> PCMAudioFrame {
     PCMAudioFrame(samples: Array(repeating: value, count: 480), sampleRate: 24_000, channelCount: 1, capturedAt: Date(), source: .systemAudio)
 }
@@ -194,7 +208,7 @@ private actor FrameCounter {
     @Test func microphoneRestartOnDeviceChangeKeepsSubscribers() async throws {
         let microphone = ScriptedMicrophone()
         let plan = MutablePlan()
-        let hub = CaptureHub(system: ScriptedSystemAudio(), microphone: microphone, microphonePlan: { await plan.plan })
+        let hub = CaptureHub(system: ScriptedSystemAudio(), microphone: microphone, microphonePlan: { _ in await plan.plan })
         let notices = hub.notices.subscribe("test")
         let subscription = try await hub.acquire(.microphone, consumer: "recorder", policy: .unbounded)
         let counter = FrameCounter()
@@ -227,5 +241,72 @@ private actor FrameCounter {
         await hub.handleDeviceChange(.defaultOutputChanged)
         #expect(await microphone.startedOptions.count == 2)
         await hub.stopAll()
+    }
+
+    @Test func meProfileStartsMicrophoneAt24kHzAndRecordingAt16kHz() async throws {
+        let microphone = ScriptedMicrophone()
+        let state = RouteState()
+        let hub = CaptureHub(system: ScriptedSystemAudio(), microphone: microphone, microphonePlan: { await state.plan($0) })
+        let me = try await hub.acquire(.microphone, consumer: "me", policy: .bufferingNewest(50), microphoneProfile: .me)
+        #expect(await microphone.startedOptions.last?.sampleRate == 24_000)
+        #expect(await hub.microphoneOptions?.sampleRate == 24_000)
+        await hub.release(me)
+        _ = try await hub.acquire(.microphone, consumer: "recorder")
+        #expect(await microphone.startedOptions.last?.sampleRate == 16_000)
+        #expect(await state.requestedProfiles == [.me, .recording])
+        await hub.stopAll()
+    }
+
+    @Test func switchingToSpeakersRestartsMeMicrophoneWithVoiceProcessingAndKeepsSubscriber() async throws {
+        let microphone = ScriptedMicrophone()
+        let state = RouteState()
+        let hub = CaptureHub(system: ScriptedSystemAudio(), microphone: microphone, microphonePlan: { await state.plan($0) })
+        let subscription = try await hub.acquire(.microphone, consumer: "me", policy: .unbounded, microphoneProfile: .me)
+        let counter = FrameCounter()
+        let consumer = Task { for await f in subscription.frames { await counter.add(f) } }
+        #expect(await microphone.startedOptions.map(\.voiceProcessing) == [false])
+
+        await microphone.emit(frame(1))
+        await state.set(.builtInSpeakers)
+        await hub.handleDeviceChange(.defaultOutputChanged)
+        await microphone.emit(frame(2))
+        await waitUntil { await counter.values.count == 2 }
+
+        #expect(await microphone.startedOptions.map(\.voiceProcessing) == [false, true])
+        #expect(await hub.microphoneOptions?.voiceProcessing == true)
+        #expect(await counter.values == [1, 2])
+
+        await hub.handleDeviceChange(.outputDataSourceChanged)
+        #expect(await microphone.startedOptions.count == 2)
+        await hub.stopAll()
+        await consumer.value
+    }
+
+    @Test func recordingMicrophoneIgnoresOutputRouteChanges() async throws {
+        let microphone = ScriptedMicrophone()
+        let state = RouteState()
+        let hub = CaptureHub(system: ScriptedSystemAudio(), microphone: microphone, microphonePlan: { await state.plan($0) })
+        _ = try await hub.acquire(.microphone, consumer: "recorder")
+        await state.set(.builtInSpeakers)
+        await hub.handleDeviceChange(.defaultOutputChanged)
+        await hub.refreshMicrophonePlan()
+        #expect(await microphone.startedOptions.map(\.voiceProcessing) == [false])
+        await hub.stopAll()
+    }
+
+    @Test func releasingMeMicrophoneTearsItDownForPassive() async throws {
+        let log = EventLog()
+        let microphone = ScriptedMicrophone(log: log)
+        let state = RouteState()
+        await state.set(.builtInSpeakers)
+        let hub = CaptureHub(system: ScriptedSystemAudio(), microphone: microphone, microphonePlan: { await state.plan($0) })
+        let me = try await hub.acquire(.microphone, consumer: "me", microphoneProfile: .me)
+        #expect(await microphone.startedOptions.last?.voiceProcessing == true)
+        await hub.release(me)
+        #expect(await hub.activeSources.isEmpty)
+        #expect(await hub.microphoneOptions == nil)
+        #expect(await log.entries.contains("microphone.stop"))
+        await hub.handleDeviceChange(.defaultOutputChanged)
+        #expect(await microphone.startedOptions.count == 1)
     }
 }

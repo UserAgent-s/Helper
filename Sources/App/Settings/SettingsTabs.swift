@@ -109,6 +109,11 @@ struct AudioSettingsTab: View {
                         .font(.caption2)
                         .foregroundStyle(.orange)
                 }
+                Text(viewModel.voiceProcessingActive
+                    ? loc("Канал «Я» включит эхоподавление macOS (Voice Processing). Звук других приложений приглушается минимально.")
+                    : loc("Канал «Я» пишет микрофон без эхоподавления: при наушниках оно не нужно."))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
             Section(loc("Микрофон")) {
                 Picker(loc("Микрофон"), selection: Binding(

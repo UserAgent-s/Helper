@@ -21,13 +21,15 @@ public actor CaptureHub {
         var consumerNames: Set<String> = []
         var effectiveScope: SystemAudioScope?
         var deviceUID: String?
+        var microphoneProfile: MicrophoneProfile = .recording
+        var microphoneOptions: MicrophoneCaptureOptions?
         var generation = UUID()
     }
 
     private let system: any SystemAudioCapturing
     private let microphone: any MicrophoneCapturing
     private let scope: @Sendable () async -> SystemAudioScope
-    private let microphonePlan: @Sendable () async -> MicrophoneStartPlan
+    private let microphonePlan: @Sendable (MicrophoneProfile) async -> MicrophoneStartPlan
     public nonisolated let notices: AsyncBroadcaster<CaptureNotice>
     public nonisolated let levels: AsyncBroadcaster<AudioLevel>
 
@@ -42,7 +44,9 @@ public actor CaptureHub {
         system: any SystemAudioCapturing,
         microphone: any MicrophoneCapturing,
         scope: @escaping @Sendable () async -> SystemAudioScope = { .defaultScope },
-        microphonePlan: @escaping @Sendable () async -> MicrophoneStartPlan = { MicrophoneStartPlan() },
+        microphonePlan: @escaping @Sendable (MicrophoneProfile) async -> MicrophoneStartPlan = { profile in
+            MicrophoneStartPlan(options: MicrophoneCaptureOptions(sampleRate: profile.sampleRate))
+        },
         notices: AsyncBroadcaster<CaptureNotice> = AsyncBroadcaster<CaptureNotice>(),
         levels: AsyncBroadcaster<AudioLevel> = AsyncBroadcaster<AudioLevel>(replayLatest: true)
     ) {
@@ -63,17 +67,28 @@ public actor CaptureHub {
         sources[.microphone]?.deviceUID
     }
 
+    public var microphoneOptions: MicrophoneCaptureOptions? {
+        sources[.microphone]?.microphoneOptions
+    }
+
     public func handleDeviceChange(_ change: AudioDeviceChange) async {
-        guard let source = sources[.microphone] else { return }
         switch change {
         case .microphoneEngineReconfigured:
-            break
-        case .deviceListChanged, .defaultInputChanged:
-            let plan = await microphonePlan()
-            guard plan.options.deviceUID != source.deviceUID else { return }
-        case .defaultOutputChanged, .outputDataSourceChanged:
-            return
+            guard sources[.microphone] != nil else { return }
+            await restartMicrophone()
+        case .deviceListChanged, .defaultInputChanged, .defaultOutputChanged, .outputDataSourceChanged:
+            await refreshMicrophonePlan()
         }
+    }
+
+    public func refreshMicrophonePlan() async {
+        guard let source = sources[.microphone] else { return }
+        let plan = await microphonePlan(source.microphoneProfile)
+        guard plan.options != source.microphoneOptions else { return }
+        await restartMicrophone()
+    }
+
+    private func restartMicrophone() async {
         do {
             try await restart(.microphone)
         } catch {
@@ -90,9 +105,14 @@ public actor CaptureHub {
         failureStream
     }
 
-    public func acquire(_ kind: AudioSourceKind, consumer: String, policy: BroadcastBufferPolicy = .unbounded) async throws -> CaptureSubscription {
+    public func acquire(
+        _ kind: AudioSourceKind,
+        consumer: String,
+        policy: BroadcastBufferPolicy = .unbounded,
+        microphoneProfile: MicrophoneProfile = .recording
+    ) async throws -> CaptureSubscription {
         if sources[kind] == nil {
-            try await startSource(kind)
+            try await startSource(kind, microphoneProfile: microphoneProfile)
         }
         guard var source = sources[kind] else {
             throw CaptureHubError.sourceUnavailable(kind)
@@ -122,7 +142,7 @@ public actor CaptureHub {
         sources[kind] = retiring
         source.noticesTask?.cancel()
         await source.lease.release()
-        let started = try await startCapture(kind)
+        let started = try await startCapture(kind, microphoneProfile: source.microphoneProfile)
         guard var updated = sources[kind], updated.generation == generation else {
             await started.lease.release()
             return
@@ -132,6 +152,7 @@ public actor CaptureHub {
         updated.noticesTask = makeNoticeForwarder(started.laterNotices)
         updated.effectiveScope = started.effectiveScope
         updated.deviceUID = started.deviceUID
+        updated.microphoneOptions = started.microphoneOptions
         sources[kind] = updated
     }
 
@@ -155,9 +176,10 @@ public actor CaptureHub {
         let laterNotices: AsyncStream<CaptureNotice>?
         let lease: ResourceLease
         var deviceUID: String?
+        var microphoneOptions: MicrophoneCaptureOptions?
     }
 
-    private func startCapture(_ kind: AudioSourceKind) async throws -> StartedCapture {
+    private func startCapture(_ kind: AudioSourceKind, microphoneProfile: MicrophoneProfile) async throws -> StartedCapture {
         switch kind {
         case .systemAudio:
             let requested = await scope()
@@ -173,7 +195,7 @@ public actor CaptureHub {
                 lease: ResourceLease(name: "systemAudio") { await system.stop() }
             )
         case .microphone:
-            let plan = await microphonePlan()
+            let plan = await microphonePlan(microphoneProfile)
             if let notice = plan.notice {
                 notices.yield(notice)
             }
@@ -184,15 +206,16 @@ public actor CaptureHub {
                 effectiveScope: nil,
                 laterNotices: nil,
                 lease: ResourceLease(name: "microphone") { await microphone.stop() },
-                deviceUID: plan.options.deviceUID
+                deviceUID: plan.options.deviceUID,
+                microphoneOptions: plan.options
             )
         }
     }
 
-    private func startSource(_ kind: AudioSourceKind) async throws {
+    private func startSource(_ kind: AudioSourceKind, microphoneProfile: MicrophoneProfile) async throws {
         let started: StartedCapture
         do {
-            started = try await startCapture(kind)
+            started = try await startCapture(kind, microphoneProfile: microphoneProfile)
         } catch {
             switch kind {
             case .systemAudio: await system.stop()
@@ -209,6 +232,8 @@ public actor CaptureHub {
             noticesTask: makeNoticeForwarder(started.laterNotices),
             effectiveScope: started.effectiveScope,
             deviceUID: started.deviceUID,
+            microphoneProfile: microphoneProfile,
+            microphoneOptions: started.microphoneOptions,
             generation: generation
         )
         startOrder.removeAll { $0 == kind }

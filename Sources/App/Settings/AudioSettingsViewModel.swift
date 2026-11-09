@@ -29,6 +29,7 @@ final class AudioSettingsViewModel {
     private let catalog: (any AudioDeviceCataloging)?
     private let settingsStore: AppSettingsStore
     private let runningApplicationsProvider: @MainActor () -> [RunningApplicationEntry]
+    private let onMicrophonePlanChanged: @MainActor () -> Void
     private var levelsTask: Task<Void, Never>?
 
     private(set) var scope: SystemAudioScope = .defaultScope
@@ -43,8 +44,10 @@ final class AudioSettingsViewModel {
         catalog: (any AudioDeviceCataloging)?,
         settingsStore: AppSettingsStore,
         levels: AsyncStream<AudioLevel>? = nil,
-        runningApplicationsProvider: @escaping @MainActor () -> [RunningApplicationEntry] = AudioSettingsViewModel.workspaceApplications
+        runningApplicationsProvider: @escaping @MainActor () -> [RunningApplicationEntry] = AudioSettingsViewModel.workspaceApplications,
+        onMicrophonePlanChanged: @escaping @MainActor () -> Void = {}
     ) {
+        self.onMicrophonePlanChanged = onMicrophonePlanChanged
         self.store = store
         self.catalog = catalog
         self.settingsStore = settingsStore
@@ -77,7 +80,14 @@ final class AudioSettingsViewModel {
 
     var outputRoutePolicy: OutputRoutePolicy {
         get { settingsStore.outputRoutePolicy }
-        set { settingsStore.outputRoutePolicy = newValue }
+        set {
+            settingsStore.outputRoutePolicy = newValue
+            onMicrophonePlanChanged()
+        }
+    }
+
+    var voiceProcessingActive: Bool {
+        MicrophoneProfile.me.voiceProcessing(route: currentRoute, policy: outputRoutePolicy)
     }
 
     var echoRisk: Bool {

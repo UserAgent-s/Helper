@@ -21,6 +21,8 @@ public final class AVEngineMicrophoneCapturing: NSObject, MicrophoneCapturing, @
         return body()
     }
 
+    static let minimalDucking = AVAudioVoiceProcessingOtherAudioDuckingConfiguration(enableAdvancedDucking: false, duckingLevel: .min)
+
     public func engineReconfigurations() -> AsyncStream<AudioDeviceChange> {
         reconfigurations.subscribe("microphoneEngine")
     }
@@ -33,6 +35,14 @@ public final class AVEngineMicrophoneCapturing: NSObject, MicrophoneCapturing, @
 
         let newEngine = AVAudioEngine()
         let inputNode = newEngine.inputNode
+        if options.voiceProcessing {
+            do {
+                try inputNode.setVoiceProcessingEnabled(true)
+            } catch {
+                throw AudioCaptureError.voiceProcessingUnavailable(error.localizedDescription)
+            }
+            inputNode.voiceProcessingOtherAudioDuckingConfiguration = Self.minimalDucking
+        }
         if let uid = options.deviceUID, var deviceID = CoreAudioDeviceCatalog.deviceID(forUID: uid), let unit = inputNode.audioUnit {
             let status = AudioUnitSetProperty(
                 unit,
@@ -53,18 +63,10 @@ public final class AVEngineMicrophoneCapturing: NSObject, MicrophoneCapturing, @
             continuation = audioContinuation
         }
 
-        let targetSampleRate = options.sampleRate
         let inputFormat = inputNode.outputFormat(forBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: inputFormat) { [weak self] buffer, _ in
             guard let self, let frame = Self.makeFrame(from: buffer, source: .microphone) else { return }
-            let mono = PCMResampler.downmixToMono(samples: frame.samples, channelCount: frame.channelCount)
-            let converted = PCMAudioFrame(
-                samples: PCMResampler.resample(monoSamples: mono, fromRate: frame.sampleRate, toRate: targetSampleRate),
-                sampleRate: targetSampleRate,
-                channelCount: 1,
-                capturedAt: frame.capturedAt,
-                source: .microphone
-            )
+            let converted = MicrophoneFrameConverter.convert(frame, options: options)
             let cont = self.withLockedState { self.continuation }
             cont?.yield(converted)
         }

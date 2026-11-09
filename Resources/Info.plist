@@ -25,7 +25,7 @@
 	<key>NSAudioCaptureUsageDescription</key>
 	<string>UserAgent057 слушает системный звук встречи, чтобы подсказывать ответы. Этот доступ нужен только экспериментальному способу захвата Core Audio (настройка разработчика).</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>UserAgent057 использует микрофон только в режиме записи митинга (Recording), чтобы локально расшифровать вашу реплику. Аудио с микрофона не покидает устройство и не сохраняется в исходном виде.</string>
+	<string>UserAgent057 слушает микрофон, чтобы понимать ваши реплики. В режиме Recording речь расшифровывается локально на Mac. В режиме Answers при включённом канале «Я» ваша речь отправляется в OpenAI для расшифровки в облаке и используется как контекст для подсказок. Без включения режима микрофон не используется.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>UserAgent057</string>
 	<key>LSApplicationIsAgent</key>

@@ -911,3 +911,33 @@ M1 по коду закрыт (S1.1–S1.7). Ручной чек-лист M1 в 
 - Не сделано мной, остаётся владельцу (меняет доверие в login keychain): `make dev-identity`, сборка Debug, один ответ «Разрешить» в запросе брандмауэра, затем пересборка и проверка, что запрос не повторяется (`make signing-status` показывает `certificate leaf`).
 - Документация: в `docs/troubleshooting.md` раздел о запросе брандмауэра, «Запретить», `socketfilterfw --listapps` / `--getappblocked`, потерянном сертификате и гостевых сетях. В `docs/privacy.md` раздел «Веб-панель в локальной сети»: plain http только в доверенной сети, в v1 нет Bonjour (он в M2b), обновлена строка таблицы исходящих потоков. API-ключ остаётся в `UserDefaults`, потому что dev-identity необязательна, а Keychain ACL при ad-hoc по-прежнему ломается.
 - `verify-fast` собирает с `CODE_SIGNING_ALLOWED=NO` и от сертификата не зависит. `CompanionServerTests` входят в `swift test`.
+
+### S3.1 Микрофон: формат по запросу, VPIO, ducking, смена устройства
+
+- Domain: `MicrophoneProfile` задаёт параметры микрофона.
+  - `.me` — канал «Я» в answers, 24 кГц. Voice Processing включается, если `OutputRouteClassifier.echoRisk(route, policy)`, то есть звук идёт через динамики или пользователь выбрал «Всегда динамики».
+  - `.recording` — 16 кГц, всегда без Voice Processing, чтобы не менять проверенное в M1 поведение записи.
+
+  `MicrophoneDeviceResolver.plan(_:catalog:profile:routePolicy:)` берёт маршрут из `catalog.defaultOutputDevice()` в момент старта, поэтому он не зависит от того, запущен ли `OutputRouteMonitor`.
+- `CaptureHub`:
+  - `acquire(_:consumer:policy:microphoneProfile:)`, по умолчанию `.recording`. Профиль задаёт первый подписчик, остальные получают тот же поток: режимы взаимоисключающие, конфликт профилей невозможен.
+  - `microphonePlan` принимает профиль.
+  - Хаб хранит фактические `MicrophoneCaptureOptions` (`microphoneOptions`). На любое изменение устройств, включая смену вывода, он перепланирует и перезапускает микрофон только при отличии опций, а подписчики остаются. Так переход AirPods → динамики включает VPIO без разрыва потока.
+  - `refreshMicrophonePlan()` вызывается из настроек при смене «Что считать выводом».
+  - Как и раньше, на `AVAudioEngineConfigurationChange` микрофон перезапускается всегда, а ошибка перезапуска уходит в `failures()` как `microphone_restart_failed` с остановкой источника.
+- `AVEngineMicrophoneCapturing`:
+  - При `voiceProcessing` до старта вызывается `inputNode.setVoiceProcessingEnabled(true)`: по заголовку `AVAudioIONode.h` это можно делать только при остановленном движке. Затем ставится `voiceProcessingOtherAudioDuckingConfiguration(enableAdvancedDucking: false, duckingLevel: .min)` (macOS 14+).
+  - Устройство выбирается после включения VPIO, потому что VPIO подменяет audio unit. Проба показала, что `CurrentDevice` принимается в обоих порядках.
+  - Ошибка включения VPIO возвращается как `AudioCaptureError.voiceProcessingUnavailable`.
+- Пробы в scratchpad на этом Mac (без сохранения звука):
+  - с VPIO формат входа меняется с 1 канала 48 кГц на 9 каналов 48 кГц, обработанный голос только в канале 0;
+  - движок с одним tap на входе запускается и отдаёт 48 000 кадров в секунду;
+  - обращение к `engine.mainMixerNode` при включённом VPIO ломает запуск: `-10875` на `kAUInitialize` output node. Поэтому код к mixer не обращается.
+- `MicrophoneFrameConverter`: при VPIO берёт только канал 0, без VPIO усредняет каналы, затем ресемплирует к `options.sampleRate`. Прежний downmix 9 каналов ослабил бы голос примерно в 9 раз.
+- Настройки «Звук → Вывод звука»: выбор «Определять автоматически / Всегда наушники / Всегда динамики» уже был (S1.4; v3 заменил ручной выбор автоопределением). Добавлена строка о состоянии эхоподавления для канала «Я».
+- `Info.plist`: `NSMicrophoneUsageDescription` переписан честно: в Recording расшифровка локальная, в Answers при канале «Я» речь уходит в OpenAI. `privacy.md` обновлён.
+- `AudioSourceKind.microphone` не переименован в `.me`: это физический источник. «Я» — профиль `.me` и имя потребителя, которое добавит S3.4. В answers микрофон пока не подключается: канал «Я» собирается в S3.4.
+- Тесты:
+  - `MicrophoneOptionsTests` (8): профили → частоты, VPIO только при риске эха, recording без VPIO, `plan` по маршруту вывода, выбор канала 0 при VPIO, downmix без VPIO, 9 каналов 48 кГц → 24 кГц моно, 48 → 16 кГц;
+  - `CaptureHubTests` (+4): `.me` 24 кГц и `.recording` 16 кГц; переход на динамики перезапускает «Я» с VPIO, подписчик сохраняется, повторное событие без изменений не перезапускает; recording игнорирует смену вывода; release `.me` полностью снимает микрофон (passive teardown), поздние события устройств его не поднимают.
+- Остаётся вручную на железе (S3.5): утечка эха Meet из динамиков MacBook с VPIO и без; проверка, что звук других приложений при `duckingLevel .min` почти не приглушается; переподключение при подключении и отключении AirPods.
