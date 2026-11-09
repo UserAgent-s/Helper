@@ -114,8 +114,21 @@ final class SettingsViewModel {
 
     var historyRetentionDays: Int {
         get { settingsStore.historyRetentionDays ?? 0 }
-        set { settingsStore.historyRetentionDays = newValue > 0 ? newValue : nil }
+        set {
+            settingsStore.historyRetentionDays = newValue > 0 ? newValue : nil
+            onRetentionChanged?()
+        }
     }
+
+    var keepScreenTexts: Bool {
+        get { settingsStore.keepScreenTexts }
+        set {
+            settingsStore.keepScreenTexts = newValue
+            onRetentionChanged?()
+        }
+    }
+
+    @ObservationIgnored var onRetentionChanged: (@MainActor () -> Void)?
 
     var diagnosticsIncludeContentOptIn: Bool {
         get { settingsStore.diagnosticsIncludeContentOptIn }

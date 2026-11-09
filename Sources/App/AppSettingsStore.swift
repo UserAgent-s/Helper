@@ -35,6 +35,7 @@ final class AppSettingsStore: @unchecked Sendable {
         static let companionLoopbackOnly = "com.local.UserAgent057.settings.companion.loopbackOnly"
         static let meetingAutoExportEnabled = "com.local.UserAgent057.settings.export.autoExportEnabled"
         static let autoSummaryOnStop = "com.local.UserAgent057.settings.sessions.autoSummaryOnStop"
+        static let keepScreenTexts = "com.local.UserAgent057.settings.sessions.keepScreenTexts"
     }
 
     init(defaults: UserDefaults = .standard) {
@@ -130,6 +131,15 @@ final class AppSettingsStore: @unchecked Sendable {
     var autoSummaryOnStop: Bool {
         get { defaults.bool(forKey: Keys.autoSummaryOnStop) }
         set { defaults.set(newValue, forKey: Keys.autoSummaryOnStop) }
+    }
+
+    var keepScreenTexts: Bool {
+        get { defaults.object(forKey: Keys.keepScreenTexts) as? Bool ?? true }
+        set { defaults.set(newValue, forKey: Keys.keepScreenTexts) }
+    }
+
+    var retentionPolicy: RetentionPolicy {
+        RetentionPolicy(days: historyRetentionDays, keepScreenTexts: keepScreenTexts)
     }
 
     var meChannelEnabled: Bool {

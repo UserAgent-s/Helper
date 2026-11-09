@@ -315,13 +315,17 @@ final class CompositionRoot {
         )
 
         let meetingRepository = self.meetingRepository
-        let retentionSweeper = RetentionSweeper(database: database, recordingsDirectory: recordingsDirectory)
-        retentionSweepTask = Task { [settingsStore] in
+        let retentionScheduler = RetentionScheduler(
+            sweeper: RetentionSweeper(database: database, recordingsDirectory: recordingsDirectory),
+            policy: { [settingsStore] in settingsStore.retentionPolicy },
+            activeSession: { await sessionCoordinator.currentState.sessionID }
+        )
+        retentionSweepTask = Task {
             _ = try? await meetingRepository.reconcileInterruptedMeetings()
-            while !Task.isCancelled {
-                _ = try? await retentionSweeper.sweep(retentionDays: settingsStore.historyRetentionDays)
-                try? await Task.sleep(for: .seconds(86_400))
-            }
+            await retentionScheduler.run()
+        }
+        settingsViewModel.onRetentionChanged = {
+            Task { await retentionScheduler.runOnce() }
         }
 
         let autoExporter = MeetingAutoExporter(

@@ -4026,6 +4026,75 @@
           }
         }
       }
+    },
+    "Завершённые сессии старше срока удаляются при запуске и раз в сутки вместе с аудио и поисковым индексом. Закреплённые и текущая сессия не удаляются.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Завершённые сессии старше срока удаляются при запуске и раз в сутки вместе с аудио и поисковым индексом. Закреплённые и текущая сессия не удаляются."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finished sessions older than this are deleted at launch and once a day, together with audio and the search index. Pinned sessions and the current one are kept."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Завершені сесії, старші за цей строк, видаляються під час запуску й раз на добу разом з аудіо та пошуковим індексом. Закріплені й поточна сесія не видаляються."
+          }
+        }
+      }
+    },
+    "Хранить тексты экрана": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Хранить тексты экрана"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep screen text"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Зберігати тексти екрана"
+          }
+        }
+      }
+    },
+    "Если выключить, распознанные тексты экрана удаляются из всех сессий, кроме текущей.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Если выключить, распознанные тексты экрана удаляются из всех сессий, кроме текущей."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When off, recognized screen text is deleted from every session except the current one."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Якщо вимкнути, розпізнані тексти екрана видаляються з усіх сесій, крім поточної."
+          }
+        }
+      }
     }
   }
 }

@@ -347,6 +347,15 @@ struct SessionsDataSettingsTab: View {
                     Text(loc("90 дней")).tag(90)
                     Text(loc("365 дней")).tag(365)
                 }
+                .accessibilityIdentifier("settings.sessions.retentionDays")
+                Text(loc("Завершённые сессии старше срока удаляются при запуске и раз в сутки вместе с аудио и поисковым индексом. Закреплённые и текущая сессия не удаляются."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Toggle(loc("Хранить тексты экрана"), isOn: $viewModel.keepScreenTexts)
+                    .accessibilityIdentifier("settings.sessions.keepScreenTexts")
+                Text(loc("Если выключить, распознанные тексты экрана удаляются из всех сессий, кроме текущей."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)

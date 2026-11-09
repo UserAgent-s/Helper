@@ -126,6 +126,7 @@ public actor SQLiteDatabase {
         do {
             try enableWriteAheadLog(on: newHandle)
             try run("PRAGMA foreign_keys = ON")
+            try run("PRAGMA secure_delete = ON")
         } catch {
             sqlite3_close_v2(newHandle)
             handle = nil

@@ -1311,3 +1311,24 @@ M1 по коду закрыт (S1.1–S1.7). Ручной чек-лист M1 в 
   - `WebHistoryJSCTests`: 5 тестов;
   - кодек: DTO round-trip через эталонные фикстуры;
   - XCUITest `HistorySessionsUITests.testHistorySessionsTabOpensDetail` (запускает владелец через `make ui-test`).
+
+### S4.9 Срок хранения, pinned, secure_delete
+
+- `RetentionPolicy` (Domain): `days` (0 и отрицательные приводятся к `nil`), `keepScreenTexts`, `cutoff(now:)`, `isNoop`. Сюда переехал `RetentionSweepReport`, у него появилось поле `deletedScreenContextCount`. Протокол `RetentionSweeping`.
+- `RetentionScheduler` (actor, Domain) заменил цикл в `CompositionRoot`.
+  - Сначала `reconcileInterruptedMeetings`, затем `runOnce` при запуске и раз в 24 часа. Ещё один `runOnce` выполняется сразу после изменения срока или переключателя текстов экрана (`SettingsViewModel.onRetentionChanged`).
+  - Текущая сессия берётся из `SessionCoordinator.currentState.sessionID` в момент запуска.
+  - Ошибки считаются в `failureCount` и цикл не прерывают.
+- `RetentionSweeper.sweep(policy:excluding:now:)`, одна транзакция `BEGIN IMMEDIATE`:
+  - удаляются строки `meetings`, у которых последняя активность раньше границы, со статусом не `recording`, `pinned = 0` и id не равным текущей сессии; затем их папки аудио;
+  - `qa_entries` удаляются по `asked_at` только при `session_id IS NULL`. Раньше удалялись все Q&A старше срока, в том числе Q&A закреплённых сессий;
+  - при `keepScreenTexts = false` удаляются все `screen_contexts`, кроме текущей сессии, независимо от срока. `qa_entries.screen_context_id` обнуляется по `ON DELETE SET NULL`.
+  - Старый вызов `sweep(retentionDays:now:)` оставлен как обёртка, чтобы прежние тесты работали без изменений.
+  - Отклонение от плана: метод `SQLiteSessionRepository.purge` из S4.2 не используется. Ему нужна отдельная транзакция, и он не удаляет папки аудио и Q&A без сессии. Логика повторена в одной транзакции очистки, а `purge` оставлен для API репозитория.
+- `PRAGMA secure_delete = ON` включается в `SQLiteDatabase.open` рядом с `foreign_keys`. В плане указан `SQLiteConnection.swift`, но соединение открывается в `SQLiteDatabase`.
+- Настройки, вкладка «Сессии и данные», раздел «Срок хранения истории»: подпись о том, что удаляется, и переключатель «Хранить тексты экрана». Ключ `com.local.UserAgent057.settings.sessions.keepScreenTexts`, по умолчанию `true`. Строки добавлены в ru, en и uk.
+- Тесты:
+  - `SessionRetentionTests`: `purgeDeletesOldUnpinned`, `purgeKeepsPinnedAndActive`, `purgeRemovesFtsRows` (проверяются `_docsize` всех шести индексов, поиск и `PRAGMA secure_delete`), `retentionNilIsNoop`, `screenTextsOptOutDropsAllButActive`;
+  - `RetentionSchedulerTests`: 2 теста;
+  - прежние `RetentionSweeperTests` проходят без изменений.
+- Не сделано: старые вкладки «Вопросы и ответы» и «Митинги» в окне истории на Mac остаются. Их можно убрать, когда Q&A без сессии исчезнут по сроку хранения или будут перенесены в отдельную сессию.
