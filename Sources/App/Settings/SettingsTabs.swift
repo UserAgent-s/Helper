@@ -45,6 +45,24 @@ struct AudioSettingsTab: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
+            Section(loc("Вывод звука")) {
+                LabeledContent(loc("Сейчас")) {
+                    Text(AnswerOverlayContentView.routeText(viewModel.currentOutputRoute))
+                }
+                Picker(loc("Что считать выводом"), selection: $viewModel.outputRoutePolicy) {
+                    Text(loc("Определять автоматически")).tag(OutputRoutePolicy.auto)
+                    Text(loc("Всегда наушники")).tag(OutputRoutePolicy.headphones)
+                    Text(loc("Всегда динамики")).tag(OutputRoutePolicy.speakers)
+                }
+                if OutputRouteClassifier.echoRisk(viewModel.currentOutputRoute, policy: viewModel.outputRoutePolicy) {
+                    Text(loc("Динамики: голос собеседника может попасть в микрофон. Лучше использовать наушники."))
+                        .font(.caption2)
+                        .foregroundStyle(.orange)
+                }
+                Text(loc("Если USB- или Bluetooth-устройство на самом деле колонка, а не наушники, выберите «Всегда динамики»."))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
             Section(loc("Микрофон")) {
                 Picker(loc("Микрофон"), selection: $viewModel.microphoneDeviceUID) {
                     Text(loc("Системный по умолчанию (без iPhone)")).tag("")

@@ -29,6 +29,7 @@ struct DiagnosticsSnapshot: Codable {
     let buildNumber: String
     let currentMode: String
     let currentPhase: String
+    let outputRoute: String
     let screenRecordingPermission: String
     let microphonePermission: String
     let metricCounts: [String: Int]
@@ -47,7 +48,8 @@ enum DiagnosticsExporter {
         latencyRecorder: InMemoryLatencyRecorder,
         questionAnswerRepository: any QuestionAnswerRepository,
         meetingRepository: any MeetingRepository,
-        includeContent: Bool = false
+        includeContent: Bool = false,
+        outputRoute: OutputRoute = .unknown
     ) async -> DiagnosticsSnapshot {
         let bundle = Bundle.main
         let screenRecording = await permissionsChecking.status(for: .screenRecording)
@@ -83,6 +85,7 @@ enum DiagnosticsExporter {
             buildNumber: bundle.infoDictionary?["CFBundleVersion"] as? String ?? "unknown",
             currentMode: String(describing: mode),
             currentPhase: String(describing: phase),
+            outputRoute: outputRoute.diagnosticsLabel,
             screenRecordingPermission: String(describing: screenRecording),
             microphonePermission: String(describing: microphone),
             metricCounts: counts,

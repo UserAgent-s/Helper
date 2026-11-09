@@ -64,6 +64,13 @@ final class SettingsViewModel {
         set { overlayPreferences.fontFamily = newValue }
     }
 
+    var outputRoutePolicy: OutputRoutePolicy {
+        get { settingsStore.outputRoutePolicy }
+        set { settingsStore.outputRoutePolicy = newValue }
+    }
+
+    private(set) var currentOutputRoute: OutputRoute = .unknown
+
     var deviceRole: DeviceRole {
         get { settingsStore.deviceRole }
         set { settingsStore.deviceRole = newValue }
@@ -169,6 +176,7 @@ final class SettingsViewModel {
     }
 
     func refreshInputDevices() {
+        currentOutputRoute = OutputRouteClassifier.classify(audioDeviceCatalog?.defaultOutputDevice())
         inputDevices = (audioDeviceCatalog?.devices() ?? []).filter(\.hasInput).sorted { $0.name < $1.name }
     }
 

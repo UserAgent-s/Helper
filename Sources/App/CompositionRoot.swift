@@ -20,6 +20,9 @@ final class CompositionRoot {
     let microphoneCapturing: any MicrophoneCapturing
     let captureHub: CaptureHub
     let audioDeviceCatalog: CoreAudioDeviceCatalog
+    let outputRoutes = AsyncBroadcaster<OutputRoute>(replayLatest: true, initial: .unknown)
+    let outputRouteMonitor: OutputRouteMonitor
+    private var outputRouteLifecycleTask: Task<Void, Never>?
     private var deviceChangeTasks: [Task<Void, Never>] = []
     let realtimeAnswering: any LiveResponder
     let localTranscribing: any LocalTranscribing
@@ -74,6 +77,7 @@ final class CompositionRoot {
             }
         )
         self.captureHub = captureHub
+        outputRouteMonitor = OutputRouteMonitor(catalog: audioDeviceCatalog, routes: outputRoutes, notices: captureHub.notices)
         deviceChangeTasks = [audioDeviceCatalog.changes(), avMicrophone.engineReconfigurations()].map { changes in
             Task {
                 for await change in changes {
@@ -148,7 +152,23 @@ final class CompositionRoot {
             latencyRecording: latencyRecording
         )
 
-        modeViewModel = ModeSwitcherViewModel(modeCoordinator: modeCoordinator, captureNotices: captureHub.notices.subscribe("modeSwitcher"))
+        modeViewModel = ModeSwitcherViewModel(
+            modeCoordinator: modeCoordinator,
+            captureNotices: captureHub.notices.subscribe("modeSwitcher"),
+            outputRoutes: outputRoutes.subscribe("modeSwitcher"),
+            outputRoutePolicy: { [settingsStore] in settingsStore.outputRoutePolicy }
+        )
+        let outputRouteMonitor = self.outputRouteMonitor
+        let modeStates = modeCoordinator.stateUpdates(subscriber: "outputRouteMonitor")
+        outputRouteLifecycleTask = Task {
+            for await state in modeStates {
+                if state.mode == .passive {
+                    await outputRouteMonitor.stop()
+                } else {
+                    await outputRouteMonitor.start()
+                }
+            }
+        }
         answersModeController = answersController
         recordingModeController = recordingController
         answerOverlayViewModel = AnswerOverlayViewModel(

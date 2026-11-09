@@ -7,6 +7,7 @@ public final class CoreAudioDeviceCatalog: AudioDeviceCataloging, @unchecked Sen
     private let listenerQueue = DispatchQueue(label: "com.local.UserAgent057.audiocapture.devices")
     private let listenerLock = NSLock()
     private var listenersInstalled = false
+    private var dataSourceListenerDeviceIDs: Set<AudioDeviceID> = []
 
     public init() {}
 
@@ -45,9 +46,34 @@ public final class CoreAudioDeviceCatalog: AudioDeviceCataloging, @unchecked Sen
         let broadcaster = changeBroadcaster
         for (selector, change) in pairs {
             var address = Self.address(selector)
-            AudioObjectAddPropertyListenerBlock(AudioObjectID(kAudioObjectSystemObject), &address, listenerQueue) { _, _ in
+            AudioObjectAddPropertyListenerBlock(AudioObjectID(kAudioObjectSystemObject), &address, listenerQueue) { [weak self] _, _ in
+                if change == .defaultOutputChanged {
+                    self?.installDataSourceListenerOnDefaultOutput()
+                }
                 broadcaster.yield(change)
             }
+        }
+        installDataSourceListenerOnDefaultOutputLocked()
+    }
+
+    private func installDataSourceListenerOnDefaultOutput() {
+        listenerLock.lock()
+        defer { listenerLock.unlock() }
+        installDataSourceListenerOnDefaultOutputLocked()
+    }
+
+    private func installDataSourceListenerOnDefaultOutputLocked() {
+        guard let deviceID = Self.systemDevice(kAudioHardwarePropertyDefaultOutputDevice),
+              !dataSourceListenerDeviceIDs.contains(deviceID)
+        else { return }
+        var address = Self.address(kAudioDevicePropertyDataSource, scope: kAudioObjectPropertyScopeOutput)
+        guard AudioObjectHasProperty(deviceID, &address) else { return }
+        let broadcaster = changeBroadcaster
+        let status = AudioObjectAddPropertyListenerBlock(deviceID, &address, listenerQueue) { _, _ in
+            broadcaster.yield(.outputDataSourceChanged)
+        }
+        if status == noErr {
+            dataSourceListenerDeviceIDs.insert(deviceID)
         }
     }
 

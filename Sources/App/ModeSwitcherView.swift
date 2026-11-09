@@ -14,6 +14,13 @@ final class ModeSwitcherViewModel {
     private(set) var failureReason: ModeFailureReason?
     private(set) var returnedToPassiveConfirmation: Bool = false
     private(set) var captureNoticeText: String?
+    private(set) var outputRoute: OutputRoute = .unknown
+    private let outputRoutePolicy: @MainActor () -> OutputRoutePolicy
+
+    var echoWarning: String? {
+        guard currentMode != .passive, OutputRouteClassifier.echoRisk(outputRoute, policy: outputRoutePolicy()) else { return nil }
+        return loc("Динамики: возможна утечка эха собеседника в микрофон")
+    }
 
     var lastError: String? {
         guard let failureReason else { return nil }
@@ -31,8 +38,21 @@ final class ModeSwitcherViewModel {
         }
     }
 
-    init(modeCoordinator: ModeCoordinator, captureNotices: AsyncStream<CaptureNotice>? = nil) {
+    init(
+        modeCoordinator: ModeCoordinator,
+        captureNotices: AsyncStream<CaptureNotice>? = nil,
+        outputRoutes: AsyncStream<OutputRoute>? = nil,
+        outputRoutePolicy: @escaping @MainActor () -> OutputRoutePolicy = { .auto }
+    ) {
         self.modeCoordinator = modeCoordinator
+        self.outputRoutePolicy = outputRoutePolicy
+        if let outputRoutes {
+            Task { [weak self] in
+                for await route in outputRoutes {
+                    self?.outputRoute = route
+                }
+            }
+        }
         if let captureNotices {
             Task { [weak self] in
                 for await notice in captureNotices {
@@ -131,6 +151,12 @@ struct ModeSwitcherView: View {
                     .foregroundStyle(.green)
             }
 
+            if let warning = viewModel.echoWarning {
+                Text(warning)
+                    .foregroundStyle(.orange)
+                    .font(.caption)
+            }
+
             if let notice = viewModel.captureNoticeText {
                 Text(notice)
                     .foregroundStyle(.orange)
@@ -207,7 +233,8 @@ struct ModeSwitcherView: View {
                 latencyRecorder: latencyRecording,
                 questionAnswerRepository: questionAnswerRepository,
                 meetingRepository: meetingRepository,
-                includeContent: includeContent
+                includeContent: includeContent,
+                outputRoute: viewModel.outputRoute
             )
             guard let data = try? DiagnosticsExporter.encodeJSON(snapshot) else { return }
             let panel = NSSavePanel()

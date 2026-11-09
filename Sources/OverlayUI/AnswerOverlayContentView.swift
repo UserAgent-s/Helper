@@ -68,6 +68,19 @@ struct AnswerOverlayContentView: View {
             return loc("Микрофон iPhone пропущен, пишу с") + " «\(to)»"
         case .microphoneFellBack(_, let to, .selectedDeviceMissing):
             return loc("Выбранный микрофон недоступен, пишу с") + " «\(to)»"
+        case .outputRouteChanged(let route):
+            return loc("Вывод звука:") + " " + routeText(route)
+        }
+    }
+
+    static func routeText(_ route: OutputRoute) -> String {
+        switch route {
+        case .builtInSpeakers: return loc("динамики Mac")
+        case .wiredHeadphones: return loc("проводные наушники")
+        case .bluetoothHeadphones(let name): return loc("Bluetooth-наушники") + " «\(name)»"
+        case .airPlay(let name): return "AirPlay «\(name)»"
+        case .external(let name): return loc("внешнее устройство") + " «\(name)»"
+        case .unknown: return loc("не определён")
         }
     }
 
