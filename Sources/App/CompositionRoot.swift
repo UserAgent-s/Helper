@@ -19,6 +19,8 @@ final class CompositionRoot {
     let systemAudioCapturing: any SystemAudioCapturing
     let microphoneCapturing: any MicrophoneCapturing
     let captureHub: CaptureHub
+    let audioDeviceCatalog: CoreAudioDeviceCatalog
+    private var deviceChangeTasks: [Task<Void, Never>] = []
     let realtimeAnswering: any LiveResponder
     let localTranscribing: any LocalTranscribing
     let whisperKitTranscribing: WhisperKitTranscribing
@@ -58,13 +60,27 @@ final class CompositionRoot {
         LocalizationCenter.shared.configure(with: settingsStore)
 
         systemAudioCapturing = ScreenCaptureKitSystemAudioCapturing(outputFormat: .realtimeStreaming, permissions: permissionsChecking)
-        microphoneCapturing = AVEngineMicrophoneCapturing(permissions: permissionsChecking)
+        let avMicrophone = AVEngineMicrophoneCapturing(permissions: permissionsChecking)
+        microphoneCapturing = avMicrophone
+        let audioDeviceCatalog = CoreAudioDeviceCatalog()
+        self.audioDeviceCatalog = audioDeviceCatalog
         let preferredAudioSource = self.preferredAudioSource
-        captureHub = CaptureHub(
+        let captureHub = CaptureHub(
             system: systemAudioCapturing,
-            microphone: microphoneCapturing,
-            scope: { await preferredAudioSource.systemAudioScope() }
+            microphone: avMicrophone,
+            scope: { await preferredAudioSource.systemAudioScope() },
+            microphonePlan: {
+                MicrophoneDeviceResolver.plan(await preferredAudioSource.microphoneSelection(), catalog: audioDeviceCatalog)
+            }
         )
+        self.captureHub = captureHub
+        deviceChangeTasks = [audioDeviceCatalog.changes(), avMicrophone.engineReconfigurations()].map { changes in
+            Task {
+                for await change in changes {
+                    await captureHub.handleDeviceChange(change)
+                }
+            }
+        }
 
         let whisperKitTranscribing = WhisperKitTranscribing(modelID: settingsStore.whisperModelID)
         self.whisperKitTranscribing = whisperKitTranscribing
@@ -132,7 +148,7 @@ final class CompositionRoot {
             latencyRecording: latencyRecording
         )
 
-        modeViewModel = ModeSwitcherViewModel(modeCoordinator: modeCoordinator)
+        modeViewModel = ModeSwitcherViewModel(modeCoordinator: modeCoordinator, captureNotices: captureHub.notices.subscribe("modeSwitcher"))
         answersModeController = answersController
         recordingModeController = recordingController
         answerOverlayViewModel = AnswerOverlayViewModel(
@@ -152,7 +168,8 @@ final class CompositionRoot {
             secretStoring: secretStoring,
             preferredAudioSource: preferredAudioSource,
             permissionsChecking: permissionsChecking,
-            recordingsDirectory: recordingsDirectory
+            recordingsDirectory: recordingsDirectory,
+            audioDeviceCatalog: audioDeviceCatalog
         )
 
         let meetingRepository = self.meetingRepository

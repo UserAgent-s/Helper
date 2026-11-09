@@ -20,11 +20,14 @@ public actor CaptureHub {
         var subscriptionIDs: Set<UUID> = []
         var consumerNames: Set<String> = []
         var effectiveScope: SystemAudioScope?
+        var deviceUID: String?
+        var generation = UUID()
     }
 
     private let system: any SystemAudioCapturing
     private let microphone: any MicrophoneCapturing
     private let scope: @Sendable () async -> SystemAudioScope
+    private let microphonePlan: @Sendable () async -> MicrophoneStartPlan
     public nonisolated let notices: AsyncBroadcaster<CaptureNotice>
     public nonisolated let levels: AsyncBroadcaster<AudioLevel>
 
@@ -39,12 +42,14 @@ public actor CaptureHub {
         system: any SystemAudioCapturing,
         microphone: any MicrophoneCapturing,
         scope: @escaping @Sendable () async -> SystemAudioScope = { .defaultScope },
+        microphonePlan: @escaping @Sendable () async -> MicrophoneStartPlan = { MicrophoneStartPlan() },
         notices: AsyncBroadcaster<CaptureNotice> = AsyncBroadcaster<CaptureNotice>(),
         levels: AsyncBroadcaster<AudioLevel> = AsyncBroadcaster<AudioLevel>(replayLatest: true)
     ) {
         self.system = system
         self.microphone = microphone
         self.scope = scope
+        self.microphonePlan = microphonePlan
         self.notices = notices
         self.levels = levels
         (failureStream, failureContinuation) = AsyncStream<String>.makeStream()
@@ -52,6 +57,29 @@ public actor CaptureHub {
 
     public var activeSources: Set<AudioSourceKind> {
         Set(sources.keys)
+    }
+
+    public var microphoneDeviceUID: String? {
+        sources[.microphone]?.deviceUID
+    }
+
+    public func handleDeviceChange(_ change: AudioDeviceChange) async {
+        guard let source = sources[.microphone] else { return }
+        switch change {
+        case .microphoneEngineReconfigured:
+            break
+        case .deviceListChanged, .defaultInputChanged:
+            let plan = await microphonePlan()
+            guard plan.options.deviceUID != source.deviceUID else { return }
+        case .defaultOutputChanged, .outputDataSourceChanged:
+            return
+        }
+        do {
+            try await restart(.microphone)
+        } catch {
+            failureContinuation.yield("microphone_restart_failed")
+            await stopSource(.microphone)
+        }
     }
 
     public var systemEffectiveScope: SystemAudioScope? {
@@ -88,15 +116,22 @@ public actor CaptureHub {
 
     public func restart(_ kind: AudioSourceKind) async throws {
         guard let source = sources[kind] else { return }
-        source.pumpTask?.cancel()
+        let generation = UUID()
+        var retiring = source
+        retiring.generation = generation
+        sources[kind] = retiring
         source.noticesTask?.cancel()
         await source.lease.release()
         let started = try await startCapture(kind)
-        var updated = source
+        guard var updated = sources[kind], updated.generation == generation else {
+            await started.lease.release()
+            return
+        }
         updated.lease = started.lease
-        updated.pumpTask = makePump(kind: kind, frames: started.frames, broadcaster: source.broadcaster)
+        updated.pumpTask = makePump(kind: kind, frames: started.frames, broadcaster: source.broadcaster, generation: generation)
         updated.noticesTask = makeNoticeForwarder(started.laterNotices)
         updated.effectiveScope = started.effectiveScope
+        updated.deviceUID = started.deviceUID
         sources[kind] = updated
     }
 
@@ -119,6 +154,7 @@ public actor CaptureHub {
         let effectiveScope: SystemAudioScope?
         let laterNotices: AsyncStream<CaptureNotice>?
         let lease: ResourceLease
+        var deviceUID: String?
     }
 
     private func startCapture(_ kind: AudioSourceKind) async throws -> StartedCapture {
@@ -137,13 +173,18 @@ public actor CaptureHub {
                 lease: ResourceLease(name: "systemAudio") { await system.stop() }
             )
         case .microphone:
-            let frames = try await microphone.start()
+            let plan = await microphonePlan()
+            if let notice = plan.notice {
+                notices.yield(notice)
+            }
+            let frames = try await microphone.start(options: plan.options)
             let microphone = self.microphone
             return StartedCapture(
                 frames: frames,
                 effectiveScope: nil,
                 laterNotices: nil,
-                lease: ResourceLease(name: "microphone") { await microphone.stop() }
+                lease: ResourceLease(name: "microphone") { await microphone.stop() },
+                deviceUID: plan.options.deviceUID
             )
         }
     }
@@ -160,18 +201,21 @@ public actor CaptureHub {
             throw error
         }
         let broadcaster = AsyncBroadcaster<PCMAudioFrame>()
+        let generation = UUID()
         sources[kind] = ActiveSource(
             broadcaster: broadcaster,
             lease: started.lease,
-            pumpTask: makePump(kind: kind, frames: started.frames, broadcaster: broadcaster),
+            pumpTask: makePump(kind: kind, frames: started.frames, broadcaster: broadcaster, generation: generation),
             noticesTask: makeNoticeForwarder(started.laterNotices),
-            effectiveScope: started.effectiveScope
+            effectiveScope: started.effectiveScope,
+            deviceUID: started.deviceUID,
+            generation: generation
         )
         startOrder.removeAll { $0 == kind }
         startOrder.append(kind)
     }
 
-    private func makePump(kind: AudioSourceKind, frames: AsyncStream<PCMAudioFrame>, broadcaster: AsyncBroadcaster<PCMAudioFrame>) -> Task<Void, Never> {
+    private func makePump(kind: AudioSourceKind, frames: AsyncStream<PCMAudioFrame>, broadcaster: AsyncBroadcaster<PCMAudioFrame>, generation: UUID) -> Task<Void, Never> {
         let levels = self.levels
         return Task { [weak self] in
             var meter = AudioLevelMeter()
@@ -183,7 +227,7 @@ public actor CaptureHub {
                 }
             }
             if !Task.isCancelled {
-                await self?.sourceEndedUnexpectedly(kind, broadcaster: broadcaster)
+                await self?.sourceEndedUnexpectedly(kind, generation: generation)
             }
         }
     }
@@ -198,8 +242,8 @@ public actor CaptureHub {
         }
     }
 
-    private func sourceEndedUnexpectedly(_ kind: AudioSourceKind, broadcaster: AsyncBroadcaster<PCMAudioFrame>) async {
-        guard let source = sources[kind], source.broadcaster === broadcaster else { return }
+    private func sourceEndedUnexpectedly(_ kind: AudioSourceKind, generation: UUID) async {
+        guard let source = sources[kind], source.generation == generation else { return }
         failureContinuation.yield("\(kind.rawValue)_capture_ended")
         await stopSource(kind)
     }

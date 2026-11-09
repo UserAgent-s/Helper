@@ -13,7 +13,7 @@ public struct InactiveSystemAudioCapturing: SystemAudioCapturing {
 public struct InactiveMicrophoneCapturing: MicrophoneCapturing {
     public init() {}
 
-    public func start() async throws -> AsyncStream<PCMAudioFrame> {
+    public func start(options: MicrophoneCaptureOptions) async throws -> AsyncStream<PCMAudioFrame> {
         throw BootstrapUnavailableError.notYetImplemented("MicrophoneCapturing подключается на этапе 03")
     }
 

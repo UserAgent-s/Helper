@@ -4,6 +4,7 @@ import Foundation
 public actor UserDefaultsPreferredAudioSourceStore: PreferredAudioSourceStoring {
     public static let legacyBundleIDKey = "com.local.UserAgent057.preferredAudioSourceBundleID"
     public static let systemScopeKey = "com.local.UserAgent057.settings.audio.systemScope"
+    public static let microphoneSelectionKey = "com.local.UserAgent057.settings.audio.microphoneSelection"
     private let defaults: UserDefaults
 
     public init(defaults: UserDefaults = .standard) {
@@ -32,6 +33,18 @@ public actor UserDefaultsPreferredAudioSourceStore: PreferredAudioSourceStoring 
 
     public func setSystemAudioScope(_ scope: SystemAudioScope) async {
         Self.encode(scope, into: defaults)
+    }
+
+    public func microphoneSelection() async -> MicrophoneSelection {
+        guard let data = defaults.data(forKey: Self.microphoneSelectionKey),
+              let selection = try? JSONDecoder().decode(MicrophoneSelection.self, from: data)
+        else { return .systemDefaultExcludingContinuity }
+        return selection
+    }
+
+    public func setMicrophoneSelection(_ selection: MicrophoneSelection) async {
+        guard let data = try? JSONEncoder().encode(selection) else { return }
+        defaults.set(data, forKey: Self.microphoneSelectionKey)
     }
 
     public func preferredApplicationBundleID() async -> String? {

@@ -4,10 +4,11 @@ import Foundation
 
 public final class AVEngineMicrophoneCapturing: NSObject, MicrophoneCapturing, @unchecked Sendable {
     private let permissions: any PermissionsChecking
-    private let engine = AVAudioEngine()
     private let stateLock = NSLock()
+    private let reconfigurations = AsyncBroadcaster<AudioDeviceChange>()
+    private var engine: AVAudioEngine?
     private var continuation: AsyncStream<PCMAudioFrame>.Continuation?
-    private var tapInstalled = false
+    private var configurationObserver: NSObjectProtocol?
 
     public init(permissions: any PermissionsChecking = SystemPermissionsChecker()) {
         self.permissions = permissions
@@ -20,44 +21,92 @@ public final class AVEngineMicrophoneCapturing: NSObject, MicrophoneCapturing, @
         return body()
     }
 
-    public func start() async throws -> AsyncStream<PCMAudioFrame> {
+    public func engineReconfigurations() -> AsyncStream<AudioDeviceChange> {
+        reconfigurations.subscribe("microphoneEngine")
+    }
+
+    public func start(options: MicrophoneCaptureOptions) async throws -> AsyncStream<PCMAudioFrame> {
         let status = await permissions.request(.microphone)
         guard status == .authorized else {
             throw AudioCaptureError.permissionDenied(.microphone)
         }
 
+        let newEngine = AVAudioEngine()
+        let inputNode = newEngine.inputNode
+        if let uid = options.deviceUID, var deviceID = CoreAudioDeviceCatalog.deviceID(forUID: uid), let unit = inputNode.audioUnit {
+            let status = AudioUnitSetProperty(
+                unit,
+                kAudioOutputUnitProperty_CurrentDevice,
+                kAudioUnitScope_Global,
+                0,
+                &deviceID,
+                UInt32(MemoryLayout<AudioDeviceID>.size)
+            )
+            if status != noErr {
+                throw AudioCaptureError.microphoneDeviceUnavailable(uid)
+            }
+        }
+
         let (audioStream, audioContinuation) = AsyncStream<PCMAudioFrame>.makeStream()
-        withLockedState { continuation = audioContinuation }
+        withLockedState {
+            engine = newEngine
+            continuation = audioContinuation
+        }
 
-        let inputNode = engine.inputNode
+        let targetSampleRate = options.sampleRate
         let inputFormat = inputNode.outputFormat(forBus: 0)
-
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: inputFormat) { [weak self] buffer, _ in
             guard let self, let frame = Self.makeFrame(from: buffer, source: .microphone) else { return }
-            let converted = WhisperAudioFormatConverter.convert(frame)
+            let mono = PCMResampler.downmixToMono(samples: frame.samples, channelCount: frame.channelCount)
+            let converted = PCMAudioFrame(
+                samples: PCMResampler.resample(monoSamples: mono, fromRate: frame.sampleRate, toRate: targetSampleRate),
+                sampleRate: targetSampleRate,
+                channelCount: 1,
+                capturedAt: frame.capturedAt,
+                source: .microphone
+            )
             let cont = self.withLockedState { self.continuation }
             cont?.yield(converted)
         }
-        tapInstalled = true
 
-        engine.prepare()
-        try engine.start()
+        let reconfigurations = self.reconfigurations
+        let observer = NotificationCenter.default.addObserver(
+            forName: .AVAudioEngineConfigurationChange,
+            object: newEngine,
+            queue: nil
+        ) { _ in
+            reconfigurations.yield(.microphoneEngineReconfigured)
+        }
+        withLockedState { configurationObserver = observer }
 
+        do {
+            newEngine.prepare()
+            try newEngine.start()
+        } catch {
+            await stop()
+            throw error
+        }
         return audioStream
     }
 
     public func stop() async {
-        if tapInstalled {
-            engine.inputNode.removeTap(onBus: 0)
-            tapInstalled = false
-        }
-        if engine.isRunning {
-            engine.stop()
-        }
-        withLockedState {
-            continuation?.finish()
+        let (engineToStop, observer, cont) = withLockedState { () -> (AVAudioEngine?, NSObjectProtocol?, AsyncStream<PCMAudioFrame>.Continuation?) in
+            let result = (engine, configurationObserver, continuation)
+            engine = nil
+            configurationObserver = nil
             continuation = nil
+            return result
         }
+        if let observer {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        if let engineToStop {
+            engineToStop.inputNode.removeTap(onBus: 0)
+            if engineToStop.isRunning {
+                engineToStop.stop()
+            }
+        }
+        cont?.finish()
     }
 
     private static func makeFrame(from buffer: AVAudioPCMBuffer, source: AudioSourceKind) -> PCMAudioFrame? {

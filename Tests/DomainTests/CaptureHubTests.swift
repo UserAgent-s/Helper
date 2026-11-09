@@ -47,12 +47,14 @@ private actor ScriptedSystemAudio: SystemAudioCapturing {
 private actor ScriptedMicrophone: MicrophoneCapturing {
     private var continuation: AsyncStream<PCMAudioFrame>.Continuation?
     private let log: EventLog
+    private(set) var startedOptions: [MicrophoneCaptureOptions] = []
 
     init(log: EventLog = EventLog()) {
         self.log = log
     }
 
-    func start() async throws -> AsyncStream<PCMAudioFrame> {
+    func start(options: MicrophoneCaptureOptions) async throws -> AsyncStream<PCMAudioFrame> {
+        startedOptions.append(options)
         let (stream, continuation) = AsyncStream<PCMAudioFrame>.makeStream()
         self.continuation = continuation
         return stream
@@ -62,6 +64,18 @@ private actor ScriptedMicrophone: MicrophoneCapturing {
         await log.append("microphone.stop")
         continuation?.finish()
         continuation = nil
+    }
+
+    func emit(_ frame: PCMAudioFrame) {
+        continuation?.yield(frame)
+    }
+}
+
+private actor MutablePlan {
+    var plan = MicrophoneStartPlan(options: MicrophoneCaptureOptions(deviceUID: "USBHeadset"))
+
+    func set(_ plan: MicrophoneStartPlan) {
+        self.plan = plan
     }
 }
 
@@ -182,6 +196,44 @@ private func waitUntil(timeout: Duration = .seconds(2), _ condition: () async ->
         }
         #expect(received.count == 10)
         #expect(received.allSatisfy { $0.kind == .systemAudio })
+        await hub.stopAll()
+    }
+
+    @Test func microphoneRestartOnDeviceChangeKeepsSubscribers() async throws {
+        let microphone = ScriptedMicrophone()
+        let plan = MutablePlan()
+        let hub = CaptureHub(system: ScriptedSystemAudio(), microphone: microphone, microphonePlan: { await plan.plan })
+        let notices = hub.notices.subscribe("test")
+        let subscription = try await hub.acquire(.microphone, consumer: "recorder", policy: .unbounded)
+        let counter = FrameCounter()
+        let consumer = Task { for await f in subscription.frames { await counter.add(f) } }
+
+        await microphone.emit(frame(1))
+        await hub.handleDeviceChange(.deviceListChanged)
+        #expect(await microphone.startedOptions.count == 1)
+
+        let fallback = CaptureNotice.microphoneFellBack(from: "USBHeadset", to: "MacBook Pro Microphone", reason: .selectedDeviceMissing)
+        await plan.set(MicrophoneStartPlan(options: MicrophoneCaptureOptions(deviceUID: "BuiltInMic"), notice: fallback))
+        await hub.handleDeviceChange(.deviceListChanged)
+        await microphone.emit(frame(2))
+        await waitUntil { await counter.values.count == 2 }
+
+        #expect(await counter.values == [1, 2])
+        #expect(await microphone.startedOptions.map(\.deviceUID) == ["USBHeadset", "BuiltInMic"])
+        #expect(await hub.microphoneDeviceUID == "BuiltInMic")
+        var iterator = notices.makeAsyncIterator()
+        #expect(await iterator.next() == fallback)
+        await hub.stopAll()
+        await consumer.value
+    }
+
+    @Test func engineReconfigurationAlwaysRestartsMicrophone() async throws {
+        let microphone = ScriptedMicrophone()
+        let hub = CaptureHub(system: ScriptedSystemAudio(), microphone: microphone)
+        _ = try await hub.acquire(.microphone, consumer: "recorder", policy: .unbounded)
+        await hub.handleDeviceChange(.microphoneEngineReconfigured)
+        await hub.handleDeviceChange(.defaultOutputChanged)
+        #expect(await microphone.startedOptions.count == 2)
         await hub.stopAll()
     }
 }

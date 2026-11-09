@@ -123,9 +123,12 @@ import Testing
         let recorder = CallRecorder()
         let coordinator = makeCoordinator(recorder: recorder, answersStartDelay: .milliseconds(30), recordingStartDelay: .milliseconds(5))
 
-        async let first = coordinator.requestTransition(to: .answers)
+        let first = Task { await coordinator.requestTransition(to: .answers) }
+        while !(await recorder.events.contains("answers.start.begin")) {
+            await Task.yield()
+        }
         async let second = coordinator.requestTransition(to: .recording)
-        _ = await (first, second)
+        _ = await (first.value, second)
 
         let events = await recorder.events
         #expect(events == [

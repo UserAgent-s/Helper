@@ -64,6 +64,10 @@ struct AnswerOverlayContentView: View {
             return "«\(missingBundleID)» " + loc("не запущено, слушаю весь системный звук")
         case .systemCaptureRestarted:
             return loc("Захват системного звука перезапущен")
+        case .microphoneFellBack(_, let to, .continuityDefault), .microphoneFellBack(_, let to, .continuitySelected):
+            return loc("Микрофон iPhone пропущен, пишу с") + " «\(to)»"
+        case .microphoneFellBack(_, let to, .selectedDeviceMissing):
+            return loc("Выбранный микрофон недоступен, пишу с") + " «\(to)»"
         }
     }
 

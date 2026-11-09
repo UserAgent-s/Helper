@@ -41,7 +41,28 @@ struct AudioSettingsTab: View {
                     Button(loc("Весь системный звук")) { viewModel.selectWholeSystem() }
                     Button(loc("Только Chrome")) { viewModel.selectChromeOnlyPreset() }
                 }
-                Text(loc("По умолчанию захватывается весь системный звук. «Только Chrome» — пресет для Google Meet в браузере. Устройства вывода и ввода (наушники, динамики Mac) выбираются в системном меню звука macOS."))
+                Text(loc("По умолчанию захватывается весь системный звук. «Только Chrome» — пресет для Google Meet в браузере. Устройство вывода (наушники, динамики Mac) выбирается в системном меню звука macOS."))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            Section(loc("Микрофон")) {
+                Picker(loc("Микрофон"), selection: $viewModel.microphoneDeviceUID) {
+                    Text(loc("Системный по умолчанию (без iPhone)")).tag("")
+                    if !viewModel.microphoneDeviceUID.isEmpty,
+                       !viewModel.inputDevices.contains(where: { $0.uid == viewModel.microphoneDeviceUID }) {
+                        Text(loc("Выбранное устройство не подключено")).tag(viewModel.microphoneDeviceUID)
+                    }
+                    ForEach(viewModel.inputDevices) { device in
+                        if device.transport.isContinuity {
+                            Text(device.name + " " + loc("(iPhone, не используется)")).tag(device.uid).disabled(true)
+                        } else {
+                            Text(device.name).tag(device.uid)
+                        }
+                    }
+                }
+                .onChange(of: viewModel.microphoneDeviceUID) { viewModel.saveMicrophoneSelection() }
+                Button(loc("Обновить список")) { viewModel.refreshInputDevices() }
+                Text(loc("Микрофон iPhone через Continuity никогда не выбирается автоматически. Если выбранное устройство пропадёт, запись продолжится со встроенного микрофона."))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }

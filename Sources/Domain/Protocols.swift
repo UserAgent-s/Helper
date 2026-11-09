@@ -10,7 +10,7 @@ public protocol SystemAudioCapturing: Sendable {
 }
 
 public protocol MicrophoneCapturing: Sendable {
-    func start() async throws -> AsyncStream<PCMAudioFrame>
+    func start(options: MicrophoneCaptureOptions) async throws -> AsyncStream<PCMAudioFrame>
     func stop() async
 }
 

@@ -141,7 +141,7 @@ actor FakeMicrophoneCapturing: MicrophoneCapturing {
         (stream, continuation) = AsyncStream<PCMAudioFrame>.makeStream()
     }
 
-    func start() async throws -> AsyncStream<PCMAudioFrame> {
+    func start(options: MicrophoneCaptureOptions) async throws -> AsyncStream<PCMAudioFrame> {
         startCalled = true
         if let startError { throw startError }
         return stream

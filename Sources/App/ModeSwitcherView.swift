@@ -13,6 +13,7 @@ final class ModeSwitcherViewModel {
     private(set) var phase: ModePhase = .idle
     private(set) var failureReason: ModeFailureReason?
     private(set) var returnedToPassiveConfirmation: Bool = false
+    private(set) var captureNoticeText: String?
 
     var lastError: String? {
         guard let failureReason else { return nil }
@@ -30,8 +31,15 @@ final class ModeSwitcherViewModel {
         }
     }
 
-    init(modeCoordinator: ModeCoordinator) {
+    init(modeCoordinator: ModeCoordinator, captureNotices: AsyncStream<CaptureNotice>? = nil) {
         self.modeCoordinator = modeCoordinator
+        if let captureNotices {
+            Task { [weak self] in
+                for await notice in captureNotices {
+                    self?.captureNoticeText = AnswerOverlayContentView.text(for: notice)
+                }
+            }
+        }
         Task { [weak self] in
             guard let self else { return }
             for await state in self.modeCoordinator.stateUpdates() {
@@ -55,6 +63,9 @@ final class ModeSwitcherViewModel {
         currentMode = state.mode
         phase = state.phase
         failureReason = state.userFacingError
+        if state.mode == .passive {
+            captureNoticeText = nil
+        }
         returnedToPassiveConfirmation = wasNonPassive && state.mode == .passive && state.phase == .idle
     }
 }
@@ -118,6 +129,12 @@ struct ModeSwitcherView: View {
                 Text(loc("Приложение вернулось в Passive"))
                     .font(.caption)
                     .foregroundStyle(.green)
+            }
+
+            if let notice = viewModel.captureNoticeText {
+                Text(notice)
+                    .foregroundStyle(.orange)
+                    .font(.caption)
             }
 
             if let error = viewModel.lastError {

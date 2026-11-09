@@ -23,7 +23,7 @@ private actor FakeSystemAudioCapturing: SystemAudioCapturing {
 }
 
 private struct SilentMicrophoneCapturing: MicrophoneCapturing {
-    func start() async throws -> AsyncStream<PCMAudioFrame> { AsyncStream { $0.finish() } }
+    func start(options: MicrophoneCaptureOptions) async throws -> AsyncStream<PCMAudioFrame> { AsyncStream { $0.finish() } }
     func stop() async {}
 }
 

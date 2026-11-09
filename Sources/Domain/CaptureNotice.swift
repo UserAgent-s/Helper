@@ -1,6 +1,7 @@
 public enum CaptureNotice: Sendable, Equatable {
     case fellBackToWholeSystem(missingBundleID: String)
     case systemCaptureRestarted(reason: String)
+    case microphoneFellBack(from: String?, to: String, reason: MicrophoneFallbackReason)
 }
 
 public struct SystemAudioCaptureStart: Sendable {

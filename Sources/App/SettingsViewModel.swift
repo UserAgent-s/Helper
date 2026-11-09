@@ -27,6 +27,9 @@ final class SettingsViewModel {
 
     var preferredAudioSourceBundleID = ""
     private(set) var runningApplications: [(name: String, bundleID: String)] = []
+    var microphoneDeviceUID = ""
+    private(set) var inputDevices: [AudioDeviceInfo] = []
+    private let audioDeviceCatalog: (any AudioDeviceCataloging)?
 
     private(set) var screenRecordingStatus = PermissionStatus.notDetermined
     private(set) var microphoneStatus = PermissionStatus.notDetermined
@@ -111,8 +114,10 @@ final class SettingsViewModel {
         secretStoring: any SecretStoring,
         preferredAudioSource: any PreferredAudioSourceStoring,
         permissionsChecking: any PermissionsChecking,
-        recordingsDirectory: URL
+        recordingsDirectory: URL,
+        audioDeviceCatalog: (any AudioDeviceCataloging)? = nil
     ) {
+        self.audioDeviceCatalog = audioDeviceCatalog
         self.settingsStore = settingsStore
         self.secretStoring = secretStoring
         self.preferredAudioSource = preferredAudioSource
@@ -127,6 +132,11 @@ final class SettingsViewModel {
     func load() async {
         refreshAPIKeyStatus()
         preferredAudioSourceBundleID = await preferredAudioSource.preferredApplicationBundleID() ?? ""
+        refreshInputDevices()
+        switch await preferredAudioSource.microphoneSelection() {
+        case .systemDefaultExcludingContinuity: microphoneDeviceUID = ""
+        case .device(let uid): microphoneDeviceUID = uid
+        }
         screenRecordingStatus = await permissionsChecking.status(for: .screenRecording)
         microphoneStatus = await permissionsChecking.status(for: .microphone)
     }
@@ -156,6 +166,15 @@ final class SettingsViewModel {
     func savePreferredAudioSource() {
         let trimmed = preferredAudioSourceBundleID.trimmingCharacters(in: .whitespacesAndNewlines)
         Task { await preferredAudioSource.setPreferredApplicationBundleID(trimmed.isEmpty ? nil : trimmed) }
+    }
+
+    func refreshInputDevices() {
+        inputDevices = (audioDeviceCatalog?.devices() ?? []).filter(\.hasInput).sorted { $0.name < $1.name }
+    }
+
+    func saveMicrophoneSelection() {
+        let selection: MicrophoneSelection = microphoneDeviceUID.isEmpty ? .systemDefaultExcludingContinuity : .device(uid: microphoneDeviceUID)
+        Task { await preferredAudioSource.setMicrophoneSelection(selection) }
     }
 
     func requestScreenRecordingAccess() {

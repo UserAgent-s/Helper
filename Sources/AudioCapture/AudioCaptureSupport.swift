@@ -16,6 +16,7 @@ public enum AudioCaptureError: Error, Sendable, Equatable {
     case permissionDenied(PermissionKind)
     case noDisplayAvailable
     case targetApplicationNotFound(String)
+    case microphoneDeviceUnavailable(String)
 }
 
 extension AudioCaptureError: PermissionDeniedConvertible {
