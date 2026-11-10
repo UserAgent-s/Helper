@@ -146,6 +146,7 @@ let package = Package(
         .testTarget(
             name: "RealtimeClientTests",
             dependencies: ["RealtimeClient", "Persistence"],
+            exclude: ["Fixtures"],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
         .testTarget(

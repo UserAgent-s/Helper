@@ -49,6 +49,7 @@ final class CompositionRoot {
     let profileKnowledge: MarkdownFolderProfileProvider
     let sessionProfileFreezer: SessionProfileFreezer
     let claudeExpansion: ClaudeExpansionClient
+    let realtimeDigestStore: RealtimeDigestStore
     let sessionFinalizer: SessionFinalizer
     let sessionRecorder: SessionRecorder
 
@@ -129,6 +130,17 @@ final class CompositionRoot {
         self.sessionRepository = sessionRepository
         let sessionContext = SessionContextRelay()
         secretStoring = UserDefaultsSecretStore()
+        let hasAnthropicKey: @Sendable () -> Bool = { [secretStoring] in ((try? secretStoring.retrieveAPIKey(provider: .anthropic)) ?? nil)?.isEmpty == false }
+        let anthropicKey: @Sendable () -> String? = { [secretStoring] in (try? secretStoring.retrieveAPIKey(provider: .anthropic)) ?? nil }
+        let realtimeDigestStore = RealtimeDigestStore(
+            configuration: { [settingsStore] in settingsStore.profileFolderConfiguration() },
+            snapshot: { try await profileKnowledge.snapshot() },
+            legacyText: { [settingsStore] in settingsStore.backgroundContext },
+            cacheDirectory: Self.realtimeDigestDirectory(),
+            generator: ClaudeDigestGenerator(client: ClaudeMessagesClient(apiKey: anthropicKey), hasKey: hasAnthropicKey)
+        )
+        self.realtimeDigestStore = realtimeDigestStore
+        let instructionsFreezer = SessionInstructionsFreezer(recorder: sessionRepository)
         summaryGenerating = OpenAIResponsesSummaryClient(
             secretStoring: secretStoring,
             meetingRepository: meetingRepository,
@@ -174,8 +186,13 @@ final class CompositionRoot {
             captureHub: captureHub,
             realtime: realtimeAnswering,
             answerTrigger: manualAnswerTrigger,
-            instructionsProvider: { [profileKnowledge] in
-                RealtimeInstructions.system(for: settingsStore.answerLength, background: await profileKnowledge.realtimeDigest())
+            instructionsProvider: { [settingsStore] in
+                let sessionID = await sessionContext.sessionForCapture(mode: .answers)
+                return await instructionsFreezer.instructions(for: sessionID) {
+                    let profile = settingsStore.instructionProfile
+                    let digest = await realtimeDigestStore.current()
+                    return (profile, digest.source, RealtimeInstructions.system(for: settingsStore.answerLength, profile: profile, background: digest.text))
+                }
             },
             questionAnswerLogger: questionAnswerLogger,
             latencyRecording: latencyRecording,
@@ -270,7 +287,7 @@ final class CompositionRoot {
                 apiKey: { [secretStoring] in (try? secretStoring.retrieveAPIKey(provider: .anthropic)) ?? nil },
                 redactedLog: realtimeDiagLog
             ),
-            hasKey: { [secretStoring] in ((try? secretStoring.retrieveAPIKey(provider: .anthropic)) ?? nil)?.isEmpty == false },
+            hasKey: hasAnthropicKey,
             profile: { sessionID in
                 if let sessionID { return await sessionProfileFreezer.snapshot(for: sessionID) }
                 return try? await profileKnowledge.snapshot()
@@ -284,6 +301,15 @@ final class CompositionRoot {
         )
         self.claudeExpansion = claudeExpansion
         let prewarmSessionEvents = sessionCoordinator.events(subscriber: "claudePrewarm")
+        let instructionSessionEvents = sessionCoordinator.events(subscriber: "instructionsFreezer")
+        Task {
+            for await event in instructionSessionEvents {
+                switch event {
+                case .stopped(let id, _), .discarded(let id): await instructionsFreezer.forget(id)
+                default: break
+                }
+            }
+        }
         Task { await claudeExpansion.observe(prewarmSessionEvents) }
         let companionBridge = CompanionBridge(
             control: LiveCompanionDomain(modeCoordinator: modeCoordinator, answers: answersController, trigger: manualAnswerTrigger),
@@ -343,7 +369,7 @@ final class CompositionRoot {
             companionService: companionService,
             overlaySwitch: overlaySwitch,
             exportsDirectory: exportsDirectory,
-            profile: ProfileSettingsViewModel(settingsStore: settingsStore, provider: profileKnowledge)
+            profile: ProfileSettingsViewModel(settingsStore: settingsStore, provider: profileKnowledge, digestStore: realtimeDigestStore)
         )
         self.settingsViewModel = settingsViewModel
         companionPairingViewModel = CompanionPairingViewModel(
@@ -375,6 +401,11 @@ final class CompositionRoot {
                 await autoExporter.meetingFinished(meetingID)
             }
         }
+    }
+
+    private static func realtimeDigestDirectory() -> URL {
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first ?? FileManager.default.temporaryDirectory
+        return appSupport.appendingPathComponent("UserAgent057", isDirectory: true).appendingPathComponent("RealtimeDigests", isDirectory: true)
     }
 
     private static func databaseFilePath() -> String {

@@ -133,6 +133,10 @@ final class SettingsViewModel {
         didSet { settingsStore.claudeModel = claudeModel }
     }
 
+    var instructionProfile: InstructionProfile = .interviewFirstPerson {
+        didSet { settingsStore.instructionProfile = instructionProfile }
+    }
+
     var claudePrewarmOnSessionStart = true {
         didSet { settingsStore.claudePrewarmOnSessionStart = claudePrewarmOnSessionStart }
     }
@@ -185,6 +189,7 @@ final class SettingsViewModel {
     ) {
         self.profile = profile
         self.claudeModel = settingsStore.claudeModel
+        self.instructionProfile = settingsStore.instructionProfile
         self.claudePrewarmOnSessionStart = settingsStore.claudePrewarmOnSessionStart
         self.companionService = companionService
         self.overlaySwitch = overlaySwitch ?? OverlaySwitch()

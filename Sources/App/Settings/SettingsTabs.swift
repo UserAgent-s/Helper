@@ -203,6 +203,19 @@ struct ProfileSettingsTab: View {
             if let profile = viewModel.profile {
                 ProfileFolderSection(profile: profile)
             }
+            Section(loc("Живые ответы")) {
+                Picker(loc("Профиль инструкций"), selection: $viewModel.instructionProfile) {
+                    Text(loc("Собеседование: от первого лица, на языке вопроса")).tag(InstructionProfile.interviewFirstPerson)
+                    Text(loc("Двуязычный: ответ по-русски + короткая фраза на английском")).tag(InstructionProfile.bilingualAssist)
+                }
+                .accessibilityIdentifier("settings.answers.instructionProfile")
+                Text(loc("Профиль и выжимка применяются со следующей сессии; внутри сессии инструкции не меняются."))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                if let profile = viewModel.profile {
+                    ProfileDigestRow(profile: profile)
+                }
+            }
             Section(loc("Раскрытие через Claude")) {
                 Picker(loc("Модель по умолчанию"), selection: $viewModel.claudeModel) {
                     Text("Claude Sonnet 5.5").tag(ExpansionModelChoice.sonnet)
@@ -223,6 +236,30 @@ struct ProfileSettingsTab: View {
         }
         .formStyle(.grouped)
         .task { await viewModel.profile?.reload() }
+    }
+}
+
+struct ProfileDigestRow: View {
+    @Bindable var profile: ProfileSettingsViewModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(profile.digestStatusText)
+                    .font(.caption)
+                Spacer()
+                Button(profile.isGeneratingDigest ? loc("Генерируем…") : loc("Сгенерировать выжимку")) {
+                    Task { await profile.generateDigest() }
+                }
+                .disabled(profile.isGeneratingDigest)
+            }
+            if let error = profile.digestError {
+                Text(error).font(.caption).foregroundStyle(.red)
+            }
+            Text(loc("Живые ответы видят не весь профиль, а выжимку до 4000 токенов. Положите свою в 00-realtime.md в папке профиля — она берётся дословно, Claude не вызывается."))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
     }
 }
 

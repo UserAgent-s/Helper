@@ -17,6 +17,7 @@ final class ProfileSettingsViewModel {
     private let settingsStore: AppSettingsStore
     private let provider: MarkdownFolderProfileProvider
     private let limits: ProfileLimits
+    private let digestStore: RealtimeDigestStore?
 
     private(set) var folderPath: String?
     private(set) var candidates: [ProfileCandidate] = []
@@ -28,8 +29,12 @@ final class ProfileSettingsViewModel {
     private(set) var estimatedTokens = 0
     private(set) var fingerprint = ""
     private(set) var keywords: [String] = []
+    private(set) var digest: RealtimeDigest?
+    private(set) var digestError: String?
+    private(set) var isGeneratingDigest = false
 
-    init(settingsStore: AppSettingsStore, provider: MarkdownFolderProfileProvider, limits: ProfileLimits = .standard) {
+    init(settingsStore: AppSettingsStore, provider: MarkdownFolderProfileProvider, limits: ProfileLimits = .standard, digestStore: RealtimeDigestStore? = nil) {
+        self.digestStore = digestStore
         self.settingsStore = settingsStore
         self.provider = provider
         self.limits = limits
@@ -62,6 +67,7 @@ final class ProfileSettingsViewModel {
             estimatedTokens = snapshot.estimatedTokens
             fingerprint = snapshot.fingerprint
             keywords = await provider.transcriptionKeywords()
+            await refreshDigest()
             switch snapshot.source {
             case .markdownFolder:
                 status = snapshot.sizeStatus == .warning ? .warning : .ok
@@ -77,6 +83,45 @@ final class ProfileSettingsViewModel {
             status = .error(Self.message(for: error))
         } catch {
             status = .error(String(describing: error))
+        }
+    }
+
+    func refreshDigest() async {
+        guard let digestStore else { return }
+        digest = await digestStore.current(generateInBackground: false)
+    }
+
+    func generateDigest() async {
+        guard let digestStore, !isGeneratingDigest else { return }
+        isGeneratingDigest = true
+        digestError = nil
+        do {
+            digest = try await digestStore.generateNow()
+        } catch let error as RealtimeDigestError {
+            digestError = Self.message(for: error)
+        } catch {
+            digestError = String(describing: error)
+        }
+        isGeneratingDigest = false
+    }
+
+    var digestStatusText: String {
+        guard let digest else { return "" }
+        let tokens = String(format: loc("≈%d токенов"), digest.estimatedTokens)
+        switch digest.source {
+        case .file: return loc("Выжимка для живых ответов: файл 00-realtime.md") + " · " + tokens + (digest.overBudget ? " · " + loc("больше 4000 токенов") : "")
+        case .cached, .generated: return loc("Выжимка для живых ответов: сгенерирована Claude") + " · " + tokens
+        case .legacy: return loc("Выжимка для живых ответов: текст «Опыт работы»") + " · " + tokens
+        case .none: return loc("Выжимки для живых ответов нет")
+        }
+    }
+
+    static func message(for error: RealtimeDigestError) -> String {
+        switch error {
+        case .unavailable: return loc("Нужен ключ Anthropic")
+        case .noProfile: return loc("Сначала выберите папку профиля")
+        case .tooLong(let tokens, let budget): return String(format: loc("Claude вернул слишком длинную выжимку (≈%d из %d токенов)"), tokens, budget)
+        case .generationFailed(let code): return loc("Не удалось сгенерировать выжимку") + ": \(code)"
         }
     }
 

@@ -1,7 +1,7 @@
 import Domain
 import Foundation
 
-public final class SQLiteSessionRepository: SessionRepository, DeepExpansionStoring, Sendable {
+public final class SQLiteSessionRepository: SessionRepository, DeepExpansionStoring, SessionInstructionRecording, Sendable {
     private let connection: SQLiteDatabase
 
     public init(database: SQLiteDatabase) {
@@ -329,6 +329,21 @@ public final class SQLiteSessionRepository: SessionRepository, DeepExpansionStor
                 )
             }
         ).first
+    }
+
+    public func setInstructionProfile(sessionID: SessionID, profile: InstructionProfile, digestSource: RealtimeDigestSource) async throws {
+        try await connection.transaction([
+            ("UPDATE meetings SET instruction_profile = ?, realtime_digest_source = ?, updated_at = ? WHERE id = ?", [.text(profile.rawValue), .text(digestSource.rawValue), .text(Self.format(Date())), .text(Self.key(sessionID))]),
+        ])
+    }
+
+    public func instructionProfile(sessionID: SessionID) async throws -> InstructionProfile? {
+        try await connection.ensureReady()
+        return try await connection.query(
+            "SELECT instruction_profile FROM meetings WHERE id = ?",
+            [.text(Self.key(sessionID))],
+            map: { $0.string(0).flatMap(InstructionProfile.init(rawValue:)) }
+        ).first ?? nil
     }
 
     public func questionAnswerID(responseID: String) async throws -> UUID? {

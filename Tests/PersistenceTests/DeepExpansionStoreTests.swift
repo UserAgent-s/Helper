@@ -57,4 +57,15 @@ import Testing
         )
         #expect(try await repository.questionAnswerID(responseID: "resp_x") == id)
     }
+
+    @Test func instructionProfileIsRecordedPerSession() async throws {
+        let database = SQLiteDatabase(path: ":memory:")
+        let repository = SQLiteSessionRepository(database: database)
+        let a = try await repository.create(kind: .assistant, mode: .answers, at: Date(timeIntervalSince1970: 1_793_000_000))
+        let b = try await repository.create(kind: .assistant, mode: .answers, at: Date(timeIntervalSince1970: 1_793_000_100))
+        #expect(try await repository.instructionProfile(sessionID: a.id) == nil)
+        try await repository.setInstructionProfile(sessionID: a.id, profile: .bilingualAssist, digestSource: .cached)
+        #expect(try await repository.instructionProfile(sessionID: a.id) == .bilingualAssist)
+        #expect(try await repository.instructionProfile(sessionID: b.id) == nil)
+    }
 }

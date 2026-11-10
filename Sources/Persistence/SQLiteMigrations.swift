@@ -149,5 +149,9 @@ enum SQLiteMigrations {
             "CREATE INDEX idx_deep_expansions_parent ON deep_expansions(parent_id)",
             "CREATE INDEX idx_qa_entries_response ON qa_entries(response_id)",
         ]),
+        SQLiteMigration(version: 6, statements: [
+            "ALTER TABLE meetings ADD COLUMN instruction_profile TEXT",
+            "ALTER TABLE meetings ADD COLUMN realtime_digest_source TEXT",
+        ]),
     ]
 }

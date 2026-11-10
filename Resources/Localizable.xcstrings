@@ -4808,6 +4808,420 @@
           }
         }
       }
+    },
+    "Живые ответы": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Живые ответы"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Live answers"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Живі відповіді"
+          }
+        }
+      }
+    },
+    "Профиль инструкций": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Профиль инструкций"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Instruction profile"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Профіль інструкцій"
+          }
+        }
+      }
+    },
+    "Собеседование: от первого лица, на языке вопроса": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Собеседование: от первого лица, на языке вопроса"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Interview: first person, in the question's language"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Співбесіда: від першої особи, мовою питання"
+          }
+        }
+      }
+    },
+    "Двуязычный: ответ по-русски + короткая фраза на английском": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Двуязычный: ответ по-русски + короткая фраза на английском"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilingual: answer in Russian + a short English phrase"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Двомовний: відповідь російською + коротка фраза англійською"
+          }
+        }
+      }
+    },
+    "Профиль и выжимка применяются со следующей сессии; внутри сессии инструкции не меняются.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Профиль и выжимка применяются со следующей сессии; внутри сессии инструкции не меняются."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profile and digest apply from the next session; instructions never change within a session."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Профіль і вижимка застосовуються з наступної сесії; всередині сесії інструкції не змінюються."
+          }
+        }
+      }
+    },
+    "Генерируем…": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Генерируем…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generating…"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Генеруємо…"
+          }
+        }
+      }
+    },
+    "Сгенерировать выжимку": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сгенерировать выжимку"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generate digest"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Згенерувати вижимку"
+          }
+        }
+      }
+    },
+    "Живые ответы видят не весь профиль, а выжимку до 4000 токенов. Положите свою в 00-realtime.md в папке профиля — она берётся дословно, Claude не вызывается.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Живые ответы видят не весь профиль, а выжимку до 4000 токенов. Положите свою в 00-realtime.md в папке профиля — она берётся дословно, Claude не вызывается."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Live answers see a digest of up to 4000 tokens, not the whole profile. Put your own in 00-realtime.md in the profile folder — it is used verbatim and Claude is not called."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Живі відповіді бачать не весь профіль, а вижимку до 4000 токенів. Покладіть свою в 00-realtime.md у теці профілю — вона береться дослівно, Claude не викликається."
+          }
+        }
+      }
+    },
+    "≈%d токенов": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "≈%d токенов"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "≈%d tokens"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "≈%d токенів"
+          }
+        }
+      }
+    },
+    "Выжимка для живых ответов: файл 00-realtime.md": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выжимка для живых ответов: файл 00-realtime.md"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Live-answer digest: 00-realtime.md file"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вижимка для живих відповідей: файл 00-realtime.md"
+          }
+        }
+      }
+    },
+    "больше 4000 токенов": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "больше 4000 токенов"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "over 4000 tokens"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "понад 4000 токенів"
+          }
+        }
+      }
+    },
+    "Выжимка для живых ответов: сгенерирована Claude": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выжимка для живых ответов: сгенерирована Claude"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Live-answer digest: generated by Claude"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вижимка для живих відповідей: згенерована Claude"
+          }
+        }
+      }
+    },
+    "Выжимка для живых ответов: текст «Опыт работы»": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выжимка для живых ответов: текст «Опыт работы»"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Live-answer digest: «Work experience» text"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вижимка для живих відповідей: текст «Досвід роботи»"
+          }
+        }
+      }
+    },
+    "Выжимки для живых ответов нет": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выжимки для живых ответов нет"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No live-answer digest"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вижимки для живих відповідей немає"
+          }
+        }
+      }
+    },
+    "Нужен ключ Anthropic": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нужен ключ Anthropic"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An Anthropic key is required"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Потрібен ключ Anthropic"
+          }
+        }
+      }
+    },
+    "Сначала выберите папку профиля": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сначала выберите папку профиля"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose the profile folder first"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Спершу виберіть теку профілю"
+          }
+        }
+      }
+    },
+    "Claude вернул слишком длинную выжимку (≈%d из %d токенов)": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude вернул слишком длинную выжимку (≈%d из %d токенов)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude returned a digest that is too long (≈%d of %d tokens)"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude повернув задовгу вижимку (≈%d з %d токенів)"
+          }
+        }
+      }
+    },
+    "Не удалось сгенерировать выжимку": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось сгенерировать выжимку"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not generate the digest"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не вдалося згенерувати вижимку"
+          }
+        }
+      }
     }
   }
 }

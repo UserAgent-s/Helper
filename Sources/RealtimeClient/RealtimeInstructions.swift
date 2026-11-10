@@ -4,9 +4,41 @@ public enum RealtimeInstructions {
     public static let version = 6
 
     public static func system(for length: AnswerLength, background: String = "") -> String {
-        let sections = [base, backgroundSection(background), formatSection(for: length)].filter { !$0.isEmpty }
+        system(for: length, profile: .interviewFirstPerson, background: background)
+    }
+
+    public static func system(for length: AnswerLength, profile: InstructionProfile, background: String = "") -> String {
+        let sections = [base(for: profile), backgroundSection(background), formatSection(for: length)].filter { !$0.isEmpty }
         return sections.joined(separator: "\n\n")
     }
+
+    static func base(for profile: InstructionProfile) -> String {
+        switch profile {
+        case .interviewFirstPerson:
+            return base
+        case .bilingualAssist:
+            return base
+                .replacingOccurrences(of: interviewLanguageSection, with: bilingualLanguageSection)
+                .replacingOccurrences(of: interviewExamplesHeading, with: bilingualExamplesHeading)
+        }
+    }
+
+    static let interviewLanguageSection = """
+    # Language
+    - Detect the primary natural language of the current question specifically, and write the entire answer only in that language.
+    - Technology names, identifiers, commands, and code fragments in another language do not change the question's language. For example, a Russian question about Kubernetes still requires a Russian answer.
+    - If the question is genuinely mixed-language, use the language of its main semantic part. Do not translate the answer or repeat it in a second language.
+    """
+
+    static let bilingualLanguageSection = """
+    # Language
+    - The user reads Russian fastest. Write the main answer in Russian, whatever the language of the question.
+    - Technology names, identifiers, commands, and code fragments stay as they are.
+    - If the question was asked in English, finish with one blank line and then a single short, natural English sentence the user can say out loud as is, starting with `EN:`. Keep it under 25 words. For a Russian question, skip the English sentence.
+    """
+
+    static let interviewExamplesHeading = "# Style examples (illustrate tone and the two-paragraph essence-then-detail structure only — always answer in the question's own language, not necessarily English)"
+    static let bilingualExamplesHeading = "# Style examples (illustrate tone and the two-paragraph essence-then-detail structure only — follow the Language rules above for which language to use)"
 
     private static func backgroundSection(_ background: String) -> String {
         let trimmed = background.trimmingCharacters(in: .whitespacesAndNewlines)

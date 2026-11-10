@@ -40,6 +40,7 @@ final class AppSettingsStore: @unchecked Sendable {
         static let profileFolderBookmark = "com.local.UserAgent057.settings.profile.folderBookmark"
         static let profileSelectedPaths = "com.local.UserAgent057.settings.profile.selectedPaths"
         static let claudeModel = "com.local.UserAgent057.settings.claude.model"
+        static let instructionProfile = "com.local.UserAgent057.settings.answers.instructionProfile"
         static let claudePrewarm = "com.local.UserAgent057.settings.claude.prewarmOnSessionStart"
     }
 
@@ -160,6 +161,11 @@ final class AppSettingsStore: @unchecked Sendable {
     var claudeModel: ExpansionModelChoice {
         get { ExpansionModelChoice(rawValue: defaults.string(forKey: Keys.claudeModel) ?? "") ?? .sonnet }
         set { defaults.set(newValue.rawValue, forKey: Keys.claudeModel) }
+    }
+
+    var instructionProfile: InstructionProfile {
+        get { InstructionProfile(rawValue: defaults.string(forKey: Keys.instructionProfile) ?? "") ?? .interviewFirstPerson }
+        set { defaults.set(newValue.rawValue, forKey: Keys.instructionProfile) }
     }
 
     var claudePrewarmOnSessionStart: Bool {

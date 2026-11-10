@@ -224,3 +224,28 @@ final class Sequence: @unchecked Sendable {
         #expect(turn.texts.last?.contains("Уточнение: покажи пример") == true)
     }
 }
+
+@Suite struct ClaudeDigestGeneratorTests {
+    private let snapshot = ProfileSnapshot(source: .markdownFolder(path: "/p"), documents: [ProfileDocument(relativePath: "01.md", text: "PHP")], fingerprint: "f", estimatedTokens: 1, sizeStatus: .ok)
+
+    @Test func requestHasWordBudgetAndProfileCachePoint() throws {
+        let first = ClaudeDigestGenerator.request(snapshot: snapshot, tokenBudget: 4_000, attempt: 1, model: .sonnet)
+        let second = ClaudeDigestGenerator.request(snapshot: snapshot, tokenBudget: 4_000, attempt: 2, model: .sonnet)
+        #expect(first.messages.first?.texts.first?.contains("900 слов") == true)
+        #expect(second.messages.first?.texts.first?.contains("600 слов") == true)
+        #expect(second.messages.first?.texts.first?.contains("сократи") == true)
+        #expect(first.system.count == 2)
+        #expect(first.system[1].cacheTTL == .oneHour)
+        #expect(first.system == second.system)
+        try first.validate()
+    }
+
+    @Test func generatesTextFromStream() async throws {
+        let generator = ClaudeDigestGenerator(client: ClaudeMessagesClient(transport: try FakeAnthropicTransport.fixture("thinking_then_text"), apiKey: { "k" }), hasKey: { true })
+        #expect(try await generator.generateDigest(from: snapshot, tokenBudget: 4_000, attempt: 1) == "В RedCore я вёл платежи.")
+        let refusing = ClaudeDigestGenerator(client: ClaudeMessagesClient(transport: try FakeAnthropicTransport.fixture("refusal_preoutput"), apiKey: { "k" }), hasKey: { true })
+        await #expect(throws: RealtimeDigestError.generationFailed("refused")) {
+            _ = try await refusing.generateDigest(from: snapshot, tokenBudget: 4_000, attempt: 1)
+        }
+    }
+}

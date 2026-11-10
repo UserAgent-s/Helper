@@ -78,7 +78,7 @@ import Testing
         try await makePopulatedLegacyDatabase(at: path)
 
         let database = SQLiteDatabase(path: path)
-        #expect(try await database.appliedMigrationVersions() == [1, 2, 3, 4, 5])
+        #expect(try await database.appliedMigrationVersions() == [1, 2, 3, 4, 5, 6])
         #expect(try await strings(database, "SELECT kind || '|' || pinned || '|' || last_activity_at || '|' || title_source FROM meetings") == ["recording|0|2026-10-01T10:30:00Z|legacy"])
         #expect(try await strings(database, "SELECT speaker || '|' || origin || '|' || captured_at FROM utterances ORDER BY started_ms") == [
             "them|whisper_local|2026-10-01T10:01:05Z",
@@ -169,7 +169,7 @@ import Testing
         let backupDate = try FileManager.default.attributesOfItem(atPath: backup.path)[.modificationDate] as? Date
 
         let reopened = SQLiteDatabase(path: path)
-        #expect(try await reopened.appliedMigrationVersions() == [1, 2, 3, 4, 5])
+        #expect(try await reopened.appliedMigrationVersions() == [1, 2, 3, 4, 5, 6])
         #expect(try await count(reopened, "SELECT COUNT(*) FROM session_spans") == 1)
         #expect(try await count(reopened, "SELECT COUNT(*) FROM search_aliases") == 10)
         #expect(try await count(reopened, "SELECT COUNT(*) FROM utterances_fts WHERE utterances_fts MATCH 'kafka'") == 1)
@@ -194,7 +194,7 @@ import Testing
         #expect(FileManager.default.fileExists(atPath: SQLiteDatabase.backupURL(forDatabaseAt: path, beforeVersion: 4).path))
 
         let recovered = SQLiteDatabase(path: path)
-        #expect(try await recovered.appliedMigrationVersions() == [1, 2, 3, 4, 5])
+        #expect(try await recovered.appliedMigrationVersions() == [1, 2, 3, 4, 5, 6])
         #expect(try await count(recovered, "SELECT COUNT(*) FROM utterances") == 2)
     }
 }
