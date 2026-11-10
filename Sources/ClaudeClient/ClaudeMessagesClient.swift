@@ -57,6 +57,28 @@ public struct ClaudeMessagesClient: Sendable {
         }
     }
 
+    public func countTokens(_ request: ClaudeMessagesRequest, endpoint: URL = ClaudeModelCatalog.countTokensEndpoint) async -> Result<Int, ClaudeFailure> {
+        guard let key = apiKey(), !key.isEmpty else { return .failure(.missingAPIKey) }
+        let urlRequest: URLRequest
+        do {
+            urlRequest = try request.countTokensURLRequest(apiKey: key, endpoint: endpoint)
+        } catch let error as ClaudeRequestError {
+            return .failure(.invalidRequest(error))
+        } catch {
+            return .failure(.malformed("request encoding"))
+        }
+        do {
+            let (status, body) = try await transport.send(urlRequest)
+            guard (200..<300).contains(status) else { return .failure(Self.httpFailure(status: status, body: body)) }
+            guard let object = try? JSONSerialization.jsonObject(with: body) as? [String: Any], let tokens = object["input_tokens"] as? Int else {
+                return .failure(.malformed("count_tokens response"))
+            }
+            return .success(tokens)
+        } catch {
+            return .failure(.transport(Self.describe(error)))
+        }
+    }
+
     private func makeURLRequest(_ request: ClaudeMessagesRequest) -> Result<URLRequest, ClaudeFailure> {
         guard let key = apiKey(), !key.isEmpty else { return .failure(.missingAPIKey) }
         do {

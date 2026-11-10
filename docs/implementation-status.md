@@ -1402,3 +1402,21 @@ M1 по коду закрыт (S1.1–S1.7). Ручной чек-лист M1 в 
 - `store.js`: `expandTarget`, `pointIdAt`, горячие клавиши `E` (только при capability) и `Escape`. `app.js`: `sendCommand` возвращает cmdId; ack-отказ команды `expand` снимает pending; `deep.*` применяются только при seq > lastSeq.
 - Тесты: `WebClaudeJSCTests` 9 (поток пункта со статистикой и follow-up-доступностью, дедуп повторного клика, явный отказ, аргументы follow-up, отказ/переподключение/snapshot освобождают pending, gap и неизвестный requestId, ограничение 8 с сохранением идущего, фикстуры сервера, горячие клавиши). `node --check` для модулей.
 - Не сделано: визуальная проверка в браузере и на телефоне (владелец), рендер Markdown в раскрытии (показывается как текст с переносами).
+
+### S5.7 verify-real для Claude и профиля (подготовка; платный прогон — владелец)
+
+- `ClaudeMessagesRequest.countTokensBody/countTokensURLRequest` (только `model`, `system`, `messages`; `POST /v1/messages/count_tokens`, без beta-заголовка) и `ClaudeMessagesClient.countTokens` → `input_tokens`. Тесты `ClaudeCountTokensTests` 2 (golden тела, разбор ответа и ошибок).
+- `Tests/RealAPITests/ClaudeExpansionRealTests.swift` (включается только при `RUN_REAL_API_TESTS=1` и `ANTHROPIC_API_KEY`; профиль из `UA057_PROFILE_DIR` или синтетический ≈ 40 абзацев): `countTokensOfProfileVersusEstimate` (Sonnet и Opus, сравнение с `ProfileTokenEstimator`), `prewarmThenEveryExpansionReadsTheCache` (prewarm пишет кеш без выходных токенов, два раскрытия Sonnet с `cache_read > 0`), `ttftPercentiles` для Sonnet и Opus (`CLAUDE_LATENCY_ROUNDS`, по умолчанию 5, максимум 10; все раунды должны попасть в кеш). Печатают `VERIFY_REAL claude …` со стоимостью по `ClaudeCostEstimator`. RealAPITests теперь зависит от ClaudeClient и ProfileKnowledge.
+- `make verify-real-claude` (нужен `ANTHROPIC_API_KEY`, лог `.build/verify-real-claude.log`); команда с ключом из настроек приложения — в troubleshooting.md.
+- Платный прогон не выполнялся. Таблица для владельца:
+
+| Метрика | Sonnet 5.5 | Opus 5.5 |
+|---|---|---|
+| count_tokens (rules + профиль) | | |
+| Оценка приложения, токены | | |
+| prewarm: запись кеша / стоимость | | — |
+| Раскрытие №1/№2: cache_read | | — |
+| TTFT p50 / p95, мс | | |
+| Стоимость N раундов | | |
+
+- Решение по модели по умолчанию (сейчас Sonnet) и TTL (сейчас 1 час) принимается по этим цифрам; до прогона остаются значения из ADR 0007.

@@ -176,7 +176,7 @@ let package = Package(
         ),
         .testTarget(
             name: "RealAPITests",
-            dependencies: ["RealtimeClient", "Domain", "Diagnostics"],
+            dependencies: ["RealtimeClient", "Domain", "Diagnostics", "ClaudeClient", "ProfileKnowledge"],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
     ]

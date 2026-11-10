@@ -94,6 +94,25 @@ public struct ClaudeMessagesRequest: Sendable, Equatable {
         return try encoder.encode(WireRequest(self))
     }
 
+    public func countTokensBody() throws -> Data {
+        try validate()
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
+        let wire = WireRequest(self)
+        return try encoder.encode(CountTokensWire(model: wire.model, system: wire.system, messages: wire.messages))
+    }
+
+    public func countTokensURLRequest(apiKey: String, endpoint: URL = ClaudeModelCatalog.countTokensEndpoint) throws -> URLRequest {
+        var request = URLRequest(url: endpoint, timeoutInterval: 60)
+        request.httpMethod = "POST"
+        request.httpBody = try countTokensBody()
+        request.setValue("application/json", forHTTPHeaderField: "content-type")
+        request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
+        request.setValue(ClaudeModelCatalog.apiVersion, forHTTPHeaderField: "anthropic-version")
+        request.setValue("application/json", forHTTPHeaderField: "accept")
+        return request
+    }
+
     public func urlRequest(apiKey: String, endpoint: URL = ClaudeModelCatalog.endpoint, timeout: TimeInterval = 120) throws -> URLRequest {
         var request = URLRequest(url: endpoint, timeoutInterval: timeout)
         request.httpMethod = "POST"
@@ -118,6 +137,12 @@ public enum ClaudeRequestError: Error, Sendable, Equatable {
     case lastMessageMustBeUser
     case rolesMustAlternate
     case emptyText
+}
+
+private struct CountTokensWire: Encodable {
+    let model: String
+    let system: [WireRequest.SystemBlock]
+    let messages: [WireRequest.Message]
 }
 
 private struct WireRequest: Encodable {

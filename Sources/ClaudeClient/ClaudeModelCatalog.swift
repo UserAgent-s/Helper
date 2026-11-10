@@ -40,6 +40,7 @@ public enum ClaudeModelCatalog {
     public static let apiVersion = "2026-10-21"
     public static let serverFallbackBeta = "server-side-fallback-2026-07-01"
     public static let endpoint = URL(string: "https://api.anthropic.com/v1/messages")!
+    public static let countTokensEndpoint = URL(string: "https://api.anthropic.com/v1/messages/count_tokens")!
     public static let pricesCheckedOn = "2026-10-06"
 
     public static func info(_ model: ClaudeModel) -> ClaudeModelInfo {

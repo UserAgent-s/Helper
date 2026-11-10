@@ -130,3 +130,18 @@ CI не воспроизводит системный захват звука и
 - Если сертификат удалён из keychain, а `Config/DevSigning.local.xcconfig` остался, сборка Debug падает с «No certificate matching 'UserAgent057 Local Dev' found». Выполните `make dev-identity` снова или удалите этот файл, чтобы вернуться к ad-hoc.
 - `make verify-fast` собирает без подписи (`CODE_SIGNING_ALLOWED=NO`) и от сертификата не зависит. Release по-прежнему подписывает `scripts/sign-and-install.sh` тем же сертификатом.
 - Если веб-панель не открывается при выключенном брандмауэре, проверьте, что телефон в той же сети, а не в гостевой: гостевые и офисные сети часто изолируют клиентов друг от друга.
+
+## Замеры Claude и профиля (S5.7)
+
+Запуск (платно, около $0.5–1 за прогон: запись кеша профиля на 1 час для Sonnet и Opus плюс 2 + 2×N раскрытий):
+
+```sh
+ANTHROPIC_API_KEY="$(defaults read com.local.UserAgent057 com.local.UserAgent057.settings.anthropicAPIKey)" \
+UA057_PROFILE_DIR="$HOME/Documents/ChatGPT/Search work/Maksym_Biehishev_About_Me_2026-11-08" \
+CLAUDE_LATENCY_ROUNDS=5 make verify-real-claude
+```
+
+- Без `UA057_PROFILE_DIR` используется синтетический профиль; с ним — файлы по умолчанию (01, 02, 03), как в приложении.
+- Лог: `.build/verify-real-claude.log`; строки `VERIFY_REAL claude …` перенести в таблицу S5.7 в `docs/implementation-status.md`.
+- Что проверяется: `count_tokens` системы с профилем для Sonnet и Opus против оценки приложения; prewarm (`max_tokens: 0`) пишет кеш, следующие два раскрытия читают его (`cache_read > 0`); p50/p95 времени до первого текста для Sonnet и Opus на N раундах после прогрева, все раунды с попаданием в кеш.
+- Если `cache_read = 0`: проверить, что модель и `effort` в prewarm и в раскрытии совпадают, и что профиль больше 512 токенов.

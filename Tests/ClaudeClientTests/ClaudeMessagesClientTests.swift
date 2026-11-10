@@ -91,3 +91,26 @@ private final class Timeline: @unchecked Sendable {
         #expect(transport.requests.first?.value(forHTTPHeaderField: "accept") == "application/json")
     }
 }
+
+@Suite struct ClaudeCountTokensTests {
+    private func request() -> ClaudeMessagesRequest {
+        ClaudeMessagesRequest(model: .opus, maxTokens: 1_024, system: [ClaudeSystemBlock(text: "rules"), ClaudeSystemBlock(text: "<profile>p</profile>", cacheTTL: .oneHour)], messages: [.user("q")])
+    }
+
+    @Test func bodyHasOnlyModelSystemMessages() throws {
+        let json = String(decoding: try request().countTokensBody(), as: UTF8.self)
+        #expect(json == #"{"messages":[{"content":[{"text":"q","type":"text"}],"role":"user"}],"model":"claude-opus-5-5","system":[{"text":"rules","type":"text"},{"cache_control":{"ttl":"1h","type":"ephemeral"},"text":"<profile>p</profile>","type":"text"}]}"#)
+        let url = try request().countTokensURLRequest(apiKey: "k")
+        #expect(url.url?.absoluteString == "https://api.anthropic.com/v1/messages/count_tokens")
+        #expect(url.value(forHTTPHeaderField: "anthropic-version") == "2026-10-21")
+        #expect(url.value(forHTTPHeaderField: "anthropic-beta") == nil)
+    }
+
+    @Test func parsesInputTokensAndErrors() async throws {
+        let ok = FakeAnthropicTransport(sendBody: Data(#"{"input_tokens":31337}"#.utf8))
+        #expect(try await ClaudeMessagesClient(transport: ok, apiKey: { "k" }).countTokens(request()).get() == 31_337)
+        let bad = FakeAnthropicTransport(status: 400, sendBody: Data(#"{"error":{"type":"invalid_request_error","message":"m"}}"#.utf8))
+        #expect(await ClaudeMessagesClient(transport: bad, apiKey: { "k" }).countTokens(request()) == .failure(.http(status: 400, type: "invalid_request_error", message: "m")))
+        #expect(await ClaudeMessagesClient(transport: ok, apiKey: { nil }).countTokens(request()) == .failure(.missingAPIKey))
+    }
+}
