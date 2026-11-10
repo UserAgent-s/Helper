@@ -41,13 +41,13 @@ actor FakeResponsesAPITransport: ResponsesAPITransport {
 struct FakeSecretStore: SecretStoring {
     var apiKey: String?
 
-    func store(apiKey: String) throws {}
+    func store(apiKey: String, provider: SecretProvider) throws {}
 
-    func retrieveAPIKey() throws -> String? {
-        apiKey
+    func retrieveAPIKey(provider: SecretProvider) throws -> String? {
+        provider == .openAI ? apiKey : nil
     }
 
-    func deleteAPIKey() throws {}
+    func deleteAPIKey(provider: SecretProvider) throws {}
 }
 
 func makeSampleContent(title: String = "Планёрка") -> SummaryContent {

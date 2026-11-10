@@ -12,7 +12,7 @@ public struct DirectKeyCredentialProvider: RealtimeCredentialProviding {
     }
 
     public func currentCredential() async throws -> RealtimeCredential {
-        guard let apiKey = try secretStoring.retrieveAPIKey(), !apiKey.isEmpty else {
+        guard let apiKey = try secretStoring.retrieveAPIKey(provider: .openAI), !apiKey.isEmpty else {
             throw DirectKeyCredentialError.missingAPIKey
         }
         return RealtimeCredential(apiKey: apiKey)

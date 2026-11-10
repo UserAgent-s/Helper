@@ -46,10 +46,18 @@ final class SettingsViewModel {
 
     var apiKeyInput = ""
     private(set) var hasStoredAPIKey = false
-    private(set) var hasAPIKeyFormatWarning = false
+    private(set) var apiKeyWarning: String?
+
+    var anthropicAPIKeyInput = ""
+    private(set) var hasStoredAnthropicAPIKey = false
+    private(set) var anthropicAPIKeyWarning: String?
 
     var apiKeyStatusText: String {
         hasStoredAPIKey ? loc("сохранён") : loc("не задан")
+    }
+
+    var anthropicAPIKeyStatusText: String {
+        hasStoredAnthropicAPIKey ? loc("сохранён") : loc("не задан")
     }
 
     let audio: AudioSettingsViewModel
@@ -290,25 +298,49 @@ final class SettingsViewModel {
     }
 
     func refreshAPIKeyStatus() {
-        let stored = (try? secretStoring.retrieveAPIKey()) ?? nil
-        hasStoredAPIKey = stored?.isEmpty == false
+        hasStoredAPIKey = ((try? secretStoring.retrieveAPIKey(provider: .openAI)) ?? nil)?.isEmpty == false
+        hasStoredAnthropicAPIKey = ((try? secretStoring.retrieveAPIKey(provider: .anthropic)) ?? nil)?.isEmpty == false
     }
 
     func saveAPIKey() {
-        let trimmed = apiKeyInput.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard APIKeyFormatValidator.isPlausibleFormat(trimmed) else {
-            hasAPIKeyFormatWarning = true
-            return
-        }
-        hasAPIKeyFormatWarning = false
-        try? secretStoring.store(apiKey: trimmed)
-        apiKeyInput = ""
-        refreshAPIKeyStatus()
+        apiKeyWarning = save(apiKeyInput, provider: .openAI)
+        if apiKeyWarning == nil { apiKeyInput = "" }
     }
 
     func deleteAPIKey() {
-        try? secretStoring.deleteAPIKey()
+        try? secretStoring.deleteAPIKey(provider: .openAI)
         refreshAPIKeyStatus()
+    }
+
+    func saveAnthropicAPIKey() {
+        anthropicAPIKeyWarning = save(anthropicAPIKeyInput, provider: .anthropic)
+        if anthropicAPIKeyWarning == nil { anthropicAPIKeyInput = "" }
+    }
+
+    func deleteAnthropicAPIKey() {
+        try? secretStoring.deleteAPIKey(provider: .anthropic)
+        refreshAPIKeyStatus()
+    }
+
+    private func save(_ input: String, provider: SecretProvider) -> String? {
+        switch APIKeyFormatValidator.check(input, for: provider) {
+        case .valid(let key):
+            do {
+                try secretStoring.store(apiKey: key, provider: provider)
+            } catch {
+                return loc("Не удалось сохранить ключ")
+            }
+            refreshAPIKeyStatus()
+            return nil
+        case .belongsTo(.anthropic):
+            return loc("Это ключ Anthropic (sk-ant-…) — вставьте его в поле Anthropic")
+        case .belongsTo(.openAI):
+            return loc("Это ключ OpenAI — вставьте его в поле OpenAI")
+        case .invalidFormat:
+            return provider == .openAI
+                ? loc("Формат ключа выглядит некорректным (ожидается sk-…)")
+                : loc("Формат ключа выглядит некорректным (ожидается sk-ant-…)")
+        }
     }
 
     func requestScreenRecordingAccess() {

@@ -369,8 +369,9 @@ struct AccountsSettingsTab: View {
         Form {
             Section(loc("API-ключ OpenAI")) {
                 SecureField("sk-…", text: $viewModel.apiKeyInput)
-                if viewModel.hasAPIKeyFormatWarning {
-                    Text(loc("Формат ключа выглядит некорректным (ожидается sk-…)")).font(.caption).foregroundStyle(.red)
+                    .accessibilityIdentifier("settings.accounts.openaiKey")
+                if let warning = viewModel.apiKeyWarning {
+                    Text(warning).font(.caption).foregroundStyle(.red)
                 }
                 HStack {
                     Text(loc("Статус:") + " " + viewModel.apiKeyStatusText)
@@ -383,9 +384,21 @@ struct AccountsSettingsTab: View {
                 }
             }
             Section(loc("Anthropic (Claude)")) {
-                SecureField("sk-ant-…", text: .constant(""))
-                    .disabled(true)
-                Text(loc("Ключ Anthropic подключается на этапе M5."))
+                SecureField("sk-ant-…", text: $viewModel.anthropicAPIKeyInput)
+                    .accessibilityIdentifier("settings.accounts.anthropicKey")
+                if let warning = viewModel.anthropicAPIKeyWarning {
+                    Text(warning).font(.caption).foregroundStyle(.red)
+                }
+                HStack {
+                    Text(loc("Статус:") + " " + viewModel.anthropicAPIKeyStatusText)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button(loc("Сохранить")) { viewModel.saveAnthropicAPIKey() }
+                        .disabled(viewModel.anthropicAPIKeyInput.isEmpty)
+                    Button(loc("Удалить"), role: .destructive) { viewModel.deleteAnthropicAPIKey() }
+                }
+                Text(loc("Нужен для глубоких раскрытий через Claude. Хранится отдельно от ключа OpenAI."))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }

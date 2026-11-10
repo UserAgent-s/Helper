@@ -1,4 +1,5 @@
 import Foundation
+import Domain
 import Testing
 @testable import SecurityStore
 
@@ -38,5 +39,17 @@ import Testing
     @Test func deletingWhenNothingStoredDoesNotThrow() throws {
         let store = uniqueStore()
         try store.deleteAPIKey()
+    }
+
+    @Test func providersAreIsolated() throws {
+        let store = uniqueStore()
+        try store.store(apiKey: "sk-openai-value-1234567890", provider: .openAI)
+        try store.store(apiKey: "sk-ant-api03-anthropic-value-123456", provider: .anthropic)
+        #expect(try store.retrieveAPIKey(provider: .openAI) == "sk-openai-value-1234567890")
+        #expect(try store.retrieveAPIKey(provider: .anthropic) == "sk-ant-api03-anthropic-value-123456")
+        try store.deleteAPIKey(provider: .openAI)
+        #expect(try store.retrieveAPIKey(provider: .openAI) == nil)
+        #expect(try store.retrieveAPIKey(provider: .anthropic) == "sk-ant-api03-anthropic-value-123456")
+        try store.deleteAPIKey(provider: .anthropic)
     }
 }

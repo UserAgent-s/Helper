@@ -79,3 +79,9 @@
 - Удаление одной записи истории или всей истории (с подтверждением) — через экран «История» в приложении.
 - Полное удаление всех локальных данных: закрыть приложение, удалить папку `~/Library/Application Support/UserAgent057/`, и удалить API-ключ (Настройки → «Удалить» рядом с API-ключом, либо `defaults delete com.local.UserAgent057 com.local.UserAgent057.settings.openaiAPIKey`).
 - Whisper-модель кешируется CoreML/WhisperKit вне каталога приложения (стандартный кеш моделей); удаляется отдельно при необходимости освободить место.
+
+## API-ключи
+
+- Ключи OpenAI и Anthropic хранятся раздельно в UserDefaults приложения: `com.local.UserAgent057.settings.openaiAPIKey` и `com.local.UserAgent057.settings.anthropicAPIKey`. Это не Keychain: любой процесс под вашей учётной записью может прочитать файл настроек. Переход на Keychain отложен до стабильной подписи (`make dev-identity`).
+- Ключ Anthropic отправляется только в Anthropic, ключ OpenAI — только в OpenAI. Ключ `sk-ant-…` нельзя сохранить в поле OpenAI, и наоборот.
+- В диагностическом логе `realtime_diag.log` маскируются ключи `sk-…` и `sk-ant-…`, заголовки `Authorization: Bearer …` и значения `x-api-key`.

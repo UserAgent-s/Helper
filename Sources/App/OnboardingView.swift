@@ -11,7 +11,10 @@ struct OnboardingView: View {
 
     @State private var apiKeyInput = ""
     @State private var hasSavedAPIKey = false
-    @State private var hasAPIKeyFormatWarning = false
+    @State private var apiKeyWarning: String?
+    @State private var anthropicAPIKeyInput = ""
+    @State private var hasSavedAnthropicAPIKey = false
+    @State private var anthropicAPIKeyWarning: String?
     @State private var modelCheckOutcome: ModelCheckOutcome?
     @State private var isCheckingModel = false
     @State private var screenRecordingStatus = PermissionStatus.notDetermined
@@ -68,14 +71,15 @@ struct OnboardingView: View {
                     Text(loc("API-ключ OpenAI (для Answers и саммари)")).font(.headline)
                     SecureField("sk-…", text: $apiKeyInput)
                         .textFieldStyle(.roundedBorder)
-                    HStack {
-                        Button(loc("Сохранить в Keychain")) { saveAPIKey() }
-                            .disabled(apiKeyInput.isEmpty)
-                        if hasAPIKeyFormatWarning {
-                            Text(loc("Формат ключа выглядит некорректным")).font(.caption).foregroundStyle(.secondary)
-                        } else if hasSavedAPIKey {
-                            Text(loc("Сохранён")).font(.caption).foregroundStyle(.secondary)
-                        }
+                    keyStatusRow(input: apiKeyInput, warning: apiKeyWarning, saved: hasSavedAPIKey) {
+                        saveKey(provider: .openAI)
+                    }
+                    Text(loc("API-ключ Anthropic (для раскрытий через Claude)")).font(.headline)
+                        .padding(.top, 6)
+                    SecureField("sk-ant-…", text: $anthropicAPIKeyInput)
+                        .textFieldStyle(.roundedBorder)
+                    keyStatusRow(input: anthropicAPIKeyInput, warning: anthropicAPIKeyWarning, saved: hasSavedAnthropicAPIKey) {
+                        saveKey(provider: .anthropic)
                     }
                     Text(loc("Можно пропустить и добавить позже в Настройках."))
                         .font(.caption2)
@@ -144,17 +148,46 @@ struct OnboardingView: View {
         }
     }
 
-    private func saveAPIKey() {
-        let trimmed = apiKeyInput.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard APIKeyFormatValidator.isPlausibleFormat(trimmed) else {
-            hasAPIKeyFormatWarning = true
-            hasSavedAPIKey = false
-            return
+    private func keyStatusRow(input: String, warning: String?, saved: Bool, onSave: @escaping () -> Void) -> some View {
+        HStack {
+            Button(loc("Сохранить"), action: onSave)
+                .disabled(input.isEmpty)
+            if let warning {
+                Text(warning).font(.caption).foregroundStyle(.secondary)
+            } else if saved {
+                Text(loc("Сохранён")).font(.caption).foregroundStyle(.secondary)
+            }
         }
-        try? secretStoring.store(apiKey: trimmed)
-        apiKeyInput = ""
-        hasAPIKeyFormatWarning = false
-        hasSavedAPIKey = true
+    }
+
+    private func saveKey(provider: SecretProvider) {
+        let input = provider == .openAI ? apiKeyInput : anthropicAPIKeyInput
+        var warning: String?
+        var saved = false
+        switch APIKeyFormatValidator.check(input, for: provider) {
+        case .valid(let key):
+            if (try? secretStoring.store(apiKey: key, provider: provider)) != nil {
+                saved = true
+            } else {
+                warning = loc("Не удалось сохранить ключ")
+            }
+        case .belongsTo(.anthropic):
+            warning = loc("Это ключ Anthropic (sk-ant-…) — вставьте его в поле Anthropic")
+        case .belongsTo(.openAI):
+            warning = loc("Это ключ OpenAI — вставьте его в поле OpenAI")
+        case .invalidFormat:
+            warning = loc("Формат ключа выглядит некорректным")
+        }
+        switch provider {
+        case .openAI:
+            apiKeyWarning = warning
+            hasSavedAPIKey = saved
+            if saved { apiKeyInput = "" }
+        case .anthropic:
+            anthropicAPIKeyWarning = warning
+            hasSavedAnthropicAPIKey = saved
+            if saved { anthropicAPIKeyInput = "" }
+        }
     }
 
     private func checkModel() {

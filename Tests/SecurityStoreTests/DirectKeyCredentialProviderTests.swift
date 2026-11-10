@@ -5,9 +5,9 @@ import Testing
 private struct FakeSecretStore: SecretStoring {
     var apiKey: String?
 
-    func store(apiKey: String) throws {}
-    func retrieveAPIKey() throws -> String? { apiKey }
-    func deleteAPIKey() throws {}
+    func store(apiKey: String, provider: SecretProvider) throws {}
+    func retrieveAPIKey(provider: SecretProvider) throws -> String? { provider == .openAI ? apiKey : nil }
+    func deleteAPIKey(provider: SecretProvider) throws {}
 }
 
 @Suite struct DirectKeyCredentialProviderTests {

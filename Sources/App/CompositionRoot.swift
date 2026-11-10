@@ -369,7 +369,7 @@ final class CompositionRoot {
         return { message in
             lock.lock()
             defer { lock.unlock() }
-            let line = "\(Date()) \(message)\n"
+            let line = "\(Date()) \(SecretRedactor.redact(message))\n"
             if let data = line.data(using: .utf8) {
                 if FileManager.default.fileExists(atPath: path), let handle = FileHandle(forWritingAtPath: path) {
                     handle.seekToEndOfFile()

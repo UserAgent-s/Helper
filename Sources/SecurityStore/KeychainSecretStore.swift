@@ -16,10 +16,17 @@ public struct KeychainSecretStore: SecretStoring, Sendable {
         self.account = account
     }
 
-    public func store(apiKey: String) throws {
+    func service(for provider: SecretProvider) -> String {
+        switch provider {
+        case .openAI: service
+        case .anthropic: service + ".anthropic"
+        }
+    }
+
+    public func store(apiKey: String, provider: SecretProvider) throws {
         let data = Data(apiKey.utf8)
-        var query = baseQuery()
-        if try readData() != nil {
+        var query = baseQuery(provider)
+        if try readData(provider) != nil {
             let attributesToUpdate: [String: Any] = [kSecValueData as String: data]
             let status = SecItemUpdate(query as CFDictionary, attributesToUpdate as CFDictionary)
             guard status == errSecSuccess else { throw KeychainError.unexpectedStatus(status) }
@@ -31,23 +38,23 @@ public struct KeychainSecretStore: SecretStoring, Sendable {
         }
     }
 
-    public func retrieveAPIKey() throws -> String? {
-        guard let data = try readData() else { return nil }
+    public func retrieveAPIKey(provider: SecretProvider) throws -> String? {
+        guard let data = try readData(provider) else { return nil }
         guard let apiKey = String(data: data, encoding: .utf8) else {
             throw KeychainError.unexpectedItemFormat
         }
         return apiKey
     }
 
-    public func deleteAPIKey() throws {
-        let status = SecItemDelete(baseQuery() as CFDictionary)
+    public func deleteAPIKey(provider: SecretProvider) throws {
+        let status = SecItemDelete(baseQuery(provider) as CFDictionary)
         guard status == errSecSuccess || status == errSecItemNotFound else {
             throw KeychainError.unexpectedStatus(status)
         }
     }
 
-    private func readData() throws -> Data? {
-        var query = baseQuery()
+    private func readData(_ provider: SecretProvider) throws -> Data? {
+        var query = baseQuery(provider)
         query[kSecReturnData as String] = true
         query[kSecMatchLimit as String] = kSecMatchLimitOne
 
@@ -65,10 +72,10 @@ public struct KeychainSecretStore: SecretStoring, Sendable {
         return data
     }
 
-    private func baseQuery() -> [String: Any] {
+    private func baseQuery(_ provider: SecretProvider) -> [String: Any] {
         [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
+            kSecAttrService as String: service(for: provider),
             kSecAttrAccount as String: account,
         ]
     }

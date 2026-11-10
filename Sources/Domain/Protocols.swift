@@ -125,10 +125,29 @@ public protocol SummaryRepository: Sendable {
     func fetch(meetingID: MeetingID) async throws -> MeetingSummary?
 }
 
+public enum SecretProvider: String, Sendable, Hashable, CaseIterable {
+    case openAI = "openai"
+    case anthropic
+}
+
 public protocol SecretStoring: Sendable {
-    func store(apiKey: String) throws
-    func retrieveAPIKey() throws -> String?
-    func deleteAPIKey() throws
+    func store(apiKey: String, provider: SecretProvider) throws
+    func retrieveAPIKey(provider: SecretProvider) throws -> String?
+    func deleteAPIKey(provider: SecretProvider) throws
+}
+
+extension SecretStoring {
+    public func store(apiKey: String) throws {
+        try store(apiKey: apiKey, provider: .openAI)
+    }
+
+    public func retrieveAPIKey() throws -> String? {
+        try retrieveAPIKey(provider: .openAI)
+    }
+
+    public func deleteAPIKey() throws {
+        try deleteAPIKey(provider: .openAI)
+    }
 }
 
 public struct RealtimeCredential: Sendable, Equatable {

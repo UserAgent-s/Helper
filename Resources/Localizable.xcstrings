@@ -1060,29 +1060,6 @@
         }
       }
     },
-    "Сохранить в Keychain": {
-      "extractionState": "manual",
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Сохранить в Keychain"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Save to Keychain"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Зберегти в Keychain"
-          }
-        }
-      }
-    },
     "Что захватывает UserAgent057": {
       "extractionState": "manual",
       "localizations": {
@@ -4092,6 +4069,144 @@
           "stringUnit": {
             "state": "translated",
             "value": "Якщо вимкнути, розпізнані тексти екрана видаляються з усіх сесій, крім поточної."
+          }
+        }
+      }
+    },
+    "Это ключ Anthropic (sk-ant-…) — вставьте его в поле Anthropic": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Это ключ Anthropic (sk-ant-…) — вставьте его в поле Anthropic"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This is an Anthropic key (sk-ant-…) — paste it into the Anthropic field"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Це ключ Anthropic (sk-ant-…) — вставте його в поле Anthropic"
+          }
+        }
+      }
+    },
+    "Это ключ OpenAI — вставьте его в поле OpenAI": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Это ключ OpenAI — вставьте его в поле OpenAI"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This is an OpenAI key — paste it into the OpenAI field"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Це ключ OpenAI — вставте його в поле OpenAI"
+          }
+        }
+      }
+    },
+    "Формат ключа выглядит некорректным (ожидается sk-ant-…)": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Формат ключа выглядит некорректным (ожидается sk-ant-…)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The key format looks invalid (expected sk-ant-…)"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Формат ключа виглядає некоректним (очікується sk-ant-…)"
+          }
+        }
+      }
+    },
+    "Не удалось сохранить ключ": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось сохранить ключ"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not save the key"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не вдалося зберегти ключ"
+          }
+        }
+      }
+    },
+    "Нужен для глубоких раскрытий через Claude. Хранится отдельно от ключа OpenAI.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нужен для глубоких раскрытий через Claude. Хранится отдельно от ключа OpenAI."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Used for deep expansions via Claude. Stored separately from the OpenAI key."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Потрібен для глибоких розкриттів через Claude. Зберігається окремо від ключа OpenAI."
+          }
+        }
+      }
+    },
+    "API-ключ Anthropic (для раскрытий через Claude)": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "API-ключ Anthropic (для раскрытий через Claude)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anthropic API key (for Claude expansions)"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "API-ключ Anthropic (для розкриттів через Claude)"
           }
         }
       }

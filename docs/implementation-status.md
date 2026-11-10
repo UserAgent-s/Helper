@@ -1332,3 +1332,16 @@ M1 по коду закрыт (S1.1–S1.7). Ручной чек-лист M1 в 
   - `RetentionSchedulerTests`: 2 теста;
   - прежние `RetentionSweeperTests` проходят без изменений.
 - Не сделано: старые вкладки «Вопросы и ответы» и «Митинги» в окне истории на Mac остаются. Их можно убрать, когда Q&A без сессии исчезнут по сроку хранения или будут перенесены в отдельную сессию.
+
+## M5. Профиль владельца и раскрытие через Claude
+
+### S5.1 Ключи по провайдерам: OpenAI и Anthropic
+
+- Domain: `SecretProvider {openAI, anthropic}` (rawValue `openai`/`anthropic`), `SecretStoring.store/retrieveAPIKey/deleteAPIKey(provider:)`. Расширение протокола без параметра равно `.openAI`. `DirectKeyCredentialProvider` и `OpenAIResponsesSummaryClient` теперь явно передают `.openAI`.
+- `UserDefaultsSecretStore`: OpenAI по прежнему ключу `com.local.UserAgent057.settings.openaiAPIKey` (без миграции), Anthropic по `…settings.anthropicAPIKey`. `KeychainSecretStore`: у Anthropic service `<service>.anthropic`. `InactiveSecretStore` с параметром провайдера.
+- `APIKeyFormatValidator.isPlausibleFormat(_:for:)`: общий минимум 20 символов и алфавит `[A-Za-z0-9_-]`. OpenAI: `sk-`, но не `sk-ant-`. Anthropic: `sk-ant-` и больше 12 символов после префикса. Старый `isPlausibleFormat(_:)` равен проверке OpenAI, поэтому `sk-ant-` больше не проходит. `check(_:for:) -> APIKeyCheck {valid(trimmed), invalidFormat, belongsTo(provider)}` для подсказки «вставьте в другое поле».
+- `SecretRedactor`: сначала значение после `x-api-key` (`:`/`=`, в кавычках и JSON, регистр не важен) заменяется на `[REDACTED]` с сохранением имени заголовка, затем `sk-ant-…` от 8 символов, затем `sk-…` от 16 и `Bearer …`. Диагностический лог `realtime_diag.log` (`CompositionRoot.makeRealtimeDiagLogger`) теперь пропускает каждую строку через `SecretRedactor`; раньше маскировщик нигде не вызывался.
+- UI: во вкладке «Аккаунты» рабочее поле Anthropic (сохранить, удалить, статус, подсказка) вместо заглушки; ошибки показываются текстом из `SettingsViewModel.apiKeyWarning/anthropicAPIKeyWarning`. В онбординге второе поле ключа Anthropic; кнопка «Сохранить в Keychain» переименована в «Сохранить», потому что ключ лежит в UserDefaults. Строки ru/en/uk, неиспользуемая «Сохранить в Keychain» удалена из каталога.
+- privacy.md: раздел «API-ключи» (где лежат, что маскируется).
+- Тесты: `UserDefaultsSecretStoreProviderTests` 3 (старый ключ без миграции, изоляция, отдельный ключ defaults), `KeychainSecretStoreTests.providersAreIsolated`, `APIKeyProviderMatrixTests` (матрица 11 случаев, старый вход отклоняет `sk-ant-`, `check` для чужого поля), `SecretRedactorTests` +3 (`sk-ant-`, короткий `sk-ant-`, `x-api-key` в 5 форматах, одна замена при `x-api-key: sk-ant-…`).
+- Не сделано: Keychain в приложении (ключи остаются в UserDefaults до стабильной подписи), UI-тест поля Anthropic.

@@ -30,7 +30,7 @@ public actor OpenAIResponsesSummaryClient: SummaryGenerating {
     }
 
     public func summarize(meetingID: MeetingID, headers: SummaryMarkdownHeaders) async throws -> MeetingSummary {
-        guard let apiKey = try secretStoring.retrieveAPIKey(), !apiKey.isEmpty else {
+        guard let apiKey = try secretStoring.retrieveAPIKey(provider: .openAI), !apiKey.isEmpty else {
             throw SummaryGeneratingError.notAuthenticated
         }
 
