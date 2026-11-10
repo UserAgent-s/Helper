@@ -18,6 +18,7 @@ let package = Package(
         .library(name: "CompanionServer", targets: ["CompanionServer"]),
         .library(name: "CompanionBridge", targets: ["CompanionBridge"]),
         .library(name: "ProfileKnowledge", targets: ["ProfileKnowledge"]),
+        .library(name: "ClaudeClient", targets: ["ClaudeClient"]),
     ],
     dependencies: [
         .package(url: "https://github.com/argmaxinc/argmax-oss-swift.git", exact: "1.1.0"),
@@ -65,6 +66,16 @@ let package = Package(
         .target(
             name: "Summary",
             dependencies: ["Domain"],
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .target(
+            name: "ClaudeClient",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .testTarget(
+            name: "ClaudeClientTests",
+            dependencies: ["ClaudeClient"],
+            resources: [.copy("Fixtures")],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
         .target(
