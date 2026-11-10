@@ -157,6 +157,22 @@ import Testing
         }
     }
 
+    @Test func followUpCarriesParentRequestId() throws {
+        let command = try CompanionCodec.decodeCommand(#"{"v":1,"cmdId":"c1","name":"expand","args":{"freeText":"А ограничения?","parentRequestId":"exp-1"}}"#)
+        #expect(command.action == .expand(.init(freeText: "А ограничения?", parentRequestId: "exp-1")))
+        let encoded = try JSONSerialization.jsonObject(with: CompanionCodec.encode(command)) as? [String: Any]
+        #expect((encoded?["args"] as? [String: Any])?["parentRequestId"] as? String == "exp-1")
+    }
+
+    @Test func followUpRequiresFreeTextWithoutPoint() {
+        #expect(throws: CompanionProtocolError.invalidArgument(field: "parentRequestId", reason: "requires freeText without pointId")) {
+            try CompanionCodec.decodeCommand(#"{"v":1,"cmdId":"c1","name":"expand","args":{"pointId":"r.0","freeText":"x","parentRequestId":"exp-1"}}"#)
+        }
+        #expect(throws: CompanionProtocolError.invalidArgument(field: "parentRequestId", reason: "invalid_characters")) {
+            try CompanionCodec.decodeCommand(#"{"v":1,"cmdId":"c1","name":"expand","args":{"freeText":"x","parentRequestId":"bad id"}}"#)
+        }
+    }
+
     @Test func expandNeedsPointOrFreeText() {
         #expect(throws: CompanionProtocolError.invalidArgument(field: "pointId", reason: "required")) {
             try CompanionCodec.decodeCommand(#"{"v":1,"cmdId":"c1","name":"expand","args":{"format":"short"}}"#)

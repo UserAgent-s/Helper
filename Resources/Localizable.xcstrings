@@ -4670,6 +4670,144 @@
           }
         }
       }
+    },
+    "Раскрытие через Claude": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Раскрытие через Claude"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude expansion"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Розкриття через Claude"
+          }
+        }
+      }
+    },
+    "Модель по умолчанию": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модель по умолчанию"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Default model"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модель за замовчуванням"
+          }
+        }
+      }
+    },
+    "Прогревать кеш профиля при старте сессии": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Прогревать кеш профиля при старте сессии"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Warm the profile cache when a session starts"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Прогрівати кеш профілю на старті сесії"
+          }
+        }
+      }
+    },
+    "Ключ Anthropic сохранён. Раскрытие запускается из веб-панели; профиль отправляется в Anthropic и кешируется на час.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ключ Anthropic сохранён. Раскрытие запускается из веб-панели; профиль отправляется в Anthropic и кешируется на час."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anthropic key is saved. Expansion starts from the web panel; the profile is sent to Anthropic and cached for an hour."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ключ Anthropic збережено. Розкриття запускається з веб-панелі; профіль надсилається в Anthropic і кешується на годину."
+          }
+        }
+      }
+    },
+    "Ключ Anthropic не задан — раскрытие недоступно. Добавьте его во вкладке «Аккаунты».": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ключ Anthropic не задан — раскрытие недоступно. Добавьте его во вкладке «Аккаунты»."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Anthropic key — expansion is unavailable. Add it on the Accounts tab."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ключ Anthropic не задано — розкриття недоступне. Додайте його на вкладці «Акаунти»."
+          }
+        }
+      }
+    },
+    "Прогрев один раз записывает профиль в кеш Anthropic (≈$0.12 для Sonnet на профиле 80 КБ), после чего каждое раскрытие читает его примерно в 10 раз дешевле.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Прогрев один раз записывает профиль в кеш Anthropic (≈$0.12 для Sonnet на профиле 80 КБ), после чего каждое раскрытие читает его примерно в 10 раз дешевле."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Warming writes the profile to Anthropic's cache once (≈$0.12 for Sonnet with an 80 KB profile); after that each expansion reads it about 10× cheaper."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Прогрів один раз записує профіль у кеш Anthropic (≈$0.12 для Sonnet на профілі 80 КБ), після чого кожне розкриття читає його приблизно в 10 разів дешевше."
+          }
+        }
+      }
     }
   }
 }

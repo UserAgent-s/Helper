@@ -203,6 +203,23 @@ struct ProfileSettingsTab: View {
             if let profile = viewModel.profile {
                 ProfileFolderSection(profile: profile)
             }
+            Section(loc("Раскрытие через Claude")) {
+                Picker(loc("Модель по умолчанию"), selection: $viewModel.claudeModel) {
+                    Text("Claude Sonnet 5.5").tag(ExpansionModelChoice.sonnet)
+                    Text("Claude Opus 5.5").tag(ExpansionModelChoice.opus)
+                }
+                .accessibilityIdentifier("settings.claude.model")
+                Toggle(loc("Прогревать кеш профиля при старте сессии"), isOn: $viewModel.claudePrewarmOnSessionStart)
+                    .accessibilityIdentifier("settings.claude.prewarm")
+                Text(viewModel.hasStoredAnthropicAPIKey
+                    ? loc("Ключ Anthropic сохранён. Раскрытие запускается из веб-панели; профиль отправляется в Anthropic и кешируется на час.")
+                    : loc("Ключ Anthropic не задан — раскрытие недоступно. Добавьте его во вкладке «Аккаунты»."))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                Text(loc("Прогрев один раз записывает профиль в кеш Anthropic (≈$0.12 для Sonnet на профиле 80 КБ), после чего каждое раскрытие читает его примерно в 10 раз дешевле."))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
         }
         .formStyle(.grouped)
         .task { await viewModel.profile?.reload() }

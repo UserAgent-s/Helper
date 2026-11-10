@@ -129,4 +129,42 @@ public enum CompanionWireMapping {
         case .unknown: "unknown"
         }
     }
+
+    public static func expansionFormat(_ format: WireDeepFormat?) -> ExpansionFormat {
+        guard let format else { return .structured }
+        return ExpansionFormat(rawValue: format.rawValue) ?? .structured
+    }
+
+    public static func expansionLanguage(_ language: WireLanguage?) -> ExpansionLanguage {
+        guard let language else { return .auto }
+        return ExpansionLanguage(rawValue: language.rawValue) ?? .auto
+    }
+
+    public static func expansionModel(_ model: WireDeepModel) -> ExpansionModelChoice {
+        model == .opus ? .opus : .sonnet
+    }
+
+    public static func wireDeepModel(_ modelID: String) -> WireDeepModel {
+        modelID.contains("opus") ? .opus : .sonnet
+    }
+
+    public static func wireDeepFormat(_ format: ExpansionFormat) -> WireDeepFormat {
+        WireDeepFormat(rawValue: format.rawValue) ?? .structured
+    }
+
+    public static func wireLanguage(_ language: ExpansionLanguage) -> WireLanguage {
+        WireLanguage(rawValue: language.rawValue) ?? .auto
+    }
+
+    public static func wireStatus(_ outcome: ExpansionOutcome) -> WireAnswerStatus {
+        switch outcome {
+        case .completed, .truncated: .completed
+        case .cancelled: .cancelled
+        case .refused, .failed: .failed
+        }
+    }
+
+    public static func transcriptPromptLine(_ line: TranscriptLine) -> String {
+        (line.speaker == .me ? "Я: " : "Собеседник: ") + line.text
+    }
 }

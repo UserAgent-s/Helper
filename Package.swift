@@ -70,11 +70,12 @@ let package = Package(
         ),
         .target(
             name: "ClaudeClient",
+            dependencies: ["Domain"],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
         .testTarget(
             name: "ClaudeClientTests",
-            dependencies: ["ClaudeClient"],
+            dependencies: ["ClaudeClient", "Domain"],
             resources: [.copy("Fixtures")],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
@@ -113,7 +114,7 @@ let package = Package(
         ),
         .testTarget(
             name: "CompanionBridgeTests",
-            dependencies: ["CompanionBridge", "CompanionServer", "CompanionProtocol", "Domain", "RealtimeClient"],
+            dependencies: ["CompanionBridge", "CompanionServer", "CompanionProtocol", "Domain", "RealtimeClient", "ClaudeClient", "Persistence"],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
         .testTarget(

@@ -11,6 +11,7 @@ import OverlayReducer
 import CompanionProtocol
 import CompanionBridge
 import ProfileKnowledge
+import ClaudeClient
 
 @MainActor
 final class CompositionRoot {
@@ -47,6 +48,7 @@ final class CompositionRoot {
     let sessionCoordinator: SessionCoordinator
     let profileKnowledge: MarkdownFolderProfileProvider
     let sessionProfileFreezer: SessionProfileFreezer
+    let claudeExpansion: ClaudeExpansionClient
     let sessionFinalizer: SessionFinalizer
     let sessionRecorder: SessionRecorder
 
@@ -263,11 +265,32 @@ final class CompositionRoot {
             searcher: SQLiteSessionSearchRepository(database: database),
             summaries: summaryRepository
         )
+        let claudeExpansion = ClaudeExpansionClient(
+            client: ClaudeMessagesClient(
+                apiKey: { [secretStoring] in (try? secretStoring.retrieveAPIKey(provider: .anthropic)) ?? nil },
+                redactedLog: realtimeDiagLog
+            ),
+            hasKey: { [secretStoring] in ((try? secretStoring.retrieveAPIKey(provider: .anthropic)) ?? nil)?.isEmpty == false },
+            profile: { sessionID in
+                if let sessionID { return await sessionProfileFreezer.snapshot(for: sessionID) }
+                return try? await profileKnowledge.snapshot()
+            },
+            activeSession: { await sessionCoordinator.activeSessionID },
+            store: sessionRepository,
+            settings: { [settingsStore] in
+                ClaudeExpansionSettings(defaultModel: settingsStore.claudeModel, prewarmOnSessionStart: settingsStore.claudePrewarmOnSessionStart)
+            },
+            redactedLog: realtimeDiagLog
+        )
+        self.claudeExpansion = claudeExpansion
+        let prewarmSessionEvents = sessionCoordinator.events(subscriber: "claudePrewarm")
+        Task { await claudeExpansion.observe(prewarmSessionEvents) }
         let companionBridge = CompanionBridge(
             control: LiveCompanionDomain(modeCoordinator: modeCoordinator, answers: answersController, trigger: manualAnswerTrigger),
             sessions: sessionCoordinator,
             exporter: SessionMarkdownExporter(repository: sessionRepository, summaries: summaryRepository),
-            history: sessionHistory
+            history: sessionHistory,
+            expansions: claudeExpansion
         )
         let companionFeeds = LiveCompanionDomain.feeds(modeCoordinator: modeCoordinator, answers: answersController, captureHub: captureHub)
         let companionService = CompanionService(

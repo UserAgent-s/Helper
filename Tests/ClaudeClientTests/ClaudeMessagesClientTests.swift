@@ -25,7 +25,11 @@ private final class Timeline: @unchecked Sendable {
         let stopIndex = try #require(lines.firstIndex { $0.contains("\"message_stop\"") })
         let timeline = Timeline()
         let transport = FakeAnthropicTransport(lines: lines, onLine: { index in
-            if index == stopIndex { timeline.add("transport:message_stop") }
+            guard index == stopIndex else { return }
+            for _ in 0..<400 where !timeline.entries.contains("delta") {
+                try? await Task.sleep(for: .milliseconds(5))
+            }
+            timeline.add(timeline.entries.contains("delta") ? "stop-after-delta" : "stop-before-delta")
         })
         let client = ClaudeMessagesClient(transport: transport, apiKey: { "sk-ant-api03-key" })
         for await event in client.stream(request()) {
@@ -36,9 +40,8 @@ private final class Timeline: @unchecked Sendable {
             }
         }
         let entries = timeline.entries
-        let firstDelta = try #require(entries.firstIndex(of: "delta"))
-        let stop = try #require(entries.firstIndex(of: "transport:message_stop"))
-        #expect(firstDelta < stop)
+        #expect(entries.contains("stop-after-delta"))
+        #expect(!entries.contains("stop-before-delta"))
         #expect(entries.last == "completed")
         #expect(transport.requests.first?.value(forHTTPHeaderField: "x-api-key") == "sk-ant-api03-key")
     }

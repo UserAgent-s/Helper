@@ -106,8 +106,10 @@ public struct ClientCommand: Sendable, Equatable {
         public let format: WireDeepFormat?
         public let model: WireDeepModel?
         public let language: WireLanguage?
+        public let parentRequestId: String?
 
-        public init(pointId: String? = nil, freeText: String? = nil, format: WireDeepFormat? = nil, model: WireDeepModel? = nil, language: WireLanguage? = nil) {
+        public init(pointId: String? = nil, freeText: String? = nil, format: WireDeepFormat? = nil, model: WireDeepModel? = nil, language: WireLanguage? = nil, parentRequestId: String? = nil) {
+            self.parentRequestId = parentRequestId
             self.pointId = pointId
             self.freeText = freeText
             self.format = format
@@ -239,6 +241,12 @@ extension ClientCommand {
             }
             guard expand.pointId != nil || expand.freeText != nil else {
                 throw CompanionProtocolError.invalidArgument(field: "pointId", reason: "required")
+            }
+            if let parent = expand.parentRequestId {
+                try Self.identifier(parent, field: "parentRequestId", limit: CompanionLimits.maxIdentifierLength)
+                guard expand.freeText != nil, expand.pointId == nil else {
+                    throw CompanionProtocolError.invalidArgument(field: "parentRequestId", reason: "requires freeText without pointId")
+                }
             }
         case .sessionStart(let start):
             if let title = start.title {

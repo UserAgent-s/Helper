@@ -82,6 +82,8 @@ targets:
         product: CompanionBridge
       - package: UserAgent057Core
         product: ProfileKnowledge
+      - package: UserAgent057Core
+        product: ClaudeClient
 
   UserAgent057Tests:
     type: bundle.unit-test

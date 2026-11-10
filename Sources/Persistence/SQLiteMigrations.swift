@@ -133,5 +133,21 @@ enum SQLiteMigrations {
             """,
         ]),
         SQLiteMigration(version: 4, statements: SessionSchema.statements, backsUpExistingDatabase: true),
+        SQLiteMigration(version: 5, statements: [
+            "ALTER TABLE deep_expansions ADD COLUMN parent_id TEXT REFERENCES deep_expansions(id) ON DELETE SET NULL",
+            "ALTER TABLE deep_expansions ADD COLUMN source_kind TEXT",
+            "ALTER TABLE deep_expansions ADD COLUMN point_id TEXT",
+            "ALTER TABLE deep_expansions ADD COLUMN source_text TEXT",
+            "ALTER TABLE deep_expansions ADD COLUMN format TEXT",
+            "ALTER TABLE deep_expansions ADD COLUMN language TEXT",
+            "ALTER TABLE deep_expansions ADD COLUMN ttft_ms INTEGER",
+            "ALTER TABLE deep_expansions ADD COLUMN input_tokens INTEGER",
+            "ALTER TABLE deep_expansions ADD COLUMN output_tokens INTEGER",
+            "ALTER TABLE deep_expansions ADD COLUMN cache_read_tokens INTEGER",
+            "ALTER TABLE deep_expansions ADD COLUMN cache_write_tokens INTEGER",
+            "ALTER TABLE deep_expansions ADD COLUMN stop_reason TEXT",
+            "CREATE INDEX idx_deep_expansions_parent ON deep_expansions(parent_id)",
+            "CREATE INDEX idx_qa_entries_response ON qa_entries(response_id)",
+        ]),
     ]
 }

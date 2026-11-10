@@ -129,6 +129,14 @@ final class SettingsViewModel {
         }
     }
 
+    var claudeModel: ExpansionModelChoice = .sonnet {
+        didSet { settingsStore.claudeModel = claudeModel }
+    }
+
+    var claudePrewarmOnSessionStart = true {
+        didSet { settingsStore.claudePrewarmOnSessionStart = claudePrewarmOnSessionStart }
+    }
+
     var keepScreenTexts: Bool {
         get { settingsStore.keepScreenTexts }
         set {
@@ -176,6 +184,8 @@ final class SettingsViewModel {
         profile: ProfileSettingsViewModel? = nil
     ) {
         self.profile = profile
+        self.claudeModel = settingsStore.claudeModel
+        self.claudePrewarmOnSessionStart = settingsStore.claudePrewarmOnSessionStart
         self.companionService = companionService
         self.overlaySwitch = overlaySwitch ?? OverlaySwitch()
         self.exportsDirectory = exportsDirectory

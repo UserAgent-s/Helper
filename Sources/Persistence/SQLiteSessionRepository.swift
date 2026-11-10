@@ -1,7 +1,7 @@
 import Domain
 import Foundation
 
-public final class SQLiteSessionRepository: SessionRepository, Sendable {
+public final class SQLiteSessionRepository: SessionRepository, DeepExpansionStoring, Sendable {
     private let connection: SQLiteDatabase
 
     public init(database: SQLiteDatabase) {
@@ -261,6 +261,83 @@ public final class SQLiteSessionRepository: SessionRepository, Sendable {
     public func deleteIfEmpty(sessionID: SessionID) async throws -> Bool {
         try await connection.ensureReady()
         return try await connection.deleteSessionIfEmpty(Self.key(sessionID))
+    }
+
+    public func saveExpansion(_ record: DeepExpansionRecord) async throws {
+        let stamp = Self.format(Date())
+        func opt(_ value: String?) -> SQLiteValue { value.map(SQLiteValue.text) ?? .null }
+        func opt(_ value: Int?) -> SQLiteValue { value.map(SQLiteValue.int) ?? .null }
+        func opt(_ value: Double?) -> SQLiteValue { value.map(SQLiteValue.double) ?? .null }
+        let usageTotal: Int? = {
+            let parts = [record.inputTokens, record.outputTokens, record.cacheReadTokens, record.cacheWriteTokens].compactMap { $0 }
+            return parts.isEmpty ? nil : parts.reduce(0, +)
+        }()
+        try await connection.transaction([
+            (
+                """
+                INSERT INTO deep_expansions (id, session_id, qa_entry_id, requested_at, model_id, status, text, usage_tokens, estimated_cost_usd, created_at, updated_at,
+                    parent_id, source_kind, point_id, source_text, format, language, ttft_ms, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, stop_reason)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    qa_entry_id = excluded.qa_entry_id, model_id = excluded.model_id, status = excluded.status, text = excluded.text,
+                    usage_tokens = excluded.usage_tokens, estimated_cost_usd = excluded.estimated_cost_usd, updated_at = excluded.updated_at,
+                    ttft_ms = excluded.ttft_ms, input_tokens = excluded.input_tokens, output_tokens = excluded.output_tokens,
+                    cache_read_tokens = excluded.cache_read_tokens, cache_write_tokens = excluded.cache_write_tokens, stop_reason = excluded.stop_reason
+                """,
+                [
+                    .text(record.id), .text(Self.key(record.sessionID)), opt(record.questionAnswerID?.uuidString), .text(Self.format(record.requestedAt)),
+                    .text(record.modelID), .text(record.status), .text(record.text), opt(usageTotal), opt(record.estimatedCostUSD), .text(stamp), .text(stamp),
+                    opt(record.parentID), .text(record.sourceKind), opt(record.pointID), .text(record.sourceText), .text(record.format), .text(record.language),
+                    opt(record.ttftMs), opt(record.inputTokens), opt(record.outputTokens), opt(record.cacheReadTokens), opt(record.cacheWriteTokens), opt(record.stopReason),
+                ]
+            ),
+            ("UPDATE meetings SET last_activity_at = MAX(COALESCE(last_activity_at, ''), ?) WHERE id = ?", [.text(stamp), .text(Self.key(record.sessionID))]),
+        ])
+    }
+
+    public func expansionRecord(id: String) async throws -> DeepExpansionRecord? {
+        try await connection.ensureReady()
+        return try await connection.query(
+            """
+            SELECT id, session_id, qa_entry_id, parent_id, requested_at, model_id, status, text, source_kind, point_id, source_text, format, language,
+                ttft_ms, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, estimated_cost_usd, stop_reason
+            FROM deep_expansions WHERE id = ?
+            """,
+            [.text(id)],
+            map: { row in
+                DeepExpansionRecord(
+                    id: row.string(0) ?? "",
+                    sessionID: Self.sessionID(row.string(1)),
+                    questionAnswerID: row.string(2).flatMap(UUID.init(uuidString:)),
+                    parentID: row.string(3),
+                    requestedAt: Self.parse(row.string(4)) ?? Date(timeIntervalSince1970: 0),
+                    modelID: row.string(5) ?? "",
+                    status: row.string(6) ?? "",
+                    text: row.string(7) ?? "",
+                    sourceKind: row.string(8) ?? "",
+                    pointID: row.string(9),
+                    sourceText: row.string(10) ?? "",
+                    format: row.string(11) ?? "",
+                    language: row.string(12) ?? "",
+                    ttftMs: row.int(13),
+                    inputTokens: row.int(14),
+                    outputTokens: row.int(15),
+                    cacheReadTokens: row.int(16),
+                    cacheWriteTokens: row.int(17),
+                    estimatedCostUSD: row.double(18),
+                    stopReason: row.string(19)
+                )
+            }
+        ).first
+    }
+
+    public func questionAnswerID(responseID: String) async throws -> UUID? {
+        try await connection.ensureReady()
+        return try await connection.query(
+            "SELECT id FROM qa_entries WHERE response_id = ? ORDER BY asked_at DESC LIMIT 1",
+            [.text(responseID)],
+            map: { $0.string(0).flatMap(UUID.init(uuidString:)) }
+        ).first ?? nil
     }
 
     private static func key(_ id: SessionID) -> String {

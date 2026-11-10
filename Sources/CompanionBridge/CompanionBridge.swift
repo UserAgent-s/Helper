@@ -41,11 +41,14 @@ public actor CompanionBridge: CompanionHubDelegate {
     public static let sessionCapabilities = ["session.start", "session.stop", "session.resume", "star_last", "mark_moment"]
     public static let exportCapabilities = ["export.request"]
     public static let historyCapabilities = ["history.list", "history.get"]
+    public static let expandCapabilities = ["expand"]
+    public static let expansionTranscriptTail = 12
 
     private let control: any CompanionDomainControlling
     private let sessions: (any SessionControlling)?
     private let exporter: (any SessionDocumentExporting)?
     private let historyQueries: (any SessionHistoryQuerying)?
+    private let expansions: (any ExpansionRequesting)?
     public nonisolated let capabilities: [String]
     private var session: SessionInfo?
     private var announcedSessionId: String?
@@ -72,6 +75,7 @@ public actor CompanionBridge: CompanionHubDelegate {
         sessions: (any SessionControlling)? = nil,
         exporter: (any SessionDocumentExporting)? = nil,
         history: (any SessionHistoryQuerying)? = nil,
+        expansions: (any ExpansionRequesting)? = nil,
         now: @escaping @Sendable () -> Date = { Date() },
         makeAnswerId: @escaping @Sendable () -> String = { UUID().uuidString }
     ) {
@@ -79,7 +83,8 @@ public actor CompanionBridge: CompanionHubDelegate {
         self.sessions = sessions
         self.exporter = exporter
         historyQueries = history
-        capabilities = Self.baseCapabilities + (sessions == nil ? [] : Self.sessionCapabilities) + (exporter == nil ? [] : Self.exportCapabilities) + (history == nil ? [] : Self.historyCapabilities)
+        self.expansions = expansions
+        capabilities = Self.baseCapabilities + (sessions == nil ? [] : Self.sessionCapabilities) + (exporter == nil ? [] : Self.exportCapabilities) + (history == nil ? [] : Self.historyCapabilities) + (expansions == nil ? [] : Self.expandCapabilities)
         self.now = now
         self.makeAnswerId = makeAnswerId
         (outgoing, outgoingContinuation) = AsyncStream<ServerEvent>.makeStream()
@@ -166,7 +171,10 @@ public actor CompanionBridge: CompanionHubDelegate {
         case .sessionStart, .sessionStop, .sessionResume, .starLast, .markMoment:
             guard let sessions else { return .rejected(code: "not_available") }
             return await performSession(action, sessions: sessions)
-        case .expand, .captureScreen, .exportRequest, .historyList, .historyGet:
+        case .expand(let request):
+            guard let expansions else { return .rejected(code: "not_available") }
+            return await performExpand(request, expansions: expansions)
+        case .captureScreen, .exportRequest, .historyList, .historyGet:
             return .rejected(code: "not_available")
         case .hello, .pair, .ping, .unknown:
             return .rejected(code: "unknown_command")
@@ -255,6 +263,70 @@ public actor CompanionBridge: CompanionHubDelegate {
             }
         default:
             return .rejected(code: "unknown_command")
+        }
+    }
+
+    private func performExpand(_ request: ClientCommand.Expand, expansions: any ExpansionRequesting) async -> CompanionCommandOutcome {
+        guard await expansions.isAvailable() else { return .rejected(code: "claude_unavailable") }
+        let stream: AsyncStream<ExpansionEvent>
+        let pointId = request.pointId
+        do {
+            if let parent = request.parentRequestId {
+                stream = try await expansions.followUp(expansionID: parent, question: request.freeText ?? "")
+            } else {
+                guard let source = expansionSource(request) else { return .rejected(code: "unknown_point") }
+                let domainRequest = ExpansionRequest(
+                    source: source,
+                    format: CompanionWireMapping.expansionFormat(request.format),
+                    language: CompanionWireMapping.expansionLanguage(request.language),
+                    model: request.model.map(CompanionWireMapping.expansionModel),
+                    transcriptTail: transcript.suffix(Self.expansionTranscriptTail).map(CompanionWireMapping.transcriptPromptLine),
+                    note: request.pointId != nil ? request.freeText : nil
+                )
+                stream = try await expansions.expand(domainRequest)
+            }
+        } catch ExpansionRejection.unavailable {
+            return .rejected(code: "claude_unavailable")
+        } catch ExpansionRejection.busy {
+            return .rejected(code: "expansion_busy")
+        } catch ExpansionRejection.unknownExpansion {
+            return .rejected(code: "unknown_expansion")
+        } catch {
+            return .rejected(code: "invalid_args")
+        }
+        let task = Task { [weak self] in
+            for await event in stream {
+                await self?.ingest(event, pointId: pointId)
+            }
+        }
+        tasks.append(task)
+        return .ok
+    }
+
+    private func expansionSource(_ request: ClientCommand.Expand) -> ExpansionSource? {
+        if let pointId = request.pointId {
+            let candidates = [projector?.state, lastAnswer].compactMap { $0 }
+            for answer in candidates {
+                guard let point = answer.points.first(where: { $0.pointId == pointId }) else { continue }
+                let utf16 = Array(answer.text.utf16)
+                guard point.start >= 0, point.start <= point.end, point.end <= utf16.count else { return nil }
+                let slice = String(decoding: utf16[point.start..<point.end], as: UTF16.self).trimmingCharacters(in: .whitespacesAndNewlines)
+                return .point(answerID: answer.answerId, pointID: pointId, pointText: slice, answerText: answer.text)
+            }
+            return nil
+        }
+        guard let text = request.freeText else { return nil }
+        return .freeText(text)
+    }
+
+    func ingest(_ event: ExpansionEvent, pointId: String?) {
+        switch event {
+        case .started(let id, let modelID, let format, let language):
+            emit(.deepStarted(.init(requestId: id, pointId: pointId, model: CompanionWireMapping.wireDeepModel(modelID), format: CompanionWireMapping.wireDeepFormat(format), language: CompanionWireMapping.wireLanguage(language))))
+        case .delta(let id, let offset, let text):
+            emit(.deepDelta(.init(requestId: id, offset: offset, text: text)))
+        case .finished(let id, let outcome, let errorCode):
+            emit(.deepDone(.init(requestId: id, status: CompanionWireMapping.wireStatus(outcome), errorCode: errorCode)))
         }
     }
 

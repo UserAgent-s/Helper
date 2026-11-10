@@ -39,6 +39,8 @@ final class AppSettingsStore: @unchecked Sendable {
         static let keepScreenTexts = "com.local.UserAgent057.settings.sessions.keepScreenTexts"
         static let profileFolderBookmark = "com.local.UserAgent057.settings.profile.folderBookmark"
         static let profileSelectedPaths = "com.local.UserAgent057.settings.profile.selectedPaths"
+        static let claudeModel = "com.local.UserAgent057.settings.claude.model"
+        static let claudePrewarm = "com.local.UserAgent057.settings.claude.prewarmOnSessionStart"
     }
 
     init(defaults: UserDefaults = .standard) {
@@ -153,6 +155,16 @@ final class AppSettingsStore: @unchecked Sendable {
         set {
             if let newValue { defaults.set(newValue.sorted(), forKey: Keys.profileSelectedPaths) } else { defaults.removeObject(forKey: Keys.profileSelectedPaths) }
         }
+    }
+
+    var claudeModel: ExpansionModelChoice {
+        get { ExpansionModelChoice(rawValue: defaults.string(forKey: Keys.claudeModel) ?? "") ?? .sonnet }
+        set { defaults.set(newValue.rawValue, forKey: Keys.claudeModel) }
+    }
+
+    var claudePrewarmOnSessionStart: Bool {
+        get { defaults.object(forKey: Keys.claudePrewarm) as? Bool ?? true }
+        set { defaults.set(newValue, forKey: Keys.claudePrewarm) }
     }
 
     func profileFolderConfiguration() -> ProfileFolderConfiguration {

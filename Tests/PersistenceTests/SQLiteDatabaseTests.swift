@@ -66,8 +66,8 @@ import Domain
             try await group.waitForAll()
         }
 
-        #expect(try await shared.appliedMigrationVersions() == [1, 2, 3, 4])
-        #expect(try await secondConnection.appliedMigrationVersions() == [1, 2, 3, 4])
+        #expect(try await shared.appliedMigrationVersions() == [1, 2, 3, 4, 5])
+        #expect(try await secondConnection.appliedMigrationVersions() == [1, 2, 3, 4, 5])
         let meetingCount = try await shared.query("SELECT COUNT(*) FROM meetings", map: { $0.int(0) ?? 0 })
         #expect(meetingCount == [2])
     }
@@ -97,7 +97,7 @@ import Domain
         try makeVersionOneFixture(at: path, whisperModelID: "openai_whisper-small")
 
         let database = SQLiteDatabase(path: path)
-        #expect(try await database.appliedMigrationVersions() == [1, 2, 3, 4])
+        #expect(try await database.appliedMigrationVersions() == [1, 2, 3, 4, 5])
 
         let backupURL = SQLiteDatabase.backupURL(forDatabaseAt: path, beforeVersion: 2)
         #expect(FileManager.default.fileExists(atPath: backupURL.path))
