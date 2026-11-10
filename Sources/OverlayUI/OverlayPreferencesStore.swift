@@ -17,6 +17,8 @@ final class OverlayPreferencesStore {
         static let forceAnswerHotKey = "com.local.UserAgent057.overlay.forceAnswerHotKey"
         static let toggleSessionHotKey = "com.local.UserAgent057.session.toggleHotKey"
         static let starLastAnswerHotKey = "com.local.UserAgent057.session.starHotKey"
+        static let screenCaptureHotKey = "com.local.UserAgent057.screen.captureHotKey"
+        static let screenAskHotKey = "com.local.UserAgent057.screen.askHotKey"
         static let toggleHotKey = "com.local.UserAgent057.overlay.toggleHotKey"
         static let style = "com.local.UserAgent057.overlay.style"
         static let fontFamily = "com.local.UserAgent057.overlay.fontFamily"
@@ -93,6 +95,16 @@ final class OverlayPreferencesStore {
     var starLastAnswerHotKey: HotKeyCombo {
         get { decoded(Keys.starLastAnswerHotKey) ?? .starLastAnswerDefault }
         set { encode(newValue, forKey: Keys.starLastAnswerHotKey) }
+    }
+
+    var screenCaptureHotKey: HotKeyCombo {
+        get { decoded(Keys.screenCaptureHotKey) ?? .screenCaptureDefault }
+        set { encode(newValue, forKey: Keys.screenCaptureHotKey) }
+    }
+
+    var screenAskHotKey: HotKeyCombo {
+        get { decoded(Keys.screenAskHotKey) ?? .screenAskDefault }
+        set { encode(newValue, forKey: Keys.screenAskHotKey) }
     }
 
     private func decoded(_ key: String) -> HotKeyCombo? {

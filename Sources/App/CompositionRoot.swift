@@ -12,6 +12,7 @@ import CompanionProtocol
 import CompanionBridge
 import ProfileKnowledge
 import ClaudeClient
+import ScreenContext
 
 @MainActor
 final class CompositionRoot {
@@ -51,6 +52,7 @@ final class CompositionRoot {
     let claudeExpansion: ClaudeExpansionClient
     let realtimeDigestStore: RealtimeDigestStore
     let translationService: TranslationService
+    let screenTrigger: ScreenContextTrigger
     let sessionFinalizer: SessionFinalizer
     let sessionRecorder: SessionRecorder
 
@@ -329,12 +331,27 @@ final class CompositionRoot {
             }
         }
         Task { await claudeExpansion.observe(prewarmSessionEvents) }
+        let applicationTracker = LastActiveApplicationTracker()
+        let screenTrigger = ScreenContextTrigger(
+            capturer: ScreenTextCapturer(
+                accessibility: AccessibilityTextReader(provider: SystemAccessibilityProvider(tracker: applicationTracker)),
+                windows: WindowScreenshotter(tracker: applicationTracker)
+            ),
+            isAnswersActive: { [modeCoordinator] in await modeCoordinator.currentMode == .answers },
+            inject: { [realtimeAnswering] context in try await realtimeAnswering.injectContext(context) },
+            answerNow: { [manualAnswerTrigger] in await manualAnswerTrigger.fire() },
+            sessions: sessionContext,
+            store: sessionRepository,
+            redactedLog: realtimeDiagLog
+        )
+        self.screenTrigger = screenTrigger
         let companionBridge = CompanionBridge(
             control: LiveCompanionDomain(modeCoordinator: modeCoordinator, answers: answersController, trigger: manualAnswerTrigger),
             sessions: sessionCoordinator,
             exporter: SessionMarkdownExporter(repository: sessionRepository, summaries: summaryRepository),
             history: sessionHistory,
-            expansions: claudeExpansion
+            expansions: claudeExpansion,
+            screen: screenTrigger
         )
         let companionFeeds = LiveCompanionDomain.feeds(modeCoordinator: modeCoordinator, answers: answersController, captureHub: captureHub, translations: translationService.events(subscriber: "companion"))
         let companionService = CompanionService(

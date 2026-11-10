@@ -1,7 +1,7 @@
 import Domain
 import Foundation
 
-public final class SQLiteSessionRepository: SessionRepository, DeepExpansionStoring, SessionInstructionRecording, UtteranceTranslationStoring, Sendable {
+public final class SQLiteSessionRepository: SessionRepository, DeepExpansionStoring, SessionInstructionRecording, UtteranceTranslationStoring, ScreenContextStoring, Sendable {
     private let connection: SQLiteDatabase
 
     public init(database: SQLiteDatabase) {
@@ -349,6 +349,18 @@ public final class SQLiteSessionRepository: SessionRepository, DeepExpansionStor
     public func setUtteranceTranslation(utteranceID: String, text: String, language: String) async throws {
         try await connection.transaction([
             ("UPDATE utterances SET translation_text = ?, translation_lang = ? WHERE id = ?", [.text(text), .text(language), .text(utteranceID)]),
+        ])
+    }
+
+    public func saveScreenContext(_ context: SessionScreenContext, sessionID: SessionID) async throws {
+        let stamp = Self.format(Date())
+        func opt(_ value: String?) -> SQLiteValue { value.map(SQLiteValue.text) ?? .null }
+        try await connection.transaction([
+            (
+                "INSERT INTO screen_contexts (id, session_id, captured_at, application, window_title, text, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                [.text(context.id), .text(Self.key(sessionID)), .text(Self.format(context.capturedAt)), opt(context.application), opt(context.windowTitle), .text(context.text), .text(stamp)]
+            ),
+            ("UPDATE meetings SET last_activity_at = MAX(COALESCE(last_activity_at, ''), ?) WHERE id = ?", [.text(stamp), .text(Self.key(sessionID))]),
         ])
     }
 

@@ -18,6 +18,10 @@ public struct HotKeyCombo: Sendable, Equatable, Hashable, Codable {
 
     public static let starLastAnswerDefault = HotKeyCombo(keyCode: UInt16(kVK_ANSI_B), modifierFlags: [.control, .option, .command])
 
+    public static let screenCaptureDefault = HotKeyCombo(keyCode: UInt16(kVK_ANSI_X), modifierFlags: [.control, .option, .command])
+
+    public static let screenAskDefault = HotKeyCombo(keyCode: UInt16(kVK_ANSI_Z), modifierFlags: [.control, .option, .command])
+
     static let relevantFlags: NSEvent.ModifierFlags = [.command, .option, .control, .shift]
 
     var modifiers: NSEvent.ModifierFlags { NSEvent.ModifierFlags(rawValue: modifierFlags).intersection(Self.relevantFlags) }

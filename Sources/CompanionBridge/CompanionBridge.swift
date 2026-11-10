@@ -45,6 +45,8 @@ public actor CompanionBridge: CompanionHubDelegate {
     public static let exportCapabilities = ["export.request"]
     public static let historyCapabilities = ["history.list", "history.get"]
     public static let expandCapabilities = ["expand"]
+    public static let screenCapabilities = ["capture_screen"]
+    public static let screenPreviewLength = 160
     public static let expansionTranscriptTail = 12
 
     private let control: any CompanionDomainControlling
@@ -52,6 +54,7 @@ public actor CompanionBridge: CompanionHubDelegate {
     private let exporter: (any SessionDocumentExporting)?
     private let historyQueries: (any SessionHistoryQuerying)?
     private let expansions: (any ExpansionRequesting)?
+    private let screen: ScreenContextTrigger?
     public nonisolated let capabilities: [String]
     private var session: SessionInfo?
     private var announcedSessionId: String?
@@ -82,6 +85,7 @@ public actor CompanionBridge: CompanionHubDelegate {
         exporter: (any SessionDocumentExporting)? = nil,
         history: (any SessionHistoryQuerying)? = nil,
         expansions: (any ExpansionRequesting)? = nil,
+        screen: ScreenContextTrigger? = nil,
         now: @escaping @Sendable () -> Date = { Date() },
         makeAnswerId: @escaping @Sendable () -> String = { UUID().uuidString }
     ) {
@@ -90,7 +94,8 @@ public actor CompanionBridge: CompanionHubDelegate {
         self.exporter = exporter
         historyQueries = history
         self.expansions = expansions
-        capabilities = Self.baseCapabilities + (sessions == nil ? [] : Self.sessionCapabilities) + (exporter == nil ? [] : Self.exportCapabilities) + (history == nil ? [] : Self.historyCapabilities) + (expansions == nil ? [] : Self.expandCapabilities)
+        self.screen = screen
+        capabilities = Self.baseCapabilities + (sessions == nil ? [] : Self.sessionCapabilities) + (exporter == nil ? [] : Self.exportCapabilities) + (history == nil ? [] : Self.historyCapabilities) + (expansions == nil ? [] : Self.expandCapabilities) + (screen == nil ? [] : Self.screenCapabilities)
         self.now = now
         self.makeAnswerId = makeAnswerId
         (outgoing, outgoingContinuation) = AsyncStream<ServerEvent>.makeStream()
@@ -122,6 +127,12 @@ public actor CompanionBridge: CompanionHubDelegate {
                 for await translation in feeds.translations { await self?.ingest(translation) }
             },
         ]
+        if let screen {
+            let screenEvents = screen.events(subscriber: "companion")
+            tasks.append(Task { [weak self] in
+                for await event in screenEvents { await self?.ingest(event) }
+            })
+        }
         if let sessions {
             let events = sessions.events(subscriber: "companion")
             tasks.append(Task { [weak self] in
@@ -183,7 +194,14 @@ public actor CompanionBridge: CompanionHubDelegate {
         case .expand(let request):
             guard let expansions else { return .rejected(code: "not_available") }
             return await performExpand(request, expansions: expansions)
-        case .captureScreen, .exportRequest, .historyList, .historyGet:
+        case .captureScreen(let request):
+            guard let screen else { return .rejected(code: "not_available") }
+            let kind = ScreenCaptureKind(rawValue: request.kind?.rawValue ?? "auto") ?? .auto
+            switch await screen.trigger(kind: kind, ask: request.ask == true) {
+            case .success: return .ok
+            case .failure(let failure): return .rejected(code: failure.code)
+            }
+        case .exportRequest, .historyList, .historyGet:
             return .rejected(code: "not_available")
         case .hello, .pair, .ping, .unknown:
             return .rejected(code: "unknown_command")
@@ -290,6 +308,7 @@ public actor CompanionBridge: CompanionHubDelegate {
                     language: CompanionWireMapping.expansionLanguage(request.language),
                     model: request.model.map(CompanionWireMapping.expansionModel),
                     transcriptTail: transcript.suffix(Self.expansionTranscriptTail).map(CompanionWireMapping.transcriptPromptLine),
+                    screenText: await screen?.recentText(),
                     note: request.pointId != nil ? request.freeText : nil
                 )
                 stream = try await expansions.expand(domainRequest)
@@ -420,6 +439,22 @@ public actor CompanionBridge: CompanionHubDelegate {
             }
         }
         emit(.transcriptDelta(line))
+    }
+
+    func ingest(_ event: ScreenContextEvent) {
+        guard case .captured(let capture) = event else { return }
+        let text = capture.captured.text
+        let preview = String(text.prefix(Self.screenPreviewLength))
+        emit(.screenCaptured(.init(
+            captureId: capture.id,
+            capturedAt: CompanionWireMapping.milliseconds(capture.captured.capturedAt),
+            charCount: text.count,
+            preview: preview,
+            text: text,
+            application: capture.captured.application,
+            source: capture.captured.source.rawValue,
+            asked: capture.asked
+        )))
     }
 
     func ingest(_ event: TranslationEvent) {

@@ -233,3 +233,7 @@ kbd {
 }
 
 .line .translation { display: block; margin-top: 2px; font-size: 0.92em; color: var(--muted); }
+
+.captures { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.capture-summary { cursor: pointer; font-size: 13px; }
+.capture-text { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 40vh; overflow-y: auto; font: 12px ui-monospace, monospace; margin: 4px 0 0; padding: 6px; border: 1px solid var(--line); border-radius: 6px; }

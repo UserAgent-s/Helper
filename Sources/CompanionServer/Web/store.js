@@ -1,5 +1,6 @@
 export const TRANSCRIPT_LIMIT = 40;
 export const NOTICE_LIMIT = 10;
+export const CAPTURE_LIMIT = 5;
 export const PER_CLIENT_TYPES = ["hello.ok", "pair.ok", "ack", "error", "pong", "export.ready", "history.page", "history.session"];
 
 export function initialState() {
@@ -14,6 +15,7 @@ export function initialState() {
     answer: null,
     selectedPoint: -1,
     showTranslation: true,
+    captures: [],
     transcript: [],
     levels: {},
     notices: [],
@@ -214,6 +216,13 @@ export function applyEnvelope(state, envelope) {
       const notices = next.notices.concat([data]);
       return { ...next, notices: notices.length > NOTICE_LIMIT ? notices.slice(notices.length - NOTICE_LIMIT) : notices };
     }
+    case "screen.captured": {
+      if (next.captures.some((item) => item.captureId === data.captureId)) {
+        return next;
+      }
+      const captures = [data].concat(next.captures);
+      return { ...next, captures: captures.slice(0, CAPTURE_LIMIT) };
+    }
     case "session.started":
       return { ...next, session: sessionFrom(data, next.session) };
     case "session.stopped":
@@ -352,6 +361,12 @@ export function hotkeyAction(key, state) {
     case "t":
     case "T":
       return { local: { type: "toggleTranslation" } };
+    case "x":
+    case "X":
+      return state.capabilities.indexOf("capture_screen") >= 0 ? { command: "capture_screen" } : null;
+    case "z":
+    case "Z":
+      return state.capabilities.indexOf("capture_screen") >= 0 ? { command: "capture_screen", args: { ask: true } } : null;
     default:
       if (key.length === 1 && key >= "1" && key <= "9") {
         return { local: { type: "selectPoint", index: Number(key) - 1 }, copy: Number(key) - 1 };

@@ -384,7 +384,7 @@ document.addEventListener("keydown", (event) => {
   }
   event.preventDefault();
   if (action.command) {
-    sendCommand(action.command);
+    sendCommand(action.command, action.args);
   }
   if (action.local) {
     update(applyLocal(state, action.local));

@@ -21,7 +21,7 @@ public struct ClientCommand: Sendable, Equatable {
         case setMode(SetMode)
         case resetContext
         case expand(Expand)
-        case captureScreen
+        case captureScreen(CaptureScreen)
         case sessionStart(SessionStart)
         case sessionStop
         case sessionResume(SessionResume)
@@ -118,6 +118,18 @@ public struct ClientCommand: Sendable, Equatable {
         }
     }
 
+    public struct CaptureScreen: Codable, Sendable, Equatable {
+        public let kind: WireScreenCaptureKind?
+        public let ask: Bool?
+
+        public init(kind: WireScreenCaptureKind? = nil, ask: Bool? = nil) {
+            self.kind = kind
+            self.ask = ask
+        }
+
+        public var isDefault: Bool { kind == nil && ask == nil }
+    }
+
     public struct SessionStart: Codable, Sendable, Equatable {
         public let title: String?
 
@@ -176,7 +188,7 @@ extension ClientCommand: Codable {
         case "set_mode": action = .setMode(try args(SetMode.self))
         case "reset_context": action = .resetContext
         case "expand": action = .expand(try args(Expand.self))
-        case "capture_screen": action = .captureScreen
+        case "capture_screen": action = .captureScreen(try container.decodeIfPresent(CaptureScreen.self, forKey: .args) ?? CaptureScreen())
         case "session.start": action = .sessionStart(try container.decodeIfPresent(SessionStart.self, forKey: .args) ?? SessionStart())
         case "session.stop": action = .sessionStop
         case "session.resume": action = .sessionResume(try args(SessionResume.self))
@@ -206,7 +218,9 @@ extension ClientCommand: Codable {
         case .exportRequest(let p): try container.encode(p, forKey: .args)
         case .historyList(let p): try container.encode(p, forKey: .args)
         case .historyGet(let p): try container.encode(p, forKey: .args)
-        case .answerNow, .resetContext, .captureScreen, .sessionStop, .starLast, .unknown: break
+        case .captureScreen(let p):
+            if !p.isDefault { try container.encode(p, forKey: .args) }
+        case .answerNow, .resetContext, .sessionStop, .starLast, .unknown: break
         }
     }
 }

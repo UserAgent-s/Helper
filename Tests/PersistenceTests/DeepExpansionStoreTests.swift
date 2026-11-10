@@ -68,4 +68,14 @@ import Testing
         #expect(try await repository.instructionProfile(sessionID: a.id) == .bilingualAssist)
         #expect(try await repository.instructionProfile(sessionID: b.id) == nil)
     }
+
+    @Test func screenContextIsSavedSearchableAndInDetail() async throws {
+        let database = SQLiteDatabase(path: ":memory:")
+        let repository = SQLiteSessionRepository(database: database)
+        let session = try await repository.create(kind: .assistant, mode: .answers, at: Date(timeIntervalSince1970: 1_793_000_000))
+        try await repository.saveScreenContext(SessionScreenContext(id: "scr_1", capturedAt: Date(timeIntervalSince1970: 1_793_000_050), application: "Chrome", windowTitle: "Task", text: "Реализуйте LRU-кеш с вытеснением"), sessionID: session.id)
+        let detail = try #require(try await repository.detail(sessionID: session.id))
+        #expect(detail.screenContexts.map(\.text) == ["Реализуйте LRU-кеш с вытеснением"])
+        #expect(try await SQLiteSessionSearchRepository(database: database).search(query: "вытеснением", limit: 5).map(\.sessionID) == [session.id])
+    }
 }

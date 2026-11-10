@@ -103,5 +103,12 @@ final class OverlayCoordinator {
             overlaySwitch: root.overlaySwitch
         )
         root.sessionControlViewModel.registerHotKeys(on: windowController, preferences: preferences)
+        let screenTrigger = root.screenTrigger
+        _ = windowController.registerHotKey(preferences.screenCaptureHotKey) {
+            Task { await screenTrigger.trigger(kind: .auto, ask: false) }
+        }
+        _ = windowController.registerHotKey(preferences.screenAskHotKey) {
+            Task { await screenTrigger.trigger(kind: .auto, ask: true) }
+        }
     }
 }

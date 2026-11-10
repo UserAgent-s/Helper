@@ -298,12 +298,20 @@ extension ServerEvent {
         public let capturedAt: Int64
         public let charCount: Int
         public let preview: String?
+        public let text: String?
+        public let application: String?
+        public let source: String?
+        public let asked: Bool?
 
-        public init(captureId: String, capturedAt: Int64, charCount: Int, preview: String? = nil) {
+        public init(captureId: String, capturedAt: Int64, charCount: Int, preview: String? = nil, text: String? = nil, application: String? = nil, source: String? = nil, asked: Bool? = nil) {
             self.captureId = captureId
             self.capturedAt = capturedAt
             self.charCount = charCount
             self.preview = preview
+            self.text = text
+            self.application = application
+            self.source = source
+            self.asked = asked
         }
     }
 

@@ -166,3 +166,51 @@ private let sse = [
         withExtendedLifetime(bridge) {}
     }
 }
+
+private actor StaticCapturer: ScreenTextCapturing {
+    let result: Result<CapturedScreenText, ScreenCaptureFailure>
+    init(_ result: Result<CapturedScreenText, ScreenCaptureFailure>) { self.result = result }
+    func capture(_ kind: ScreenCaptureKind) async -> Result<CapturedScreenText, ScreenCaptureFailure> { result }
+}
+
+@Suite struct CompanionBridgeScreenTests {
+    private func trigger(_ result: Result<CapturedScreenText, ScreenCaptureFailure>) -> ScreenContextTrigger {
+        ScreenContextTrigger(capturer: StaticCapturer(result), isAnswersActive: { true }, inject: { _ in }, answerNow: {}, sessions: nil, store: nil)
+    }
+
+    @Test func captureScreenEmitsFullTextAndFeedsExpansion() async throws {
+        let text = String(repeating: "Условие задачи. ", count: 30)
+        let captured = CapturedScreenText(text: text, source: .selection, application: "Chrome", bundleID: "com.google.Chrome", windowTitle: nil, truncated: false, capturedAt: Date(), durationMs: 10)
+        let transport = ScriptedAnthropicTransport(lines: sse)
+        let expansion = ClaudeExpansionClient(client: ClaudeMessagesClient(transport: transport, apiKey: { "k" }), hasKey: { true }, profile: { _ in nil }, activeSession: { nil }, store: nil)
+        let bridge = CompanionBridge(control: FakeDomainControl(), expansions: expansion, screen: trigger(.success(captured)))
+        let feeds = ManualFeeds()
+        let sink = EventSink()
+        await bridge.setPublisher { event in await sink.append(event) }
+        await bridge.start(feeds: feeds.feeds)
+        #expect(bridge.capabilities.contains("capture_screen"))
+        #expect(await bridge.perform(.captureScreen(.init(ask: true)), deviceId: "d") == .ok)
+        await waitUntil { await sink.types.contains("screen.captured") }
+        guard case .screenCaptured(let event) = await sink.events.first(where: { $0.type == "screen.captured" }) else { Issue.record("no event"); return }
+        #expect(event.text == text)
+        #expect(event.preview?.count == CompanionBridge.screenPreviewLength)
+        #expect(event.charCount == text.count)
+        #expect(event.application == "Chrome")
+        #expect(event.source == "selection")
+        #expect(event.asked == true)
+
+        #expect(await bridge.perform(.expand(.init(freeText: "Как решить?")), deviceId: "d") == .ok)
+        await waitUntil { await sink.types.contains("deep.done") }
+        let body = String(decoding: try #require(transport.bodies.first), as: UTF8.self)
+        #expect(body.contains("<screen>"))
+        #expect(body.contains("Условие задачи."))
+    }
+
+    @Test func failureIsRejectedWithCodeAndUnavailableWithoutTrigger() async {
+        let bridge = CompanionBridge(control: FakeDomainControl(), screen: trigger(.failure(.permissionDenied(.screenRecording))))
+        #expect(await bridge.perform(.captureScreen(.init()), deviceId: "d") == .rejected(code: "screen_recording_permission_missing"))
+        let plain = CompanionBridge(control: FakeDomainControl())
+        #expect(!plain.capabilities.contains("capture_screen"))
+        #expect(await plain.perform(.captureScreen(.init()), deviceId: "d") == .rejected(code: "not_available"))
+    }
+}

@@ -173,6 +173,18 @@ import Testing
         }
     }
 
+    @Test func captureScreenArgsRoundTripAndDefaultOmitsArgs() throws {
+        let asked = try CompanionCodec.decodeCommand(#"{"v":1,"cmdId":"c1","name":"capture_screen","args":{"kind":"window","ask":true}}"#)
+        #expect(asked.action == .captureScreen(.init(kind: .window, ask: true)))
+        let plain = try CompanionCodec.decodeCommand(#"{"v":1,"cmdId":"c1","name":"capture_screen"}"#)
+        #expect(plain.action == .captureScreen(.init()))
+        let encoded = try JSONSerialization.jsonObject(with: CompanionCodec.encode(plain)) as? [String: Any]
+        #expect(encoded?["args"] == nil)
+        #expect(throws: (any Error).self) {
+            try CompanionCodec.decodeCommand(#"{"v":1,"cmdId":"c1","name":"capture_screen","args":{"kind":"fullscreen"}}"#)
+        }
+    }
+
     @Test func expandNeedsPointOrFreeText() {
         #expect(throws: CompanionProtocolError.invalidArgument(field: "pointId", reason: "required")) {
             try CompanionCodec.decodeCommand(#"{"v":1,"cmdId":"c1","name":"expand","args":{"format":"short"}}"#)

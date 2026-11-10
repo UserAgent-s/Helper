@@ -34,6 +34,8 @@
 <div class="actions">
 <button type="button" id="answer-now" class="primary" disabled>Ответить <kbd>A</kbd></button>
 <button type="button" id="reset" disabled>Сброс <kbd>R</kbd></button>
+<button type="button" id="screen-capture" disabled hidden>Экран <kbd>X</kbd></button>
+<button type="button" id="screen-ask" disabled hidden>Спросить по экрану <kbd>Z</kbd></button>
 </div>
 </header>
 <div id="banner" class="banner" role="alert" hidden>
@@ -87,6 +89,10 @@
 </form>
 </div>
 <p class="hint muted"><kbd>E</kbd> раскрыть выбранный или последний пункт, <kbd>Esc</kbd> свернуть</p>
+</section>
+<section id="captures-section" hidden>
+<h2>Экран</h2>
+<ol id="captures" class="captures"></ol>
 </section>
 <section>
 <h2>История</h2>

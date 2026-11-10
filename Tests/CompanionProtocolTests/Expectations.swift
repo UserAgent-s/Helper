@@ -81,7 +81,7 @@ enum Expectations {
         "set_mode": ClientCommand(cmdId: "c-mode", action: .setMode(.init(mode: .passive))),
         "reset_context": ClientCommand(cmdId: "c-reset", action: .resetContext),
         "expand": ClientCommand(cmdId: "c-expand", action: .expand(.init(pointId: "resp_2.0", freeText: "Покажи на примере", format: .code, model: .opus, language: .ru))),
-        "capture_screen": ClientCommand(cmdId: "c-screen", action: .captureScreen),
+        "capture_screen": ClientCommand(cmdId: "c-screen", action: .captureScreen(.init())),
         "session.start": ClientCommand(cmdId: "c-ses-start", action: .sessionStart(.init(title: "Interview"))),
         "session.stop": ClientCommand(cmdId: "c-ses-stop", action: .sessionStop),
         "session.resume": ClientCommand(cmdId: "c-ses-resume", action: .sessionResume(.init(sessionId: "8F0C6B2A-3D4E-4F50-9A1B-2C3D4E5F6A7B"))),

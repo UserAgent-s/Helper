@@ -20,7 +20,13 @@ const ERROR_TEXT = {
   export_failed: "Не удалось подготовить экспорт.",
   unauthorized: "Устройство не сопряжено.",
   throttled: "Слишком много попыток. Подождите минуту.",
-  too_many_clients: "Подключено слишком много устройств."
+  too_many_clients: "Подключено слишком много устройств.",
+  accessibility_permission_missing: "На Mac нет разрешения Accessibility: выделенный текст не прочитать.",
+  screen_recording_permission_missing: "На Mac нет разрешения записи экрана: окно не прочитать.",
+  no_frontmost_application: "Не найдено активное окно на Mac.",
+  no_screen_text: "На экране не найден текст.",
+  screen_capture_timeout: "Захват экрана занял слишком много времени.",
+  screen_capture_failed: "Не удалось прочитать экран."
 };
 const NOTICE_TEXT = {
   capture_fell_back_whole_system: "Приложение не найдено, захватывается весь системный звук.",
@@ -110,10 +116,16 @@ export function createView(doc, handlers) {
     transcript: byId("transcript"),
     answer: byId("answer"),
     answerStatus: byId("answer-status"),
-    notices: byId("notices")
+    notices: byId("notices"),
+    screenCapture: byId("screen-capture"),
+    screenAsk: byId("screen-ask"),
+    capturesSection: byId("captures-section"),
+    captures: byId("captures")
   };
 
   elements.answerNow.addEventListener("click", () => handlers.command("answer_now"));
+  elements.screenCapture.addEventListener("click", () => handlers.command("capture_screen"));
+  elements.screenAsk.addEventListener("click", () => handlers.command("capture_screen", { ask: true }));
   elements.reset.addEventListener("click", () => handlers.command("reset_context"));
   elements.sessionToggle.addEventListener("click", () => handlers.command(elements.sessionToggle.dataset.command || "session.start"));
   elements.sessionStar.addEventListener("click", () => handlers.command("star_last"));
@@ -185,6 +197,26 @@ export function createView(doc, handlers) {
     }
   }
 
+  function renderCaptures(state) {
+    const available = state.capabilities.indexOf("capture_screen") >= 0;
+    const online = state.connection === "online";
+    elements.screenCapture.hidden = !available;
+    elements.screenAsk.hidden = !available;
+    elements.screenCapture.disabled = !online;
+    elements.screenAsk.disabled = !online || state.mode.mode !== "answers";
+    elements.capturesSection.hidden = !available || state.captures.length === 0;
+    clear(elements.captures);
+    for (const capture of state.captures) {
+      const item = make(doc, "li", "capture");
+      const details = make(doc, "details");
+      const label = (capture.application || "Экран") + " · " + capture.charCount + " симв." + (capture.asked ? " · спрошено" : "");
+      details.appendChild(make(doc, "summary", "capture-summary", label));
+      details.appendChild(make(doc, "pre", "capture-text", capture.text || capture.preview || ""));
+      item.appendChild(details);
+      elements.captures.appendChild(item);
+    }
+  }
+
   function renderTranscript(state) {
     clear(elements.transcript);
     for (const line of state.transcript) {
@@ -250,6 +282,7 @@ export function createView(doc, handlers) {
     renderAnswer(state, view);
     renderTranscript(state);
     renderNotices(state);
+    renderCaptures(state);
   };
 }
 

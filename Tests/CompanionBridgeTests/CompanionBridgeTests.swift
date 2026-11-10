@@ -133,7 +133,7 @@ import Testing
         #expect(await control.requestedModes == [.recording])
         await control.set(transitionResult: .failedToPassive(reason: "permission"))
         #expect(await bridge.perform(.setMode(.init(mode: .answers)), deviceId: "d") == .rejected(code: "mode_transition_failed", message: "permission"))
-        for action: ClientCommand.Action in [.expand(.init(pointId: nil)), .captureScreen, .sessionStart(.init()), .sessionStop] {
+        for action: ClientCommand.Action in [.expand(.init(pointId: nil)), .captureScreen(.init()), .sessionStart(.init()), .sessionStop] {
             #expect(await bridge.perform(action, deviceId: "d") == .rejected(code: "not_available"))
         }
         await control.set(mode: .passive)

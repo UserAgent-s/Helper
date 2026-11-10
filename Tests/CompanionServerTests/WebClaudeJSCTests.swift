@@ -173,3 +173,16 @@ import Testing
         #expect(line?.first?["translation"] as? String == "Почему?")
     }
 }
+
+@Suite struct WebScreenJSCTests {
+    @Test func screenHotkeysAndCapturesReducer() throws {
+        let store = try WebModuleContext(modules: ["store.js"])
+        #expect(try store.run(#"var s = initialState(); return hotkeyAction("x", s);"#) is NSNull)
+        let capture = try #require(try store.run(#"var s = initialState(); s.capabilities = ["capture_screen"]; return hotkeyAction("x", s);"#) as? [String: Any])
+        #expect(capture["command"] as? String == "capture_screen")
+        let ask = try #require(try store.run(#"var s = initialState(); s.capabilities = ["capture_screen"]; return hotkeyAction("Z", s).args;"#) as? [String: Any])
+        #expect(ask["ask"] as? Bool == true)
+        let captures = try #require(try store.run(#"var s = initialState(); for (var i = 0; i < 7; i++) { s = applyEnvelope(s, {v:1, seq:i+1, ts:0, type:"screen.captured", data:{captureId:"c"+i, capturedAt:0, charCount:3, text:"abc"}}); } s = applyEnvelope(s, {v:1, seq:9, ts:0, type:"screen.captured", data:{captureId:"c6", capturedAt:0, charCount:3}}); return s.captures.map(function(c){return c.captureId;});"#) as? [String])
+        #expect(captures == ["c6", "c5", "c4", "c3", "c2"])
+    }
+}

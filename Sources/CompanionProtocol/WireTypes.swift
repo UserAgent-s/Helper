@@ -55,6 +55,12 @@ public enum WireDeepModel: String, Codable, Sendable, CaseIterable {
     case opus
 }
 
+public enum WireScreenCaptureKind: String, Codable, Sendable, CaseIterable {
+    case auto
+    case selection
+    case window
+}
+
 public enum WireLanguage: String, Codable, Sendable, CaseIterable {
     case auto
     case ru
