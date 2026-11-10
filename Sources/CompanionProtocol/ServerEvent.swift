@@ -279,11 +279,17 @@ extension ServerEvent {
         public let requestId: String
         public let status: WireAnswerStatus
         public let errorCode: String?
+        public let ttftMs: Int?
+        public let costUsd: Double?
+        public let modelId: String?
 
-        public init(requestId: String, status: WireAnswerStatus, errorCode: String? = nil) {
+        public init(requestId: String, status: WireAnswerStatus, errorCode: String? = nil, ttftMs: Int? = nil, costUsd: Double? = nil, modelId: String? = nil) {
             self.requestId = requestId
             self.status = status
             self.errorCode = errorCode
+            self.ttftMs = ttftMs
+            self.costUsd = costUsd
+            self.modelId = modelId
         }
     }
 

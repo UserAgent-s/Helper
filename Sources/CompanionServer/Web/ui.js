@@ -129,6 +129,12 @@ export function createView(doc, handlers) {
   });
   elements.bannerClose.addEventListener("click", () => handlers.dismissError());
   elements.answer.addEventListener("click", (event) => {
+    const expand = event.target.closest ? event.target.closest("[data-expand]") : null;
+    if (expand && handlers.expandPoint) {
+      event.stopPropagation();
+      handlers.expandPoint(Number(expand.dataset.expand));
+      return;
+    }
     const target = event.target.closest ? event.target.closest("[data-point]") : null;
     if (target) {
       handlers.selectPoint(Number(target.dataset.point), true);
@@ -137,9 +143,11 @@ export function createView(doc, handlers) {
 
   let renderedAnswerKey = null;
 
-  function renderAnswer(state) {
+  function renderAnswer(state, view) {
     const answer = state.answer;
-    const key = answer ? [answer.answerId, answer.text.length, answer.points.length, answer.status, state.selectedPoint, answer.text].join("|") : "none";
+    const expandable = state.capabilities.indexOf("expand") >= 0 && state.connection === "online";
+    const runningPoints = (view.runningPoints || []).join(",");
+    const key = answer ? [answer.answerId, answer.text.length, answer.points.length, answer.status, state.selectedPoint, expandable, runningPoints, answer.text].join("|") : "none";
     if (key === renderedAnswerKey) {
       return;
     }
@@ -161,6 +169,15 @@ export function createView(doc, handlers) {
       point.tabIndex = 0;
       point.appendChild(make(doc, "span", "point-number", String(segment.index + 1)));
       point.appendChild(make(doc, "span", "point-text", segment.text));
+      if (expandable) {
+        const pointId = answer.points.find((item) => item.index === segment.index);
+        const isRunning = pointId && (view.runningPoints || []).indexOf(pointId.pointId) >= 0;
+        const button = make(doc, "button", "point-expand" + (isRunning ? " running" : ""), isRunning ? "…" : "Claude");
+        button.type = "button";
+        button.dataset.expand = String(segment.index);
+        button.setAttribute("aria-label", "Раскрыть пункт " + (segment.index + 1) + " через Claude");
+        point.appendChild(button);
+      }
       elements.answer.appendChild(point);
     }
   }
@@ -224,7 +241,7 @@ export function createView(doc, handlers) {
     elements.banner.hidden = !message;
     elements.banner.dataset.kind = view.silent ? "silence" : "info";
     elements.bannerText.textContent = message || "";
-    renderAnswer(state);
+    renderAnswer(state, view);
     renderTranscript(state);
     renderNotices(state);
   };

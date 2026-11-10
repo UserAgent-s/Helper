@@ -206,3 +206,28 @@ kbd {
 .history-expansion { margin-left: 16px; padding-left: 8px; border-left: 3px solid var(--accent); }
 .history-list { margin: 0; padding-left: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
 .history-list .translation { display: block; }
+
+.point-expand { flex: none; align-self: flex-start; padding: 0 6px; font-size: 12px; line-height: 1.6; opacity: 0; }
+.point:hover .point-expand, .point:focus .point-expand, .point.selected .point-expand, .point-expand.running { opacity: 1; }
+.point-expand.running { color: var(--accent); border-color: var(--accent); }
+.deep[hidden], .deep-body[hidden], .deep-error[hidden] { display: none; }
+.deep-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.deep-head button { font-size: 12px; padding: 2px 8px; }
+.deep-controls { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.deep-controls select { font: inherit; font-size: 13px; padding: 3px 4px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--text); }
+.deep-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 55vh; overflow-y: auto; }
+.deep-entry { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font-size: 14px; cursor: pointer; }
+.deep-entry.active { border-color: var(--accent); cursor: default; }
+.deep-entry.refused { border-color: var(--bad); }
+.deep-title { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.deep-text { white-space: pre-wrap; overflow-wrap: anywhere; margin-top: 4px; line-height: 1.45; }
+.deep-stats { font-size: 11px; margin-top: 4px; }
+.deep-error { color: var(--bad); font-size: 13px; margin: 4px 0 0; }
+.deep-warning { color: var(--warning); font-size: 13px; margin-top: 4px; }
+.deep-form { display: grid; gap: 6px; margin-top: 8px; }
+.deep-form textarea { font: inherit; font-size: 14px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--text); resize: vertical; min-height: 2.6em; }
+.deep-form-actions { display: flex; justify-content: flex-end; gap: 6px; }
+@media (max-width: 600px) {
+  .deep-list { max-height: none; }
+  .deep-form-actions button { flex: 1; padding: 10px; }
+}

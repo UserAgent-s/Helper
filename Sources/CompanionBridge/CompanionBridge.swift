@@ -66,6 +66,7 @@ public actor CompanionBridge: CompanionHubDelegate {
     private var overlayEnabled = true
     private var publisher: (@Sendable (ServerEvent) async -> Void)?
     private var tasks: [Task<Void, Never>] = []
+    private var expansionStats: [String: (ttftMs: Int?, costUSD: Double?, modelID: String)] = [:]
     private let outgoing: AsyncStream<ServerEvent>
     private let outgoingContinuation: AsyncStream<ServerEvent>.Continuation
     private(set) public var publishedEventCount = 0
@@ -325,8 +326,11 @@ public actor CompanionBridge: CompanionHubDelegate {
             emit(.deepStarted(.init(requestId: id, pointId: pointId, model: CompanionWireMapping.wireDeepModel(modelID), format: CompanionWireMapping.wireDeepFormat(format), language: CompanionWireMapping.wireLanguage(language))))
         case .delta(let id, let offset, let text):
             emit(.deepDelta(.init(requestId: id, offset: offset, text: text)))
+        case .stats(let id, let ttftMs, let costUSD, let modelID):
+            expansionStats[id] = (ttftMs, costUSD, modelID)
         case .finished(let id, let outcome, let errorCode):
-            emit(.deepDone(.init(requestId: id, status: CompanionWireMapping.wireStatus(outcome), errorCode: errorCode)))
+            let stats = expansionStats.removeValue(forKey: id)
+            emit(.deepDone(.init(requestId: id, status: CompanionWireMapping.wireStatus(outcome), errorCode: errorCode, ttftMs: stats?.ttftMs, costUsd: stats?.costUSD.map { ($0 * 10_000).rounded() / 10_000 }, modelId: stats?.modelID)))
         }
     }
 

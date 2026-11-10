@@ -247,6 +247,8 @@ public actor ClaudeExpansionClient: ExpansionRequesting {
                 try? await store?.saveExpansion(final)
             }
             await self?.finish(id: id, conversation: conversation, text: text, outcome: outcome)
+            let cost = usage.map { ClaudeCostEstimator.estimate($0, model: ClaudeModel(rawValue: servedModel) ?? conversation.model).total }
+            continuation.yield(.stats(expansionID: id, ttftMs: ttftMs, costUSD: cost, modelID: servedModel))
             continuation.yield(.finished(expansionID: id, outcome: outcome, errorCode: errorCode))
             continuation.finish()
         }

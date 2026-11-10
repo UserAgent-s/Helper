@@ -77,6 +77,7 @@ public enum ExpansionOutcome: String, Sendable, Equatable {
 public enum ExpansionEvent: Sendable, Equatable {
     case started(expansionID: String, modelID: String, format: ExpansionFormat, language: ExpansionLanguage)
     case delta(expansionID: String, offset: Int, text: String)
+    case stats(expansionID: String, ttftMs: Int?, costUSD: Double?, modelID: String)
     case finished(expansionID: String, outcome: ExpansionOutcome, errorCode: String?)
 }
 

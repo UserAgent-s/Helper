@@ -1,7 +1,8 @@
 import { createSupervisor } from "./connection.js";
+import { applyDeep, canExpand, createDeepView, DEEP_TYPES, deepCommandArgs, deepLocal, initialDeep, runningEntryForPoint, canFollowUp } from "./claude.js";
 import { applyHistory, createHistoryView, HISTORY_TYPES, historyListArgs, historyLocal, initialHistory } from "./history.js";
 import { describeClose, helloCommand, makeCommand, pairCommand, pairingCodeFromHash, parseEnvelope, pingCommand, socketURL } from "./protocol.js";
-import { applyEnvelope, applyLocal, hotkeyAction, initialState, pointText, shouldHandleHotkey } from "./store.js";
+import { applyEnvelope, applyLocal, hotkeyAction, initialState, pointIdAt, pointText, shouldHandleHotkey } from "./store.js";
 import { copyText, createView, startDownload } from "./ui.js";
 
 const TOKEN_KEY = "ua057.deviceToken";
@@ -32,6 +33,7 @@ const storage = {
 
 let state = initialState();
 let history = initialHistory();
+let deep = initialDeep();
 let searchTimer = null;
 let socket = null;
 let renderQueued = false;
@@ -80,8 +82,56 @@ const render = createView(document, {
     if (copy) {
       copyText(document, pointText(state.answer, index));
     }
+  },
+  expandPoint
+});
+
+const renderDeep = createDeepView(document, {
+  local(action) {
+    deep = deepLocal(deep, action);
+    scheduleRender();
+  },
+  ask(text) {
+    const question = text.trim();
+    if (!question) {
+      return;
+    }
+    const source = canFollowUp(deep) ? { parentRequestId: deep.activeId, freeText: question } : { freeText: question };
+    requestExpansion(source, null);
   }
 });
+
+function expandPoint(index) {
+  if (index < 0) {
+    return;
+  }
+  update(applyLocal(state, { type: "selectPoint", index }));
+  const pointId = pointIdAt(state.answer, index);
+  if (!pointId) {
+    return;
+  }
+  const runningEntry = runningEntryForPoint(deep, pointId);
+  if (runningEntry) {
+    deep = deepLocal(deep, { type: "select", requestId: runningEntry.requestId });
+    scheduleRender();
+    return;
+  }
+  requestExpansion({ pointId }, index);
+}
+
+function requestExpansion(source, pointNumber) {
+  const args = deepCommandArgs(deep, source);
+  if (!canExpand(deep, args)) {
+    deep = deepLocal(deep, { type: "open" });
+    scheduleRender();
+    return;
+  }
+  const cmdId = sendCommand("expand", args);
+  if (cmdId) {
+    deep = deepLocal(deep, { type: "requested", cmdId, args, pointNumber });
+    scheduleRender();
+  }
+}
 
 const renderHistory = createHistoryView(document, {
   open() {
@@ -150,7 +200,9 @@ function scheduleRender() {
   globalThis.requestAnimationFrame(() => {
     renderQueued = false;
     view.showPairing = !currentToken() && state.connection !== "online";
+    view.runningPoints = deep.entries.filter((entry) => entry.pointId && (entry.status === "thinking" || entry.status === "streaming")).map((entry) => entry.pointId).concat(deep.pending.filter((item) => item.pointId).map((item) => item.pointId));
     render(state, view);
+    renderDeep(deep, { available: state.capabilities.indexOf("expand") >= 0, online: state.connection === "online" });
     const can = (name) => state.connection === "online" && state.capabilities.indexOf(name) >= 0;
     renderHistory(history, { canList: can("history.list"), canExport: can("export.request") });
   });
@@ -181,7 +233,9 @@ function sendCommand(name, args) {
   const command = makeCommand(name, args);
   if (send(command)) {
     update(applyLocal(state, { type: "commandSent", cmdId: command.cmdId, name }));
+    return command.cmdId;
   }
+  return null;
 }
 
 function handleEnvelope(envelope) {
@@ -193,6 +247,18 @@ function handleEnvelope(envelope) {
     if (command === "history.list" || command === "history.get") {
       history = historyLocal(history, { type: "failed", command });
     }
+    if (command === "expand") {
+      deep = deepLocal(deep, { type: "rejected", cmdId: envelope.data.cmdId, code: envelope.data.code });
+    }
+  }
+  if (envelope.type === "hello.ok") {
+    deep = deepLocal(deep, { type: "online" });
+  }
+  if (envelope.type === "state.snapshot") {
+    deep = deepLocal(deep, { type: "snapshot" });
+  }
+  if (DEEP_TYPES.indexOf(envelope.type) >= 0 && (state.lastSeq === null || envelope.seq > state.lastSeq)) {
+    deep = applyDeep(deep, envelope);
   }
   let next = applyEnvelope(state, envelope);
   if (next.pairedToken) {
@@ -325,6 +391,13 @@ document.addEventListener("keydown", (event) => {
   }
   if (action.copy !== undefined) {
     copyText(document, pointText(state.answer, action.copy));
+  }
+  if (action.expand !== undefined) {
+    expandPoint(action.expand);
+  }
+  if (action.deepClose) {
+    deep = deepLocal(deep, { type: "close" });
+    scheduleRender();
   }
 });
 

@@ -53,7 +53,7 @@
 <section class="panel answer-panel">
 <h2>Ответ <span id="answer-status" class="muted"></span></h2>
 <div id="answer" class="answer" aria-live="polite"></div>
-<p class="hint muted"><kbd>1</kbd>–<kbd>9</kbd> выбрать и скопировать пункт, <kbd>[</kbd> <kbd>]</kbd> соседний пункт, <kbd>C</kbd> копировать выбранный</p>
+<p class="hint muted"><kbd>1</kbd>–<kbd>9</kbd> выбрать и скопировать пункт, <kbd>[</kbd> <kbd>]</kbd> соседний пункт, <kbd>C</kbd> копировать выбранный, <kbd>E</kbd> раскрыть через Claude</p>
 </section>
 <section class="panel transcript-panel">
 <h2>Стенограмма</h2>
@@ -61,9 +61,32 @@
 <p id="headphones-hint" class="hint muted">Для канала «Я» рекомендуются наушники: с динамиками голос собеседника может попасть в микрофон.</p>
 </section>
 <aside class="panel side-panel">
-<section>
-<h2>Claude</h2>
-<p class="muted">Раскрытие пунктов появится позже.</p>
+<section id="deep" class="deep" hidden>
+<div class="deep-head">
+<h2>Claude <span id="deep-status" class="muted"></span></h2>
+<button type="button" id="deep-toggle" aria-controls="deep-body" aria-expanded="false">Развернуть</button>
+</div>
+<div id="deep-body" class="deep-body" hidden>
+<div class="deep-controls">
+<select id="deep-format" aria-label="Формат"></select>
+<select id="deep-language" aria-label="Язык"></select>
+<select id="deep-model" aria-label="Модель">
+<option value="">Модель с Mac</option>
+<option value="sonnet">Sonnet</option>
+<option value="opus">Opus</option>
+</select>
+</div>
+<p id="deep-error" class="deep-error" role="alert" hidden></p>
+<ol id="deep-list" class="deep-list" aria-live="polite"></ol>
+<form id="deep-form" class="deep-form" autocomplete="off">
+<textarea id="deep-question" rows="2" maxlength="4000" placeholder="Вопрос к Claude (Ctrl+Enter)"></textarea>
+<div class="deep-form-actions">
+<button type="button" id="deep-new" hidden>Новый вопрос</button>
+<button type="submit" id="deep-submit" class="primary" disabled>Спросить</button>
+</div>
+</form>
+</div>
+<p class="hint muted"><kbd>E</kbd> раскрыть выбранный или последний пункт, <kbd>Esc</kbd> свернуть</p>
 </section>
 <section>
 <h2>История</h2>

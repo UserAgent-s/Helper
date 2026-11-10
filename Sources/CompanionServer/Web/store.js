@@ -294,6 +294,24 @@ function pushText(segments, text) {
   }
 }
 
+export function expandTarget(state) {
+  if (!state.answer || state.answer.points.length === 0) {
+    return -1;
+  }
+  if (state.selectedPoint >= 0 && state.selectedPoint < state.answer.points.length) {
+    return state.selectedPoint;
+  }
+  return state.answer.points.length - 1;
+}
+
+export function pointIdAt(answer, index) {
+  if (!answer) {
+    return null;
+  }
+  const point = answer.points.find((item) => item.index === index);
+  return point ? point.pointId : null;
+}
+
 export function shouldHandleHotkey(target) {
   if (!target) {
     return true;
@@ -323,6 +341,11 @@ export function hotkeyAction(key, state) {
     case "c":
     case "C":
       return { copy: state.selectedPoint };
+    case "e":
+    case "E":
+      return state.capabilities.indexOf("expand") >= 0 ? { expand: expandTarget(state) } : null;
+    case "Escape":
+      return { deepClose: true };
     default:
       if (key.length === 1 && key >= "1" && key <= "9") {
         return { local: { type: "selectPoint", index: Number(key) - 1 }, copy: Number(key) - 1 };
