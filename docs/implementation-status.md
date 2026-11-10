@@ -1459,3 +1459,22 @@ M1 по коду закрыт (S1.1–S1.7). Ручной чек-лист M1 в 
 - App: `CompositionRoot.screenTrigger` (общий `LastActiveApplicationTracker` для AX и скриншотов, inject в `realtimeAnswering`, `answerNow` → `manualAnswerTrigger`).
 - Тесты: `ScreenContextTriggerTests` 6 (в answers inject без ответа и запись; ask → один ответ; вне answers ничего не отправляется; ошибка; без сессии не пишет; срок `recentText`), `CompanionBridgeScreenTests` 2 (полный текст и превью, `<screen>` в раскрытии; код отказа и отсутствие capability), кодек `capture_screen` с аргументами, `WebScreenJSCTests`, `screenContextIsSavedSearchableAndInDetail`. Inject `.screen` без `response.create` на уровне Realtime-клиента уже покрыт `InjectedContextTests` (S3.2).
 - Не сделано: XCUITest «хоткей не печатает символ» (нет режима запуска с фейковым транспортом; Carbon `RegisterEventHotKey` поглощает событие — ручная проверка владельцем), замер «< 2 с до второго ПК» на реальной сети.
+
+### S6.5 Финальная проверка v1 на железе и документация (подготовка)
+
+- Документация сверена с кодом M5–M6: privacy.md — канал «Я» в `answers` описан как работающий (было «понадобится с M3»), новый абзац о тексте экрана (что читается, куда уходит, что не сохраняется), строки потоков OpenAI Realtime (выжимка, ключевые слова, текст экрана), канал «Я», Anthropic (текст экрана в раскрытиях); troubleshooting.md — «Команда „Экран“ ничего не читает», «Перевод реплик не появляется», чек-лист финальной проверки v1 из 11 пунктов.
+- `make verify-fast` зелёный на коммите шага.
+- Не выполнено (владелец, требуется железо, второй компьютер, платные ключи и Instruments): часовой звонок, Wi-Fi и сон, профилирование, `make verify-real`, `make verify-real-me`, `make verify-real-claude`, `make ui-test`. Таблица результатов:
+
+| Проверка | Результат |
+|---|---|
+| CPU основного процесса в «Ответах», % | |
+| Рост памяти за час (Allocations) | |
+| p50/p95 до первой дельты: начало / конец часа | |
+| Переподключение Wi-Fi: события не потеряны | |
+| Сон 1 мин: режим и сессия восстановлены | |
+| «Экран» до второго ПК, с | |
+| verify-real / verify-real-me / verify-real-claude | |
+| make ui-test | |
+
+- Открытые вопросы из v3, которые план v1 сознательно не закрывает: лимит длительности Realtime-сессии и её ротация (v3 U P0), несколько провайдеров Realtime (R2), банк историй вместо выжимки (I 210), Bonjour и роли M2b.
