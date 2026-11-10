@@ -200,14 +200,92 @@ struct ProfileSettingsTab: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
-            Section(loc("MD-профиль и Claude")) {
-                LabeledContent(loc("Папка профиля"), value: loc("появится в M5"))
-                Text(loc("Профиль из MD-файлов и расширение ответов через Claude подключаются на этапе M5."))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+            if let profile = viewModel.profile {
+                ProfileFolderSection(profile: profile)
             }
         }
         .formStyle(.grouped)
+        .task { await viewModel.profile?.reload() }
+    }
+}
+
+struct ProfileFolderSection: View {
+    @Bindable var profile: ProfileSettingsViewModel
+
+    var body: some View {
+        Section(loc("MD-профиль")) {
+            HStack {
+                Text(profile.folderPath ?? loc("Папка не выбрана — используется «Опыт работы»"))
+                    .font(.caption.monospaced())
+                    .lineLimit(2)
+                    .truncationMode(.middle)
+                    .textSelection(.enabled)
+                Spacer()
+                Button(loc("Выбрать папку…")) { profile.chooseFolder() }
+                    .accessibilityIdentifier("settings.profile.chooseFolder")
+                if profile.folderPath != nil {
+                    Button(loc("Перечитать")) { Task { await profile.reload() } }
+                    Button(loc("Отключить"), role: .destructive) { Task { await profile.clearFolder() } }
+                }
+            }
+            statusView
+            if !profile.candidates.isEmpty {
+                ForEach(profile.candidates) { candidate in
+                    Toggle(isOn: Binding(
+                        get: { profile.isSelected(candidate.relativePath) },
+                        set: { isOn in Task { await profile.setSelected(candidate.relativePath, isOn) } }
+                    )) {
+                        HStack {
+                            Text(candidate.relativePath).font(.callout.monospaced())
+                            Spacer()
+                            Text(ProfileSettingsViewModel.formatBytes(candidate.byteCount))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                HStack {
+                    Text(profile.usesDefaultSelection ? loc("Выбор по умолчанию: 01, 02, 03") : loc("Выбор изменён вручную"))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button(loc("Сбросить выбор")) { Task { await profile.resetSelection() } }
+                        .disabled(profile.usesDefaultSelection)
+                }
+            }
+            Text(loc("Файлы *.md читаются из папки и подпапок первого уровня. Профиль уходит в Anthropic при раскрытии ответа через Claude; ключевые слова (имена, технологии) — в OpenAI для точной расшифровки."))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    @ViewBuilder
+    private var statusView: some View {
+        switch profile.status {
+        case .noFolder:
+            EmptyView()
+        case .ok, .warning:
+            VStack(alignment: .leading, spacing: 2) {
+                Text(String(format: loc("Файлов: %d · %@ · ≈%d токенов"), profile.documentCount, ProfileSettingsViewModel.formatBytes(profile.totalBytes), profile.estimatedTokens))
+                    .font(.caption)
+                if profile.status == .warning {
+                    Text(loc("Профиль больше 100 КБ: раскрытия будут дороже и медленнее. Лимит — 256 КБ."))
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+                if !profile.keywords.isEmpty {
+                    Text(loc("Ключевые слова для расшифровки:") + " " + profile.keywords.prefix(15).joined(separator: ", "))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
+            }
+        case .error(let message):
+            Text(message)
+                .font(.caption)
+                .foregroundStyle(.red)
+                .accessibilityIdentifier("settings.profile.error")
+        }
     }
 }
 

@@ -85,3 +85,10 @@
 - Ключи OpenAI и Anthropic хранятся раздельно в UserDefaults приложения: `com.local.UserAgent057.settings.openaiAPIKey` и `com.local.UserAgent057.settings.anthropicAPIKey`. Это не Keychain: любой процесс под вашей учётной записью может прочитать файл настроек. Переход на Keychain отложен до стабильной подписи (`make dev-identity`).
 - Ключ Anthropic отправляется только в Anthropic, ключ OpenAI — только в OpenAI. Ключ `sk-ant-…` нельзя сохранить в поле OpenAI, и наоборот.
 - В диагностическом логе `realtime_diag.log` маскируются ключи `sk-…` и `sk-ant-…`, заголовки `Authorization: Bearer …` и значения `x-api-key`.
+
+## MD-профиль (с S5.2)
+
+- Папка профиля выбирается во вкладке «Профиль и Claude» и запоминается как bookmark в UserDefaults (`…settings.profile.folderBookmark`), выбор файлов — в `…settings.profile.selectedPaths`. Файлы читаются только локально, при каждом обращении; копия в базу не пишется.
+- В базу сессии пишется только отпечаток профиля (SHA-256, `meetings.knowledge_digest`), не текст.
+- До 40 ключевых слов из выбранных файлов (латинские имена, технологии, продукты вроде `Symfony`, `AppSync`, `Praxis`) уходят в OpenAI в настройке расшифровки (`audio.input.transcription.keywords`) в `answers` и в канале «Я». Остальной текст профиля в OpenAI не уходит: в инструкции Realtime по-прежнему идёт только «Опыт работы» (дайджест профиля появится в S5.5).
+- Профиль целиком уйдёт в Anthropic только при раскрытии через Claude (S5.4).

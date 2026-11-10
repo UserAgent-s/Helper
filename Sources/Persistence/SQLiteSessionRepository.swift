@@ -200,6 +200,21 @@ public final class SQLiteSessionRepository: SessionRepository, Sendable {
         ])
     }
 
+    public func setKnowledgeDigest(sessionID: SessionID, digest: String) async throws {
+        try await connection.transaction([
+            ("UPDATE meetings SET knowledge_digest = ?, updated_at = ? WHERE id = ?", [.text(digest), .text(Self.format(Date())), .text(Self.key(sessionID))]),
+        ])
+    }
+
+    public func knowledgeDigest(sessionID: SessionID) async throws -> String? {
+        try await connection.ensureReady()
+        return try await connection.query(
+            "SELECT knowledge_digest FROM meetings WHERE id = ?",
+            [.text(Self.key(sessionID))],
+            map: { $0.string(0) }
+        ).first ?? nil
+    }
+
     public func purge(olderThan date: Date, excluding active: SessionID?) async throws -> [SessionID] {
         try await connection.ensureReady()
         let ids = try await connection.query(

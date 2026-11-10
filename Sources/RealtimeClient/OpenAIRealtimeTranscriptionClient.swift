@@ -25,6 +25,8 @@ public actor OpenAIRealtimeTranscriptionClient: MeTranscribing {
     private let status = AsyncBroadcaster<MeTranscriptionStatus>(replayLatest: true, initial: .stopped)
 
     private var languages: [String] = []
+    private var keywords: [String] = []
+    private let keywordsProvider: @Sendable () async -> [String]
     private var active = false
     private var connected = false
     private var generation = 0
@@ -43,8 +45,10 @@ public actor OpenAIRealtimeTranscriptionClient: MeTranscribing {
         reconnectBaseDelay: Duration = .milliseconds(500),
         maxReconnectDelay: Duration = .seconds(8),
         maxReconnectAttempts: Int = 5,
+        keywordsProvider: @escaping @Sendable () async -> [String] = { [] },
         redactedLog: @escaping @Sendable (String) -> Void = { _ in }
     ) {
+        self.keywordsProvider = keywordsProvider
         self.transport = transport
         self.credentialProviding = credentialProviding
         self.delay = delay
@@ -63,6 +67,7 @@ public actor OpenAIRealtimeTranscriptionClient: MeTranscribing {
     public func start(languages: [String]) async throws -> AsyncStream<TranscriptDelta> {
         if active { await stop() }
         self.languages = languages
+        keywords = ProfileKeywordExtractor.sanitized(await keywordsProvider())
         status.yield(.connecting)
         let (stream, continuation) = AsyncStream<TranscriptDelta>.makeStream()
         do {
@@ -130,7 +135,8 @@ public actor OpenAIRealtimeTranscriptionClient: MeTranscribing {
             model: Self.modelID,
             rate: Self.sampleRate,
             languages: languages,
-            delay: delay
+            delay: delay,
+            keywords: keywords
         )))
         connected = true
         samplesSinceCommit = 0

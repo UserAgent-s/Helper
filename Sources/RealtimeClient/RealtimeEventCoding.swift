@@ -54,6 +54,7 @@ public struct TranscriptionSessionConfig: Encodable, Sendable, Equatable {
     let rate: Int
     let languages: [String]
     let delay: String
+    var keywords: [String] = []
 
     private enum CodingKeys: String, CodingKey { case type, audio }
     private enum AudioKeys: String, CodingKey { case input }
@@ -61,7 +62,7 @@ public struct TranscriptionSessionConfig: Encodable, Sendable, Equatable {
         case format, transcription
         case turnDetection = "turn_detection"
     }
-    private enum TranscriptionKeys: String, CodingKey { case model, languages, delay }
+    private enum TranscriptionKeys: String, CodingKey { case model, languages, delay, keywords }
 
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -73,6 +74,9 @@ public struct TranscriptionSessionConfig: Encodable, Sendable, Equatable {
         try transcription.encode(model, forKey: .model)
         if !languages.isEmpty {
             try transcription.encode(languages, forKey: .languages)
+        }
+        if !keywords.isEmpty {
+            try transcription.encode(keywords, forKey: .keywords)
         }
         try transcription.encode(delay, forKey: .delay)
         try input.encodeNil(forKey: .turnDetection)
@@ -150,6 +154,7 @@ struct AudioInputConfig: Encodable, Sendable {
 struct InputTranscriptionConfig: Encodable, Sendable, Equatable {
     let model: String
     let languages: [String]?
+    var keywords: [String] = []
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -157,10 +162,13 @@ struct InputTranscriptionConfig: Encodable, Sendable, Equatable {
         if let languages, !languages.isEmpty {
             try container.encode(languages, forKey: .languages)
         }
+        if !keywords.isEmpty {
+            try container.encode(keywords, forKey: .keywords)
+        }
     }
 
     private enum CodingKeys: String, CodingKey {
-        case model, languages
+        case model, languages, keywords
     }
 }
 

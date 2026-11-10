@@ -61,6 +61,7 @@ final class SettingsViewModel {
     }
 
     let audio: AudioSettingsViewModel
+    let profile: ProfileSettingsViewModel?
 
     private(set) var screenRecordingStatus = PermissionStatus.notDetermined
     private(set) var microphoneStatus = PermissionStatus.notDetermined
@@ -171,8 +172,10 @@ final class SettingsViewModel {
         recordingsDirectory: URL,
         companionService: CompanionService? = nil,
         overlaySwitch: OverlaySwitch? = nil,
-        exportsDirectory: URL? = nil
+        exportsDirectory: URL? = nil,
+        profile: ProfileSettingsViewModel? = nil
     ) {
+        self.profile = profile
         self.companionService = companionService
         self.overlaySwitch = overlaySwitch ?? OverlaySwitch()
         self.exportsDirectory = exportsDirectory

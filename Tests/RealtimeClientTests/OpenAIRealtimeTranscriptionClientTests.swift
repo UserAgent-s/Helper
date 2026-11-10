@@ -202,4 +202,25 @@ private func meFrame(samples: Int = 2_400, rate: Int = 24_000) -> PCMAudioFrame 
         #expect(transport.connectCallCount == 1)
         statusTask.cancel()
     }
+
+    @Test func keywordsAreSentSanitizedAndOmittedWhenEmpty() async throws {
+        let transport = FakeRealtimeWebSocketTransport()
+        let client = OpenAIRealtimeTranscriptionClient(
+            transport: transport,
+            credentialProviding: FakeCredentialProviding(),
+            keywordsProvider: { ["Symfony", "<bad>", "Symfony", "multi\nline"] }
+        )
+        _ = try await client.start(languages: ["ru", "en"])
+        guard case .transcriptionSessionUpdate(let config) = transport.sentEvents.first else {
+            Issue.record("expected session.update")
+            return
+        }
+        let json = try #require(JSONSerialization.jsonObject(with: JSONEncoder().encode(RealtimeClientEvent.transcriptionSessionUpdate(config))) as? [String: Any])
+        let transcription = try #require(((json["session"] as? [String: Any])?["audio"] as? [String: Any]).flatMap { ($0["input"] as? [String: Any])?["transcription"] as? [String: Any] })
+        #expect(transcription["keywords"] as? [String] == ["Symfony", "bad", "multi line"])
+        await client.stop()
+
+        let plain = RealtimeClientEvent.transcriptionSessionUpdate(TranscriptionSessionConfig(model: "gpt-live-transcribe", rate: 24_000, languages: ["ru"], delay: "low"))
+        #expect(!String(decoding: try JSONEncoder().encode(plain), as: UTF8.self).contains("keywords"))
+    }
 }

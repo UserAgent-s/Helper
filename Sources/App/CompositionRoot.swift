@@ -10,6 +10,7 @@ import Summary
 import OverlayReducer
 import CompanionProtocol
 import CompanionBridge
+import ProfileKnowledge
 
 @MainActor
 final class CompositionRoot {
@@ -44,6 +45,8 @@ final class CompositionRoot {
     let questionAnswerLogger: QuestionAnswerLogger
     let sessionRepository: any SessionRepository
     let sessionCoordinator: SessionCoordinator
+    let profileKnowledge: MarkdownFolderProfileProvider
+    let sessionProfileFreezer: SessionProfileFreezer
     let sessionFinalizer: SessionFinalizer
     let sessionRecorder: SessionRecorder
 
@@ -71,7 +74,11 @@ final class CompositionRoot {
         SettingsMigrator(defaults: .standard).migrateIfNeeded()
         let settingsStore = AppSettingsStore()
         self.settingsStore = settingsStore
-        let profileKnowledge: any ProfileKnowledgeProviding = LegacyBackgroundProfileProvider { [settingsStore] in settingsStore.backgroundContext }
+        let profileKnowledge = MarkdownFolderProfileProvider(
+            configuration: { [settingsStore] in settingsStore.profileFolderConfiguration() },
+            legacyText: { [settingsStore] in settingsStore.backgroundContext }
+        )
+        self.profileKnowledge = profileKnowledge
         LocalizationCenter.shared.configure(with: settingsStore)
 
         let avMicrophone = AVEngineMicrophoneCapturing(permissions: permissionsChecking)
@@ -138,6 +145,7 @@ final class CompositionRoot {
             credentialProviding: DirectKeyCredentialProvider(secretStoring: secretStoring),
             vadSettingsProvider: { [settingsStore] in settingsStore.vadSettings },
             latencyRecording: latencyRecording,
+            transcriptionKeywordsProvider: { await profileKnowledge.transcriptionKeywords() },
             redactedLog: realtimeDiagLog
         )
 
@@ -151,6 +159,7 @@ final class CompositionRoot {
         let meTranscription = OpenAIRealtimeTranscriptionClient(
             transport: URLSessionRealtimeWebSocketTransport(logger: realtimeDiagLog),
             credentialProviding: DirectKeyCredentialProvider(secretStoring: secretStoring),
+            keywordsProvider: { await profileKnowledge.transcriptionKeywords() },
             redactedLog: realtimeDiagLog
         )
         let meChannel = MeTranscriptionSink(
@@ -212,11 +221,15 @@ final class CompositionRoot {
             }
         )
         self.sessionCoordinator = sessionCoordinator
+        let sessionProfileFreezer = SessionProfileFreezer(provider: profileKnowledge, repository: sessionRepository, redactedLog: realtimeDiagLog)
+        self.sessionProfileFreezer = sessionProfileFreezer
+        let profileSessionEvents = sessionCoordinator.events(subscriber: "sessionProfileFreezer")
         sessionControlViewModel = SessionControlViewModel(sessions: sessionCoordinator)
         let answerTranscripts = answersController.transcriptEvents(subscriber: "sessionRecorder")
         Task {
             await sessionContext.bind(sessionCoordinator)
             await sessionRecorder.attach(answerTranscripts)
+            await sessionProfileFreezer.observe(profileSessionEvents)
             await sessionCoordinator.startObserving()
         }
 
@@ -306,7 +319,8 @@ final class CompositionRoot {
             recordingsDirectory: recordingsDirectory,
             companionService: companionService,
             overlaySwitch: overlaySwitch,
-            exportsDirectory: exportsDirectory
+            exportsDirectory: exportsDirectory,
+            profile: ProfileSettingsViewModel(settingsStore: settingsStore, provider: profileKnowledge)
         )
         self.settingsViewModel = settingsViewModel
         companionPairingViewModel = CompanionPairingViewModel(

@@ -36,6 +36,18 @@ import Testing
         #expect(try await repository.session(id: SessionID()) == nil)
     }
 
+    @Test func knowledgeDigestRoundTripsPerSession() async throws {
+        let (repository, _) = makeRepository()
+        let first = try await repository.create(kind: .assistant, mode: .answers, at: at(0))
+        let second = try await repository.create(kind: .assistant, mode: .answers, at: at(1))
+        #expect(try await repository.knowledgeDigest(sessionID: first.id) == nil)
+        try await repository.setKnowledgeDigest(sessionID: first.id, digest: "abc")
+        try await repository.setKnowledgeDigest(sessionID: first.id, digest: "def")
+        #expect(try await repository.knowledgeDigest(sessionID: first.id) == "def")
+        #expect(try await repository.knowledgeDigest(sessionID: second.id) == nil)
+        #expect(try await repository.knowledgeDigest(sessionID: SessionID()) == nil)
+    }
+
     @Test func resumeAppendsSpanAndClosesPreviousOne() async throws {
         let (repository, _) = makeRepository()
         let created = try await repository.create(kind: .assistant, mode: .answers, at: at(0))

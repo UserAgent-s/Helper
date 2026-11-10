@@ -108,6 +108,16 @@ actor InMemorySessionRepository: SessionRepository {
         sessions[sessionID]?.pinned = pinned
     }
 
+    private(set) var knowledgeDigests: [SessionID: String] = [:]
+
+    func setKnowledgeDigest(sessionID: SessionID, digest: String) async throws {
+        knowledgeDigests[sessionID] = digest
+    }
+
+    func knowledgeDigest(sessionID: SessionID) async throws -> String? {
+        knowledgeDigests[sessionID]
+    }
+
     func purge(olderThan date: Date, excluding active: SessionID?) async throws -> [SessionID] {
         []
     }

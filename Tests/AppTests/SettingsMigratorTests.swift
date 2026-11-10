@@ -1,6 +1,7 @@
 import AudioCapture
 import Domain
 import Foundation
+import ProfileKnowledge
 import RealtimeClient
 import Testing
 @testable import UserAgent057
@@ -62,16 +63,19 @@ import Testing
 
     @Test func legacyBackgroundProviderReturnsTextUnchanged() async {
         let text = "Опыт: Swift, 10 лет"
-        let provider = LegacyBackgroundProfileProvider { text }
+        let provider = MarkdownFolderProfileProvider(configuration: { ProfileFolderConfiguration(folder: nil, selectedPaths: nil) }, legacyText: { text })
         let digest = await provider.realtimeDigest()
         #expect(digest == text)
         #expect(RealtimeInstructions.system(for: .standard, background: digest) == RealtimeInstructions.system(for: .standard, background: text))
     }
 
     @Test func legacyBackgroundFingerprintTracksText() async {
-        let first = await LegacyBackgroundProfileProvider { "A" }.fingerprint()
-        let same = await LegacyBackgroundProfileProvider { "A" }.fingerprint()
-        let other = await LegacyBackgroundProfileProvider { "B" }.fingerprint()
+        func legacy(_ text: String) -> MarkdownFolderProfileProvider {
+            MarkdownFolderProfileProvider(configuration: { ProfileFolderConfiguration(folder: nil, selectedPaths: nil) }, legacyText: { text })
+        }
+        let first = await legacy("A").fingerprint()
+        let same = await legacy("A").fingerprint()
+        let other = await legacy("B").fingerprint()
         #expect(first == same)
         #expect(first != other)
     }

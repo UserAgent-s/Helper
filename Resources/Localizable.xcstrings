@@ -4210,6 +4210,466 @@
           }
         }
       }
+    },
+    "Папка профиля недоступна: выберите её заново": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Папка профиля недоступна: выберите её заново"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profile folder is unavailable: choose it again"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Тека профілю недоступна: виберіть її знову"
+          }
+        }
+      }
+    },
+    "Выбрать": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выбрать"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вибрати"
+          }
+        }
+      }
+    },
+    "Папка с MD-файлами профиля": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Папка с MD-файлами профиля"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Folder with profile Markdown files"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Тека з MD-файлами профілю"
+          }
+        }
+      }
+    },
+    "Не удалось запомнить папку": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось запомнить папку"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not remember the folder"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не вдалося запам'ятати теку"
+          }
+        }
+      }
+    },
+    "Папка профиля недоступна": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Папка профиля недоступна"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profile folder is unavailable"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Тека профілю недоступна"
+          }
+        }
+      }
+    },
+    "Не удалось прочитать файл (нужен UTF-8)": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось прочитать файл (нужен UTF-8)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not read the file (UTF-8 required)"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не вдалося прочитати файл (потрібен UTF-8)"
+          }
+        }
+      }
+    },
+    "Профиль слишком большой": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Профиль слишком большой"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profile is too large"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Профіль завеликий"
+          }
+        }
+      }
+    },
+    "Снимите галочки с лишних файлов — обрезать молча мы не будем.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Снимите галочки с лишних файлов — обрезать молча мы не будем."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Untick extra files — nothing is truncated silently."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Зніміть позначки із зайвих файлів — мовчки нічого не обрізаємо."
+          }
+        }
+      }
+    },
+    "MD-профиль": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MD-профиль"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markdown profile"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MD-профіль"
+          }
+        }
+      }
+    },
+    "Папка не выбрана — используется «Опыт работы»": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Папка не выбрана — используется «Опыт работы»"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No folder chosen — «Work experience» is used"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Теку не вибрано — використовується «Досвід роботи»"
+          }
+        }
+      }
+    },
+    "Выбрать папку…": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выбрать папку…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose folder…"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вибрати теку…"
+          }
+        }
+      }
+    },
+    "Перечитать": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Перечитать"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reload"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Перечитати"
+          }
+        }
+      }
+    },
+    "Отключить": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Отключить"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disconnect"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Відключити"
+          }
+        }
+      }
+    },
+    "Выбор по умолчанию: 01, 02, 03": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выбор по умолчанию: 01, 02, 03"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Default selection: 01, 02, 03"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вибір за замовчуванням: 01, 02, 03"
+          }
+        }
+      }
+    },
+    "Выбор изменён вручную": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выбор изменён вручную"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selection changed manually"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вибір змінено вручну"
+          }
+        }
+      }
+    },
+    "Сбросить выбор": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сбросить выбор"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset selection"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Скинути вибір"
+          }
+        }
+      }
+    },
+    "Файлы *.md читаются из папки и подпапок первого уровня. Профиль уходит в Anthropic при раскрытии ответа через Claude; ключевые слова (имена, технологии) — в OpenAI для точной расшифровки.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Файлы *.md читаются из папки и подпапок первого уровня. Профиль уходит в Anthropic при раскрытии ответа через Claude; ключевые слова (имена, технологии) — в OpenAI для точной расшифровки."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "*.md files are read from the folder and its first-level subfolders. The profile is sent to Anthropic when an answer is expanded via Claude; keywords (names, technologies) go to OpenAI for accurate transcription."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Файли *.md читаються з теки та підтек першого рівня. Профіль надсилається в Anthropic під час розкриття відповіді через Claude; ключові слова (імена, технології) — в OpenAI для точного розпізнавання."
+          }
+        }
+      }
+    },
+    "Файлов: %d · %@ · ≈%d токенов": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Файлов: %d · %@ · ≈%d токенов"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Files: %d · %@ · ≈%d tokens"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Файлів: %d · %@ · ≈%d токенів"
+          }
+        }
+      }
+    },
+    "Профиль больше 100 КБ: раскрытия будут дороже и медленнее. Лимит — 256 КБ.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Профиль больше 100 КБ: раскрытия будут дороже и медленнее. Лимит — 256 КБ."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profile is over 100 KB: expansions will be slower and cost more. Limit is 256 KB."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Профіль більший за 100 КБ: розкриття будуть дорожчими й повільнішими. Ліміт — 256 КБ."
+          }
+        }
+      }
+    },
+    "Ключевые слова для расшифровки:": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ключевые слова для расшифровки:"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transcription keywords:"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ключові слова для розпізнавання:"
+          }
+        }
+      }
     }
   }
 }

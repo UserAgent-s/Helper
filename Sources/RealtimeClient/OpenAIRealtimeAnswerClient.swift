@@ -38,6 +38,8 @@ public actor OpenAIRealtimeAnswerClient: LiveResponder {
     private let maxReconnectAttempts: Int
     private let redactedLog: @Sendable (String) -> Void
     private let transcriptionLanguages: [String]
+    private let transcriptionKeywordsProvider: @Sendable () async -> [String]
+    private var transcriptionKeywords: [String] = []
     private let contextMaxAge: TimeInterval
     private let sweepInterval: Duration
     private let now: @Sendable () -> Date
@@ -84,6 +86,7 @@ public actor OpenAIRealtimeAnswerClient: LiveResponder {
         maxReconnectAttempts: Int = 3,
         forceAnswerStrategy: ForceAnswerStrategy = .systemItem,
         transcriptionLanguages: [String] = ["ru", "en"],
+        transcriptionKeywordsProvider: @escaping @Sendable () async -> [String] = { [] },
         carryOverCapacity: Int = 2,
         carryOverMaxAge: TimeInterval = 600,
         contextMaxAge: TimeInterval = 300,
@@ -92,6 +95,7 @@ public actor OpenAIRealtimeAnswerClient: LiveResponder {
         redactedLog: @escaping @Sendable (String) -> Void = { _ in }
     ) {
         self.transcriptionLanguages = transcriptionLanguages
+        self.transcriptionKeywordsProvider = transcriptionKeywordsProvider
         self.carryOver = CarryOverMemory(capacity: carryOverCapacity, maxAge: carryOverMaxAge)
         self.contextMaxAge = contextMaxAge
         self.sweepInterval = sweepInterval
@@ -113,6 +117,7 @@ public actor OpenAIRealtimeAnswerClient: LiveResponder {
 
     public func start(instructions: String) async throws {
         self.instructions = instructions
+        transcriptionKeywords = ProfileKeywordExtractor.sanitized(await transcriptionKeywordsProvider())
         let credential = try await Self.requireCredential(from: credentialProviding)
 
         resetSessionState()
@@ -278,7 +283,7 @@ public actor OpenAIRealtimeAnswerClient: LiveResponder {
 
                 format: AudioFormatConfig(rate: 24_000),
                 turnDetection: vadSettingsProvider().config,
-                transcription: InputTranscriptionConfig(model: Self.transcriptionModelID, languages: transcriptionLanguages)
+                transcription: InputTranscriptionConfig(model: Self.transcriptionModelID, languages: transcriptionLanguages, keywords: transcriptionKeywords)
             )),
             reasoning: ReasoningConfig(effort: "low")
         )

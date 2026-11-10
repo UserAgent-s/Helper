@@ -37,6 +37,8 @@ private struct SpySessionRepository: SessionRepository {
     func purge(olderThan date: Date, excluding active: SessionID?) async throws -> [SessionID] { try await base.purge(olderThan: date, excluding: active) }
     func appendUtterance(_ utterance: SessionUtterance, sessionID: SessionID) async throws { try await base.appendUtterance(utterance, sessionID: sessionID) }
     func deleteIfEmpty(sessionID: SessionID) async throws -> Bool { try await base.deleteIfEmpty(sessionID: sessionID) }
+    func setKnowledgeDigest(sessionID: SessionID, digest: String) async throws { try await base.setKnowledgeDigest(sessionID: sessionID, digest: digest) }
+    func knowledgeDigest(sessionID: SessionID) async throws -> String? { try await base.knowledgeDigest(sessionID: sessionID) }
 }
 
 @Suite struct SessionHistoryServiceTests {

@@ -1,5 +1,6 @@
 import CompanionServer
 import Foundation
+import ProfileKnowledge
 import Domain
 import RealtimeClient
 import Transcription
@@ -36,6 +37,8 @@ final class AppSettingsStore: @unchecked Sendable {
         static let meetingAutoExportEnabled = "com.local.UserAgent057.settings.export.autoExportEnabled"
         static let autoSummaryOnStop = "com.local.UserAgent057.settings.sessions.autoSummaryOnStop"
         static let keepScreenTexts = "com.local.UserAgent057.settings.sessions.keepScreenTexts"
+        static let profileFolderBookmark = "com.local.UserAgent057.settings.profile.folderBookmark"
+        static let profileSelectedPaths = "com.local.UserAgent057.settings.profile.selectedPaths"
     }
 
     init(defaults: UserDefaults = .standard) {
@@ -136,6 +139,28 @@ final class AppSettingsStore: @unchecked Sendable {
     var keepScreenTexts: Bool {
         get { defaults.object(forKey: Keys.keepScreenTexts) as? Bool ?? true }
         set { defaults.set(newValue, forKey: Keys.keepScreenTexts) }
+    }
+
+    var profileFolderBookmark: Data? {
+        get { defaults.data(forKey: Keys.profileFolderBookmark) }
+        set {
+            if let newValue { defaults.set(newValue, forKey: Keys.profileFolderBookmark) } else { defaults.removeObject(forKey: Keys.profileFolderBookmark) }
+        }
+    }
+
+    var profileSelectedPaths: Set<String>? {
+        get { (defaults.array(forKey: Keys.profileSelectedPaths) as? [String]).map(Set.init) }
+        set {
+            if let newValue { defaults.set(newValue.sorted(), forKey: Keys.profileSelectedPaths) } else { defaults.removeObject(forKey: Keys.profileSelectedPaths) }
+        }
+    }
+
+    func profileFolderConfiguration() -> ProfileFolderConfiguration {
+        guard let data = profileFolderBookmark, let resolved = ProfileFolderBookmark.resolve(data) else {
+            return ProfileFolderConfiguration(folder: nil, selectedPaths: profileSelectedPaths)
+        }
+        if let refreshed = resolved.refreshed { profileFolderBookmark = refreshed }
+        return ProfileFolderConfiguration(folder: resolved.url, selectedPaths: profileSelectedPaths)
     }
 
     var retentionPolicy: RetentionPolicy {

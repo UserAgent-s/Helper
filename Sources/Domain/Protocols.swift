@@ -63,6 +63,8 @@ public protocol SessionRepository: Sendable {
     func purge(olderThan date: Date, excluding active: SessionID?) async throws -> [SessionID]
     func appendUtterance(_ utterance: SessionUtterance, sessionID: SessionID) async throws
     func deleteIfEmpty(sessionID: SessionID) async throws -> Bool
+    func setKnowledgeDigest(sessionID: SessionID, digest: String) async throws
+    func knowledgeDigest(sessionID: SessionID) async throws -> String?
 }
 
 public protocol QuestionAnswerRepository: Sendable {

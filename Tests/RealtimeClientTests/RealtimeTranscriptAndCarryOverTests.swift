@@ -72,6 +72,25 @@ final class TestClock: @unchecked Sendable {
         await client.stop()
     }
 
+    @Test func inputTranscriptionCarriesProfileKeywordsFetchedAtStart() async throws {
+        let transport = FakeRealtimeWebSocketTransport()
+        let client = OpenAIRealtimeAnswerClient(
+            transport: transport,
+            credentialProviding: FakeCredentialProviding(),
+            latencyRecording: RecordingLatencyRecorder(),
+            transcriptionKeywordsProvider: { ["RedCore", "PHP"] }
+        )
+        try await client.start(instructions: "test")
+        guard case .sessionUpdate(let config) = transport.sentEvents.first else {
+            Issue.record("expected session.update")
+            return
+        }
+        #expect(config.audio.input.transcription?.keywords == ["RedCore", "PHP"])
+        let json = String(decoding: try JSONEncoder().encode(config), as: UTF8.self)
+        #expect(json.contains(#""keywords":["RedCore","PHP"]"#))
+        await client.stop()
+    }
+
     @Test func committedDeltaCompletedProducesThemTranscript() async throws {
         let (client, transport) = makeClient()
         try await client.start(instructions: "test")
