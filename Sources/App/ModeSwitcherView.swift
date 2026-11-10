@@ -29,6 +29,8 @@ final class ModeSwitcherViewModel {
             return loc("Нет доступа к записи экрана. Откройте Настройки и предоставьте разрешение Screen Recording.")
         case .permissionDenied(.microphone):
             return loc("Нет доступа к микрофону. Откройте Настройки и предоставьте разрешение Microphone.")
+        case .permissionDenied(.accessibility):
+            return loc("Нет доступа Accessibility. Откройте Настройки и предоставьте разрешение Accessibility.")
         case .targetApplicationNotRunning(let bundleID):
             return loc("Приложение") + " «\(bundleID)» " + loc("не запущено, а переход на весь звук Mac для него выключен. Откройте приложение или выберите «Весь звук Mac» в настройках «Звук».")
         case .noControllerRegistered:

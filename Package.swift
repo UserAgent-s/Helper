@@ -19,6 +19,7 @@ let package = Package(
         .library(name: "CompanionBridge", targets: ["CompanionBridge"]),
         .library(name: "ProfileKnowledge", targets: ["ProfileKnowledge"]),
         .library(name: "ClaudeClient", targets: ["ClaudeClient"]),
+        .library(name: "ScreenContext", targets: ["ScreenContext"]),
     ],
     dependencies: [
         .package(url: "https://github.com/argmaxinc/argmax-oss-swift.git", exact: "1.1.0"),
@@ -66,6 +67,16 @@ let package = Package(
         .target(
             name: "Summary",
             dependencies: ["Domain"],
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .target(
+            name: "ScreenContext",
+            dependencies: ["Domain"],
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .testTarget(
+            name: "ScreenContextTests",
+            dependencies: ["ScreenContext", "Domain"],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
         .target(

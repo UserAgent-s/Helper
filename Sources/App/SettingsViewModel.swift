@@ -65,6 +65,7 @@ final class SettingsViewModel {
 
     private(set) var screenRecordingStatus = PermissionStatus.notDetermined
     private(set) var microphoneStatus = PermissionStatus.notDetermined
+    private(set) var accessibilityStatus = PermissionStatus.notDetermined
 
     var whisperModelID: String {
         get { settingsStore.whisperModelID }
@@ -217,6 +218,7 @@ final class SettingsViewModel {
         await loadCompanionDevices()
         screenRecordingStatus = await permissionsChecking.status(for: .screenRecording)
         microphoneStatus = await permissionsChecking.status(for: .microphone)
+        accessibilityStatus = await permissionsChecking.status(for: .accessibility)
     }
 
     func applyCompanionServer(_ enabled: Bool) async {
@@ -372,6 +374,16 @@ final class SettingsViewModel {
         }
     }
 
+    func requestAccessibilityAccess() {
+        Task {
+            accessibilityStatus = await permissionsChecking.request(.accessibility)
+        }
+    }
+
+    func openAccessibilitySystemSettings() {
+        SystemSettingsLinks.openAccessibilitySettings()
+    }
+
     func requestMicrophoneAccess() {
         Task {
             microphoneStatus = await permissionsChecking.request(.microphone)
@@ -399,6 +411,7 @@ final class SettingsViewModel {
     func refreshPermissionStatuses() async {
         screenRecordingStatus = await permissionsChecking.status(for: .screenRecording)
         microphoneStatus = await permissionsChecking.status(for: .microphone)
+        accessibilityStatus = await permissionsChecking.status(for: .accessibility)
     }
 }
 

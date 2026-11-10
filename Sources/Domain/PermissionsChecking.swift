@@ -7,6 +7,7 @@ public enum PermissionStatus: Sendable, Equatable {
 public enum PermissionKind: Sendable, Equatable {
     case screenRecording
     case microphone
+    case accessibility
 }
 
 public protocol PermissionsChecking: Sendable {

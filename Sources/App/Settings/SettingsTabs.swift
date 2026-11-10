@@ -552,6 +552,12 @@ struct AccountsSettingsTab: View {
                     onRequest: viewModel.requestMicrophoneAccess,
                     onOpenSettings: viewModel.openMicrophoneSystemSettings
                 )
+                PermissionRow(
+                    title: "Accessibility",
+                    status: viewModel.accessibilityStatus,
+                    onRequest: viewModel.requestAccessibilityAccess,
+                    onOpenSettings: viewModel.openAccessibilitySystemSettings
+                )
                 Text(loc("Микрофон нужен только для recording; answers работает без него, если выбран системный источник."))
                     .font(.caption)
                     .foregroundStyle(.secondary)

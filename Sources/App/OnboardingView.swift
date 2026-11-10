@@ -19,6 +19,7 @@ struct OnboardingView: View {
     @State private var isCheckingModel = false
     @State private var screenRecordingStatus = PermissionStatus.notDetermined
     @State private var microphoneStatus = PermissionStatus.notDetermined
+    @State private var accessibilityStatus = PermissionStatus.notDetermined
 
     private enum ModelCheckOutcome {
         case ready
@@ -60,6 +61,14 @@ struct OnboardingView: View {
                     } onOpenSettings: {
                         SystemSettingsLinks.openMicrophoneSettings()
                     }
+                    permissionRow(title: "Accessibility", status: accessibilityStatus) {
+                        Task { accessibilityStatus = await permissionsChecking.request(.accessibility) }
+                    } onOpenSettings: {
+                        SystemSettingsLinks.openAccessibilitySettings()
+                    }
+                    Text(loc("Accessibility нужно только для команды «Экран»: приложение читает выделенный текст в активном окне. Без разрешения команда сообщит об этом и ничего не прочитает."))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
                     Text(loc("Можно пропустить — разрешения запросятся автоматически при первом входе в соответствующий режим."))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
@@ -122,6 +131,7 @@ struct OnboardingView: View {
         .task {
             screenRecordingStatus = await permissionsChecking.status(for: .screenRecording)
             microphoneStatus = await permissionsChecking.status(for: .microphone)
+            accessibilityStatus = await permissionsChecking.status(for: .accessibility)
         }
     }
 

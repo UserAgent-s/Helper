@@ -1,4 +1,5 @@
 import AVFoundation
+import ApplicationServices
 import CoreGraphics
 import Domain
 
@@ -11,6 +12,8 @@ public struct SystemPermissionsChecker: PermissionsChecking {
             Self.mapScreenCaptureAccess(CGPreflightScreenCaptureAccess())
         case .microphone:
             Self.mapAVAuthorizationStatus(AVCaptureDevice.authorizationStatus(for: .audio))
+        case .accessibility:
+            AXIsProcessTrusted() ? .authorized : .notDetermined
         }
     }
 
@@ -21,6 +24,9 @@ public struct SystemPermissionsChecker: PermissionsChecking {
         case .microphone:
             let granted = await AVCaptureDevice.requestAccess(for: .audio)
             return granted ? .authorized : .denied
+        case .accessibility:
+            let options = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
+            return AXIsProcessTrustedWithOptions(options) ? .authorized : .denied
         }
     }
 

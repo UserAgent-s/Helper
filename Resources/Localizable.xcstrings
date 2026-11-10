@@ -5268,6 +5268,52 @@
           }
         }
       }
+    },
+    "Accessibility нужно только для команды «Экран»: приложение читает выделенный текст в активном окне. Без разрешения команда сообщит об этом и ничего не прочитает.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accessibility нужно только для команды «Экран»: приложение читает выделенный текст в активном окне. Без разрешения команда сообщит об этом и ничего не прочитает."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accessibility is needed only for the Screen command: the app reads the selected text in the active window. Without it the command says so and reads nothing."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accessibility потрібен лише для команди «Екран»: застосунок читає виділений текст в активному вікні. Без дозволу команда повідомить про це й нічого не прочитає."
+          }
+        }
+      }
+    },
+    "Нет доступа Accessibility. Откройте Настройки и предоставьте разрешение Accessibility.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нет доступа Accessibility. Откройте Настройки и предоставьте разрешение Accessibility."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Accessibility access. Open Settings and grant the Accessibility permission."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Немає доступу Accessibility. Відкрийте Налаштування та надайте дозвіл Accessibility."
+          }
+        }
+      }
     }
   }
 }

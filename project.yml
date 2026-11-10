@@ -84,6 +84,8 @@ targets:
         product: ProfileKnowledge
       - package: UserAgent057Core
         product: ClaudeClient
+      - package: UserAgent057Core
+        product: ScreenContext
 
   UserAgent057Tests:
     type: bundle.unit-test
