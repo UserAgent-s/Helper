@@ -27,7 +27,10 @@ const NOTICE_TEXT = {
   capture_restarted: "Захват звука перезапущен.",
   microphone_fell_back: "Микрофон переключён на запасной.",
   output_route_changed: "Изменился вывод звука.",
-  me_channel_unavailable: "Канал «Я» недоступен: ответы работают без ваших реплик."
+  me_channel_unavailable: "Канал «Я» недоступен: ответы работают без ваших реплик.",
+  translation_rate_limited: "Перевод временно ограничен провайдером: реплики идут без перевода.",
+  translation_unavailable: "Перевод недоступен: нет ключа Anthropic или OpenAI на Mac.",
+  translation_failed: "Не удалось перевести реплику."
 };
 
 function levelPercent(level) {
@@ -188,6 +191,9 @@ export function createView(doc, handlers) {
       const item = make(doc, "li", "line " + line.speaker + (line.isFinal ? "" : " partial"));
       item.appendChild(make(doc, "span", "speaker", SPEAKER_LABELS[line.speaker] || line.speaker));
       item.appendChild(make(doc, "span", "utterance", line.text));
+      if (state.showTranslation && line.translation) {
+        item.appendChild(make(doc, "span", "translation", line.translation));
+      }
       elements.transcript.appendChild(item);
     }
     elements.transcript.scrollTop = elements.transcript.scrollHeight;

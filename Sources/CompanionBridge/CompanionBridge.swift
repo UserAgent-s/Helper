@@ -9,14 +9,17 @@ public struct CompanionDomainFeeds: Sendable {
     public var transcripts: AsyncStream<TranscriptEvent>
     public var levels: AsyncStream<AudioLevel>
     public var notices: AsyncStream<CaptureNotice>
+    public var translations: AsyncStream<TranslationEvent>
 
     public init(
         modeStates: AsyncStream<ModeState>,
         answers: AsyncStream<AnswerStreamUpdate>,
         transcripts: AsyncStream<TranscriptEvent>,
         levels: AsyncStream<AudioLevel>,
-        notices: AsyncStream<CaptureNotice>
+        notices: AsyncStream<CaptureNotice>,
+        translations: AsyncStream<TranslationEvent> = AsyncStream { $0.finish() }
     ) {
+        self.translations = translations
         self.modeStates = modeStates
         self.answers = answers
         self.transcripts = transcripts
@@ -66,6 +69,8 @@ public actor CompanionBridge: CompanionHubDelegate {
     private var overlayEnabled = true
     private var publisher: (@Sendable (ServerEvent) async -> Void)?
     private var tasks: [Task<Void, Never>] = []
+    private var translations: [String: String] = [:]
+    private var announcedTranslationFailure: String?
     private var expansionStats: [String: (ttftMs: Int?, costUSD: Double?, modelID: String)] = [:]
     private let outgoing: AsyncStream<ServerEvent>
     private let outgoingContinuation: AsyncStream<ServerEvent>.Continuation
@@ -112,6 +117,9 @@ public actor CompanionBridge: CompanionHubDelegate {
             },
             Task { [weak self] in
                 for await notice in feeds.notices { await self?.ingest(notice) }
+            },
+            Task { [weak self] in
+                for await translation in feeds.translations { await self?.ingest(translation) }
             },
         ]
         if let sessions {
@@ -399,7 +407,10 @@ public actor CompanionBridge: CompanionHubDelegate {
     }
 
     func ingest(_ event: TranscriptEvent) {
-        let line = CompanionWireMapping.transcript(event)
+        var line = CompanionWireMapping.transcript(event)
+        if let translation = translations[line.speaker.rawValue + ":" + line.itemId] {
+            line = TranscriptLine(itemId: line.itemId, speaker: line.speaker, text: line.text, isFinal: line.isFinal, language: line.language, translation: translation)
+        }
         if let index = transcript.lastIndex(where: { $0.itemId == line.itemId && $0.speaker == line.speaker }) {
             transcript[index] = line
         } else {
@@ -409,6 +420,29 @@ public actor CompanionBridge: CompanionHubDelegate {
             }
         }
         emit(.transcriptDelta(line))
+    }
+
+    func ingest(_ event: TranslationEvent) {
+        switch event {
+        case .translated(let translation):
+            announcedTranslationFailure = nil
+            let speaker: WireSpeaker = translation.speaker == .me ? .me : .them
+            let key = speaker.rawValue + ":" + translation.itemID
+            translations[key] = translation.translation
+            if translations.count > Self.transcriptLimit * 4 {
+                let live = Set(transcript.map { $0.speaker.rawValue + ":" + $0.itemId })
+                translations = translations.filter { live.contains($0.key) }
+            }
+            guard let index = transcript.lastIndex(where: { $0.itemId == translation.itemID && $0.speaker == speaker }) else { return }
+            let line = transcript[index]
+            let updated = TranscriptLine(itemId: line.itemId, speaker: line.speaker, text: line.text, isFinal: line.isFinal, language: line.language, translation: translation.translation)
+            transcript[index] = updated
+            emit(.transcriptDelta(updated))
+        case .failed(_, _, let failure):
+            guard announcedTranslationFailure != failure.code else { return }
+            announcedTranslationFailure = failure.code
+            ingestNotice(NoticeInfo(code: failure.code, severity: .warning))
+        }
     }
 
     func ingest(_ level: AudioLevel) {
@@ -421,7 +455,10 @@ public actor CompanionBridge: CompanionHubDelegate {
     }
 
     func ingest(_ notice: CaptureNotice) {
-        let info = CompanionWireMapping.notice(notice)
+        ingestNotice(CompanionWireMapping.notice(notice))
+    }
+
+    private func ingestNotice(_ info: NoticeInfo) {
         notices.append(info)
         if notices.count > Self.noticeLimit {
             notices.removeFirst(notices.count - Self.noticeLimit)
@@ -479,13 +516,14 @@ public struct LiveCompanionDomain: CompanionDomainControlling {
         await trigger.fire()
     }
 
-    public static func feeds(modeCoordinator: ModeCoordinator, answers: AnswersModeController, captureHub: CaptureHub) -> CompanionDomainFeeds {
+    public static func feeds(modeCoordinator: ModeCoordinator, answers: AnswersModeController, captureHub: CaptureHub, translations: AsyncStream<TranslationEvent> = AsyncStream { $0.finish() }) -> CompanionDomainFeeds {
         CompanionDomainFeeds(
             modeStates: modeCoordinator.stateUpdates(subscriber: "companion"),
             answers: answers.answerUpdates(subscriber: "companion"),
             transcripts: answers.transcriptEvents(subscriber: "companion"),
             levels: captureHub.levels.subscribe("companion", policy: .bufferingNewest(8)),
-            notices: captureHub.notices.subscribe("companion")
+            notices: captureHub.notices.subscribe("companion"),
+            translations: translations
         )
     }
 }

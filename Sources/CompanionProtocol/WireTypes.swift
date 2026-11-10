@@ -124,13 +124,15 @@ public struct TranscriptLine: Codable, Sendable, Equatable {
     public let text: String
     public let isFinal: Bool
     public let language: String?
+    public let translation: String?
 
-    public init(itemId: String, speaker: WireSpeaker, text: String, isFinal: Bool, language: String? = nil) {
+    public init(itemId: String, speaker: WireSpeaker, text: String, isFinal: Bool, language: String? = nil, translation: String? = nil) {
         self.itemId = itemId
         self.speaker = speaker
         self.text = text
         self.isFinal = isFinal
         self.language = language
+        self.translation = translation
     }
 }
 

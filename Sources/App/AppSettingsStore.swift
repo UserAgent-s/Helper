@@ -41,6 +41,7 @@ final class AppSettingsStore: @unchecked Sendable {
         static let profileSelectedPaths = "com.local.UserAgent057.settings.profile.selectedPaths"
         static let claudeModel = "com.local.UserAgent057.settings.claude.model"
         static let instructionProfile = "com.local.UserAgent057.settings.answers.instructionProfile"
+        static let translateTranscript = "com.local.UserAgent057.settings.answers.translateTranscript"
         static let claudePrewarm = "com.local.UserAgent057.settings.claude.prewarmOnSessionStart"
     }
 
@@ -161,6 +162,11 @@ final class AppSettingsStore: @unchecked Sendable {
     var claudeModel: ExpansionModelChoice {
         get { ExpansionModelChoice(rawValue: defaults.string(forKey: Keys.claudeModel) ?? "") ?? .sonnet }
         set { defaults.set(newValue.rawValue, forKey: Keys.claudeModel) }
+    }
+
+    var translateTranscript: Bool {
+        get { defaults.object(forKey: Keys.translateTranscript) as? Bool ?? true }
+        set { defaults.set(newValue, forKey: Keys.translateTranscript) }
     }
 
     var instructionProfile: InstructionProfile {

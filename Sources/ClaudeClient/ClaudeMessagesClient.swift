@@ -57,6 +57,27 @@ public struct ClaudeMessagesClient: Sendable {
         }
     }
 
+    public func complete(_ request: ClaudeMessagesRequest) async -> Result<ClaudeCompletion, ClaudeFailure> {
+        var request = request
+        request.stream = false
+        let urlRequest: URLRequest
+        switch makeURLRequest(request) {
+        case .success(let built): urlRequest = built
+        case .failure(let failure): return .failure(failure)
+        }
+        do {
+            let (status, body) = try await transport.send(urlRequest)
+            guard (200..<300).contains(status) else { return .failure(Self.httpFailure(status: status, body: body)) }
+            guard let message = try? JSONDecoder().decode(WireMessage.self, from: body) else { return .failure(.malformed("message")) }
+            var usage = ClaudeUsage()
+            if let wire = message.usage { usage.merge(wire) }
+            let text = (message.content ?? []).filter { $0.type == "text" }.compactMap(\.text).joined()
+            return .success(ClaudeCompletion(messageID: message.id ?? "", model: message.model ?? request.model.rawValue, text: text, stopReason: ClaudeStopReason(wire: message.stopReason ?? "end_turn"), usage: usage))
+        } catch {
+            return .failure(.transport(Self.describe(error)))
+        }
+    }
+
     public func countTokens(_ request: ClaudeMessagesRequest, endpoint: URL = ClaudeModelCatalog.countTokensEndpoint) async -> Result<Int, ClaudeFailure> {
         guard let key = apiKey(), !key.isEmpty else { return .failure(.missingAPIKey) }
         let urlRequest: URLRequest

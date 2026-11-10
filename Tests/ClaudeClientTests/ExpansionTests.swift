@@ -249,3 +249,28 @@ final class Sequence: @unchecked Sendable {
         }
     }
 }
+
+@Suite struct ClaudeTranslatorTests {
+    @Test func requestIsHaikuWithoutThinkingAndFallbacks() throws {
+        let body = try #require(JSONSerialization.jsonObject(with: ClaudeTranslator.request("Hello").body()) as? [String: Any])
+        #expect(body["model"] as? String == "claude-haiku-5-5")
+        #expect(body["max_tokens"] as? Int == 512)
+        #expect((body["thinking"] as? [String: String]) == ["type": "disabled"])
+        #expect((body["output_config"] as? [String: String]) == ["effort": "low"])
+        #expect(body["stream"] == nil)
+        #expect(body["fallbacks"] == nil)
+        var sonnet = ClaudeTranslator.request("x")
+        sonnet.model = .sonnet
+        #expect(throws: ClaudeRequestError.thinkingCannotBeDisabled) { try sonnet.body() }
+    }
+
+    @Test func translatesAndMapsRateLimit() async throws {
+        let ok = #"{"id":"m","model":"claude-haiku-5-5","content":[{"type":"text","text":"Привет, слышно?"}],"stop_reason":"end_turn","usage":{"input_tokens":20,"output_tokens":6}}"#
+        let translator = ClaudeTranslator(client: ClaudeMessagesClient(transport: FakeAnthropicTransport(sendBody: Data(ok.utf8)), apiKey: { "k" }), hasKey: { true })
+        #expect(try await translator.translateToRussian("Hello, can you hear me?") == "Привет, слышно?")
+        let limited = ClaudeTranslator(client: ClaudeMessagesClient(transport: FakeAnthropicTransport(status: 429, sendBody: Data(#"{"error":{"type":"rate_limit_error"}}"#.utf8)), apiKey: { "k" }), hasKey: { true })
+        await #expect(throws: TranslationFailure.rateLimited) { _ = try await limited.translateToRussian("x") }
+        let noKey = ClaudeTranslator(client: ClaudeMessagesClient(transport: FakeAnthropicTransport(), apiKey: { nil }), hasKey: { false })
+        #expect(await !noKey.isAvailable())
+    }
+}

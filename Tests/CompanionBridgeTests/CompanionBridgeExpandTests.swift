@@ -129,3 +129,40 @@ private let sse = [
         #expect(transport.bodies.isEmpty)
     }
 }
+
+@Suite struct CompanionBridgeTranslationTests {
+    @Test func translationUpdatesTranscriptLineAndFailureNoticeIsNotRepeated() async {
+        let mode = AsyncStream<ModeState>.makeStream()
+        let answers = AsyncStream<AnswerStreamUpdate>.makeStream()
+        let transcripts = AsyncStream<TranscriptEvent>.makeStream()
+        let levels = AsyncStream<AudioLevel>.makeStream()
+        let notices = AsyncStream<CaptureNotice>.makeStream()
+        let translations = AsyncStream<TranslationEvent>.makeStream()
+        let feeds = CompanionDomainFeeds(modeStates: mode.stream, answers: answers.stream, transcripts: transcripts.stream, levels: levels.stream, notices: notices.stream, translations: translations.stream)
+        let bridge = CompanionBridge(control: FakeDomainControl())
+        let sink = EventSink()
+        await bridge.setPublisher { event in await sink.append(event) }
+        await bridge.start(feeds: feeds)
+
+        transcripts.continuation.yield(TranscriptEvent(speaker: .them, itemID: "i1", text: "Why Kafka?", isFinal: true))
+        await waitUntil { await sink.types.filter { $0 == "transcript.delta" }.count == 1 }
+        translations.continuation.yield(.translated(TranscriptTranslation(speaker: .them, itemID: "i1", sourceText: "Why Kafka?", translation: "Почему Kafka?", providerID: "h")))
+        await waitUntil { await sink.types.filter { $0 == "transcript.delta" }.count == 2 }
+        guard case .transcriptDelta(let line) = await sink.events.last(where: { $0.type == "transcript.delta" }) else { Issue.record("no delta"); return }
+        #expect(line.translation == "Почему Kafka?")
+        #expect(line.text == "Why Kafka?")
+        #expect(await bridge.snapshot().transcript.first?.translation == "Почему Kafka?")
+
+        translations.continuation.yield(.failed(speaker: .them, itemID: "i2", failure: .rateLimited))
+        translations.continuation.yield(.failed(speaker: .them, itemID: "i3", failure: .rateLimited))
+        translations.continuation.yield(.failed(speaker: .them, itemID: "i4", failure: .unavailable))
+        await waitUntil { await sink.types.filter { $0 == "notice" }.count == 2 }
+        try? await Task.sleep(for: .milliseconds(30))
+        let codes = await sink.events.compactMap { event -> String? in
+            if case .notice(let info) = event { return info.code }
+            return nil
+        }
+        #expect(codes == ["translation_rate_limited", "translation_unavailable"])
+        withExtendedLifetime(bridge) {}
+    }
+}

@@ -5222,6 +5222,52 @@
           }
         }
       }
+    },
+    "Переводить английские реплики собеседника на русский": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Переводить английские реплики собеседника на русский"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Translate the other side's English lines into Russian"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Перекладати англійські репліки співрозмовника російською"
+          }
+        }
+      }
+    },
+    "Только в режиме ответов: Claude Haiku 5.5, без ключа Anthropic — gpt-6-luna. В режиме записи ничего не отправляется.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Только в режиме ответов: Claude Haiku 5.5, без ключа Anthropic — gpt-6-luna. В режиме записи ничего не отправляется."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answers mode only: Claude Haiku 5.5, or gpt-6-luna without an Anthropic key. Nothing is sent in recording mode."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Лише в режимі відповідей: Claude Haiku 5.5, без ключа Anthropic — gpt-6-luna. У режимі запису нічого не надсилається."
+          }
+        }
+      }
     }
   }
 }

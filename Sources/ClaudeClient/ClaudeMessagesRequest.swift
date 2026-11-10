@@ -4,6 +4,11 @@ public enum ClaudeEffort: String, Sendable, Codable {
     case low, medium, high, xhigh, max
 }
 
+public enum ClaudeThinking: String, Sendable, Equatable {
+    case adaptive
+    case disabled
+}
+
 public enum ClaudeCacheTTL: String, Sendable {
     case fiveMinutes = "5m"
     case oneHour = "1h"
@@ -44,8 +49,10 @@ public struct ClaudeMessagesRequest: Sendable, Equatable {
     public var system: [ClaudeSystemBlock]
     public var messages: [ClaudeMessage]
     public var serverFallback: Bool
+    public var thinking: ClaudeThinking
 
-    public init(model: ClaudeModel, maxTokens: Int, stream: Bool = true, effort: ClaudeEffort = .low, system: [ClaudeSystemBlock], messages: [ClaudeMessage], serverFallback: Bool = true) {
+    public init(model: ClaudeModel, maxTokens: Int, stream: Bool = true, effort: ClaudeEffort = .low, system: [ClaudeSystemBlock], messages: [ClaudeMessage], serverFallback: Bool = true, thinking: ClaudeThinking = .adaptive) {
+        self.thinking = thinking
         self.model = model
         self.maxTokens = maxTokens
         self.stream = stream
@@ -65,6 +72,9 @@ public struct ClaudeMessagesRequest: Sendable, Equatable {
         }
         if maxTokens == 0, stream {
             throw ClaudeRequestError.prewarmMustNotStream
+        }
+        if thinking == .disabled, model != .haiku || [.xhigh, .max].contains(effort) {
+            throw ClaudeRequestError.thinkingCannotBeDisabled
         }
         if system.filter({ $0.cacheTTL != nil }).count > 4 {
             throw ClaudeRequestError.tooManyCacheBreakpoints
@@ -137,6 +147,7 @@ public enum ClaudeRequestError: Error, Sendable, Equatable {
     case lastMessageMustBeUser
     case rolesMustAlternate
     case emptyText
+    case thinkingCannotBeDisabled
 }
 
 private struct CountTokensWire: Encodable {
@@ -159,7 +170,7 @@ private struct WireRequest: Encodable {
         model = request.model.rawValue
         maxTokens = request.maxTokens
         stream = request.stream ? true : nil
-        thinking = Thinking()
+        thinking = Thinking(type: request.thinking.rawValue)
         outputConfig = OutputConfig(effort: request.effort.rawValue)
         system = request.system.map { SystemBlock(text: $0.text, cacheControl: $0.cacheTTL.map { CacheControl(ttl: $0.rawValue) }) }
         messages = request.messages.map { message in
@@ -174,7 +185,7 @@ private struct WireRequest: Encodable {
         case outputConfig = "output_config"
     }
 
-    struct Thinking: Encodable { let type = "adaptive" }
+    struct Thinking: Encodable { let type: String }
     struct OutputConfig: Encodable { let effort: String }
     struct CacheControl: Encodable {
         let type = "ephemeral"

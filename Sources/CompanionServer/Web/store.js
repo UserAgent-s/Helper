@@ -13,6 +13,7 @@ export function initialState() {
     mode: { mode: "passive", phase: "idle" },
     answer: null,
     selectedPoint: -1,
+    showTranslation: true,
     transcript: [],
     levels: {},
     notices: [],
@@ -240,6 +241,8 @@ export function applyLocal(state, action) {
       return { ...state, lastError: null };
     case "downloadStarted":
       return { ...state, download: null };
+    case "toggleTranslation":
+      return { ...state, showTranslation: !state.showTranslation };
     case "selectPoint": {
       const count = state.answer ? state.answer.points.length : 0;
       if (action.index < 0 || action.index >= count) {
@@ -346,6 +349,9 @@ export function hotkeyAction(key, state) {
       return state.capabilities.indexOf("expand") >= 0 ? { expand: expandTarget(state) } : null;
     case "Escape":
       return { deepClose: true };
+    case "t":
+    case "T":
+      return { local: { type: "toggleTranslation" } };
     default:
       if (key.length === 1 && key >= "1" && key <= "9") {
         return { local: { type: "selectPoint", index: Number(key) - 1 }, copy: Number(key) - 1 };

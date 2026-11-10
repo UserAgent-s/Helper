@@ -50,6 +50,7 @@ final class CompositionRoot {
     let sessionProfileFreezer: SessionProfileFreezer
     let claudeExpansion: ClaudeExpansionClient
     let realtimeDigestStore: RealtimeDigestStore
+    let translationService: TranslationService
     let sessionFinalizer: SessionFinalizer
     let sessionRecorder: SessionRecorder
 
@@ -218,7 +219,23 @@ final class CompositionRoot {
             latencyRecording: latencyRecording
         )
 
-        let sessionRecorder = SessionRecorder(repository: sessionRepository, sessions: sessionContext)
+        let translationService = TranslationService(
+            primary: ClaudeTranslator(client: ClaudeMessagesClient(apiKey: anthropicKey), hasKey: hasAnthropicKey),
+            fallback: OpenAIResponsesTranslator(secretStoring: secretStoring),
+            isEnabled: { [settingsStore] in settingsStore.translateTranscript },
+            redactedLog: realtimeDiagLog
+        )
+        self.translationService = translationService
+        let translationTranscripts = answersController.transcriptEvents(subscriber: "translation")
+        let translationModeStates = modeCoordinator.stateUpdates(subscriber: "translation")
+        Task {
+            await translationService.attach(translationTranscripts)
+            for await state in translationModeStates where state.mode != .answers {
+                await translationService.cancelAll()
+            }
+        }
+        let sessionRecorder = SessionRecorder(repository: sessionRepository, sessions: sessionContext, translationStore: sessionRepository)
+        let recorderTranslations = translationService.events(subscriber: "sessionRecorder")
         self.sessionRecorder = sessionRecorder
         let questionAnswerLogger = self.questionAnswerLogger
         let sessionFinalizer = SessionFinalizer(
@@ -248,6 +265,7 @@ final class CompositionRoot {
         Task {
             await sessionContext.bind(sessionCoordinator)
             await sessionRecorder.attach(answerTranscripts)
+            await sessionRecorder.attachTranslations(recorderTranslations)
             await sessionProfileFreezer.observe(profileSessionEvents)
             await sessionCoordinator.startObserving()
         }
@@ -318,7 +336,7 @@ final class CompositionRoot {
             history: sessionHistory,
             expansions: claudeExpansion
         )
-        let companionFeeds = LiveCompanionDomain.feeds(modeCoordinator: modeCoordinator, answers: answersController, captureHub: captureHub)
+        let companionFeeds = LiveCompanionDomain.feeds(modeCoordinator: modeCoordinator, answers: answersController, captureHub: captureHub, translations: translationService.events(subscriber: "companion"))
         let companionService = CompanionService(
             pairing: PairingStore(storage: SQLitePairedDeviceStore(database: database)),
             bridge: companionBridge,

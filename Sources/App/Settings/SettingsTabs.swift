@@ -212,6 +212,11 @@ struct ProfileSettingsTab: View {
                 Text(loc("Профиль и выжимка применяются со следующей сессии; внутри сессии инструкции не меняются."))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
+                Toggle(loc("Переводить английские реплики собеседника на русский"), isOn: $viewModel.translateTranscript)
+                    .accessibilityIdentifier("settings.answers.translateTranscript")
+                Text(loc("Только в режиме ответов: Claude Haiku 5.5, без ключа Anthropic — gpt-6-luna. В режиме записи ничего не отправляется."))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
                 if let profile = viewModel.profile {
                     ProfileDigestRow(profile: profile)
                 }

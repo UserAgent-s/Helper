@@ -5,6 +5,10 @@ public actor SessionRecorder {
     private let sessions: any SessionContextProviding
     private let now: @Sendable () -> Date
     private let itemRetention: Int
+    private let translationStore: (any UtteranceTranslationStoring)?
+    private var utteranceIDs: [String: String] = [:]
+    private var pendingTranslations: [String: TranscriptTranslation] = [:]
+    public private(set) var translationWriteCount = 0
 
     private var feeds: [Task<Void, Never>] = []
     private var writeTail: Task<Void, Never>?
@@ -18,8 +22,10 @@ public actor SessionRecorder {
         repository: any SessionRepository,
         sessions: any SessionContextProviding,
         now: @escaping @Sendable () -> Date = { Date() },
-        itemRetention: Int = 512
+        itemRetention: Int = 512,
+        translationStore: (any UtteranceTranslationStoring)? = nil
     ) {
+        self.translationStore = translationStore
         self.repository = repository
         self.sessions = sessions
         self.now = now
@@ -33,6 +39,46 @@ public actor SessionRecorder {
                 await self?.record(event)
             }
         })
+    }
+
+    public func attachTranslations(_ events: AsyncStream<TranslationEvent>) {
+        feeds.append(Task { [weak self] in
+            for await event in events {
+                if Task.isCancelled { break }
+                if case .translated(let translation) = event {
+                    await self?.recordTranslation(translation)
+                }
+            }
+        })
+    }
+
+    public func recordTranslation(_ translation: TranscriptTranslation) {
+        let key = "\(translation.speaker.rawValue):\(translation.itemID)"
+        guard let utteranceID = utteranceIDs[key] else {
+            if recordedItems.contains(key) || pendingTranslations.count < itemRetention {
+                pendingTranslations[key] = translation
+            }
+            return
+        }
+        writeTranslation(utteranceID: utteranceID, translation)
+    }
+
+    private func writeTranslation(utteranceID: String, _ translation: TranscriptTranslation) {
+        guard let translationStore else { return }
+        let previous = writeTail
+        writeTail = Task { [weak self] in
+            await previous?.value
+            do {
+                try await translationStore.setUtteranceTranslation(utteranceID: utteranceID, text: translation.translation, language: translation.language)
+                await self?.noteTranslationWrite()
+            } catch {
+                await self?.noteWrite(succeeded: false)
+            }
+        }
+    }
+
+    private func noteTranslationWrite() {
+        translationWriteCount += 1
     }
 
     public func detach() {
@@ -56,8 +102,9 @@ public actor SessionRecorder {
             droppedWithoutSessionCount += 1
             return
         }
+        let utteranceID = "utt_\(UUID().uuidString)"
         let utterance = SessionUtterance(
-            id: "utt_\(UUID().uuidString)",
+            id: utteranceID,
             speaker: event.speaker,
             origin: event.speaker == .me ? .meChannel : .realtimeInput,
             text: text,
@@ -75,6 +122,10 @@ public actor SessionRecorder {
                 await self?.noteWrite(succeeded: false)
             }
         }
+        utteranceIDs[key] = utteranceID
+        if let pending = pendingTranslations.removeValue(forKey: key) {
+            writeTranslation(utteranceID: utteranceID, pending)
+        }
     }
 
     private func noteWrite(succeeded: Bool) {
@@ -85,7 +136,10 @@ public actor SessionRecorder {
         recordedItems.insert(key)
         recordedOrder.append(key)
         while recordedOrder.count > itemRetention {
-            recordedItems.remove(recordedOrder.removeFirst())
+            let old = recordedOrder.removeFirst()
+            recordedItems.remove(old)
+            utteranceIDs[old] = nil
+            pendingTranslations[old] = nil
         }
     }
 }

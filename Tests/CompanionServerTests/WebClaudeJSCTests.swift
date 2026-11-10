@@ -162,3 +162,14 @@ import Testing
         #expect(CompanionWebAssets.asset(forPath: "/claude.js")?.contentType == "text/javascript; charset=utf-8")
     }
 }
+
+@Suite struct WebTranslationJSCTests {
+    @Test func tTogglesTranslationAndLineKeepsTranslation() throws {
+        let store = try WebModuleContext(modules: ["store.js"])
+        #expect(try store.run(#"var s = initialState(); return s.showTranslation;"#) as? Bool == true)
+        #expect(try store.run(#"var s = initialState(); return applyLocal(s, hotkeyAction("t", s).local).showTranslation;"#) as? Bool == false)
+        let line = try store.run(#"var s = initialState(); s = applyEnvelope(s, {v:1, seq:1, ts:0, type:"transcript.delta", data:{itemId:"i1", speaker:"them", text:"Why?", isFinal:true}}); s = applyEnvelope(s, {v:1, seq:2, ts:0, type:"transcript.delta", data:{itemId:"i1", speaker:"them", text:"Why?", isFinal:true, translation:"Почему?"}}); return s.transcript;"#) as? [[String: Any]]
+        #expect(line?.count == 1)
+        #expect(line?.first?["translation"] as? String == "Почему?")
+    }
+}
