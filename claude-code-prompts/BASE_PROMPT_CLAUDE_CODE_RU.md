@@ -1,6 +1,6 @@
 # Базовый управляющий промпт для Claude Code
 
-Скопируй содержимое этого файла в Claude Code после того, как распакуешь архив `claude-code-prompts-macos-meeting-assistant.zip` в корень репозитория. Каталог с пошаговыми промптами должен называться `claude-code-prompts`.
+Скопируй содержимое этого файла в Claude Code после того, как распакуешь архив `claude-code-prompts-macos-assistant-useragent057.zip` в корень репозитория. Каталог с пошаговыми промптами должен называться `claude-code-prompts`.
 
 ---
 
