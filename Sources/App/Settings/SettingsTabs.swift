@@ -202,6 +202,7 @@ struct ProfileSettingsTab: View {
             }
             if let profile = viewModel.profile {
                 ProfileFolderSection(profile: profile)
+                ExpertDomainsSection(profile: profile)
             }
             Section(loc("Живые ответы")) {
                 Picker(loc("Профиль инструкций"), selection: $viewModel.instructionProfile) {
@@ -241,6 +242,45 @@ struct ProfileSettingsTab: View {
         }
         .formStyle(.grouped)
         .task { await viewModel.profile?.reload() }
+    }
+}
+
+struct ExpertDomainsSection: View {
+    @Bindable var profile: ProfileSettingsViewModel
+
+    var body: some View {
+        Section(loc("Профильные области")) {
+            if profile.domainCandidates.isEmpty {
+                Text(loc("Областей нет. Создайте в папке профиля Domains/<область>/ с файлами *.md и, при желании, _role.md с ролью эксперта."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(profile.domainCandidates) { domain in
+                    Toggle(isOn: Binding(
+                        get: { profile.isDomainActive(domain.name) },
+                        set: { isOn in Task { await profile.setDomainActive(domain.name, isOn) } }
+                    )) {
+                        HStack {
+                            Text(domain.name).font(.callout)
+                            if domain.hasRole {
+                                Text(loc("роль")).font(.caption2).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Text(String(format: loc("файлов: %d"), domain.files.count) + " · " + ProfileSettingsViewModel.formatBytes(domain.byteCount))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .accessibilityIdentifier("settings.profile.domain." + domain.name)
+                }
+                Text(profile.usesDefaultDomains ? loc("Пока вы ничего не выбирали, включены все области.") : loc("Выбор областей изменён вручную."))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            Text(loc("Активные области целиком уходят в Anthropic при раскрытии ответа; в живые ответы OpenAI — только их названия и начало роли. Неактивные не покидают Mac. Выбор применяется со следующей сессии."))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
     }
 }
 

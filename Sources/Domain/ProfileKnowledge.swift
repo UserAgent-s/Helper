@@ -12,6 +12,22 @@ public struct ProfileDocument: Sendable, Equatable {
     }
 }
 
+public struct ExpertDomain: Sendable, Equatable {
+    public let name: String
+    public let role: String?
+    public let documents: [ProfileDocument]
+
+    public init(name: String, role: String?, documents: [ProfileDocument]) {
+        self.name = name
+        self.role = role
+        self.documents = documents
+    }
+
+    public var byteCount: Int {
+        (role?.utf8.count ?? 0) + documents.reduce(0) { $0 + $1.byteCount }
+    }
+}
+
 public enum ProfileSource: Sendable, Equatable {
     case markdownFolder(path: String)
     case legacyText
@@ -26,10 +42,12 @@ public enum ProfileSizeStatus: Sendable, Equatable {
 public struct ProfileLimits: Sendable, Equatable {
     public let warningBytes: Int
     public let maxBytes: Int
+    public let domainMaxBytes: Int
 
-    public init(warningBytes: Int = 100 * 1024, maxBytes: Int = 256 * 1024) {
+    public init(warningBytes: Int = 100 * 1024, maxBytes: Int = 256 * 1024, domainMaxBytes: Int = 256 * 1024) {
         self.warningBytes = warningBytes
         self.maxBytes = maxBytes
+        self.domainMaxBytes = domainMaxBytes
     }
 
     public static let standard = ProfileLimits()
@@ -42,10 +60,12 @@ public struct ProfileSnapshot: Sendable, Equatable {
     public let totalBytes: Int
     public let estimatedTokens: Int
     public let sizeStatus: ProfileSizeStatus
+    public let domains: [ExpertDomain]
 
-    public init(source: ProfileSource, documents: [ProfileDocument], fingerprint: String, estimatedTokens: Int, sizeStatus: ProfileSizeStatus) {
+    public init(source: ProfileSource, documents: [ProfileDocument], fingerprint: String, estimatedTokens: Int, sizeStatus: ProfileSizeStatus, domains: [ExpertDomain] = []) {
         self.source = source
         self.documents = documents
+        self.domains = domains
         self.fingerprint = fingerprint
         self.totalBytes = documents.reduce(0) { $0 + $1.byteCount }
         self.estimatedTokens = estimatedTokens
@@ -53,6 +73,8 @@ public struct ProfileSnapshot: Sendable, Equatable {
     }
 
     public var isEmpty: Bool { documents.isEmpty }
+
+    public var hasContent: Bool { !documents.isEmpty || !domains.isEmpty }
 }
 
 public enum ProfileKnowledgeError: Error, Sendable, Equatable {

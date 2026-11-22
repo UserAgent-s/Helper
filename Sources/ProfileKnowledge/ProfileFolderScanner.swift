@@ -19,7 +19,7 @@ public enum ProfileFolderScanner {
         }
         var result: [ProfileCandidate] = []
         try collect(folder, prefix: [], depth: 1, into: &result, fileManager: fileManager)
-        return result.sorted { $0.relativePath < $1.relativePath }
+        return result.filter { !ExpertDomainScanner.isDomainPath($0.relativePath) }.sorted { $0.relativePath < $1.relativePath }
     }
 
     private static func collect(_ directory: URL, prefix: [String], depth: Int, into result: inout [ProfileCandidate], fileManager: FileManager) throws {

@@ -91,4 +91,26 @@ import Testing
         }
         #expect(strip(interview) == strip(bilingual))
     }
+
+    @Test func expertiseSectionCarriesOnlyNamesAndRoleBriefs() {
+        let longRole = String(repeating: "r", count: RealtimeInstructions.domainRoleLimit + 50)
+        let domains = [
+            ExpertDomain(name: "PHP", role: "Senior PHP engineer.\nUse Symfony.", documents: [ProfileDocument(relativePath: "Domains/PHP/doctrine.md", text: "SECRET-DOCTRINE-NOTES")]),
+            ExpertDomain(name: "Long", role: longRole, documents: []),
+            ExpertDomain(name: "Bare", role: nil, documents: [])
+        ]
+        let text = RealtimeInstructions.system(for: .standard, profile: .interviewFirstPerson, background: "bg", domains: domains)
+        #expect(text.contains("# Expertise areas"))
+        #expect(text.contains("- PHP: Senior PHP engineer. Use Symfony."))
+        #expect(text.contains("- Long: " + String(repeating: "r", count: RealtimeInstructions.domainRoleLimit) + "…"))
+        #expect(text.contains("- Bare"))
+        #expect(!text.contains("SECRET-DOCTRINE-NOTES"))
+    }
+
+    @Test func noDomainsLeavesInstructionsUnchanged() {
+        let withEmpty = RealtimeInstructions.system(for: .standard, profile: .interviewFirstPerson, background: "bg", domains: [])
+        let legacy = RealtimeInstructions.system(for: .standard, profile: .interviewFirstPerson, background: "bg")
+        #expect(withEmpty == legacy)
+        #expect(!withEmpty.contains("Expertise areas"))
+    }
 }

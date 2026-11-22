@@ -81,4 +81,30 @@ import Testing
         await viewModel.setFolder(folder)
         #expect(viewModel.status == .warning)
     }
+
+    @Test func domainsAreListedAndToggledAndResetWithFolder() async throws {
+        let folder = try makeFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        try FileManager.default.createDirectory(at: folder.appendingPathComponent("Domains/PHP"), withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: folder.appendingPathComponent("Domains/QA"), withIntermediateDirectories: true)
+        try Data("Senior PHP".utf8).write(to: folder.appendingPathComponent("Domains/PHP/_role.md"))
+        try Data("notes".utf8).write(to: folder.appendingPathComponent("Domains/QA/notes.md"))
+        let (viewModel, store) = make()
+        await viewModel.setFolder(folder)
+        #expect(viewModel.domainCandidates.map(\.name) == ["PHP", "QA"])
+        #expect(viewModel.activeDomains == ["PHP", "QA"])
+        #expect(viewModel.usesDefaultDomains)
+        #expect(viewModel.candidates.map(\.relativePath) == ["01_ABOUT.md", "02_CURRENT.md", "CV/cv.md"])
+
+        await viewModel.setDomainActive("QA", false)
+        #expect(store.profileActiveDomains == ["PHP"])
+        #expect(viewModel.isDomainActive("PHP"))
+        #expect(!viewModel.isDomainActive("QA"))
+        #expect(!viewModel.usesDefaultDomains)
+        #expect(store.profileFolderConfiguration().activeDomains == ["PHP"])
+
+        await viewModel.clearFolder()
+        #expect(store.profileActiveDomains == nil)
+        #expect(viewModel.domainCandidates.isEmpty)
+    }
 }

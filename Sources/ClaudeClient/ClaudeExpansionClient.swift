@@ -121,7 +121,7 @@ public actor ClaudeExpansionClient: ExpansionRequesting {
 
     public func prewarm(sessionID: SessionID?) async -> ClaudePrewarmResult? {
         let config = settings()
-        guard hasKey(), let snapshot = await profile(sessionID), !snapshot.isEmpty else { return nil }
+        guard hasKey(), let snapshot = await profile(sessionID), snapshot.hasContent else { return nil }
         let request = ClaudeMessagesRequest(
             model: Self.model(config.defaultModel),
             maxTokens: 0,

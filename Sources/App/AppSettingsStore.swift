@@ -39,6 +39,7 @@ final class AppSettingsStore: @unchecked Sendable {
         static let keepScreenTexts = "com.local.UserAgent057.settings.sessions.keepScreenTexts"
         static let profileFolderBookmark = "com.local.UserAgent057.settings.profile.folderBookmark"
         static let profileSelectedPaths = "com.local.UserAgent057.settings.profile.selectedPaths"
+        static let profileActiveDomains = "com.local.UserAgent057.settings.profile.activeDomains"
         static let claudeModel = "com.local.UserAgent057.settings.claude.model"
         static let instructionProfile = "com.local.UserAgent057.settings.answers.instructionProfile"
         static let translateTranscript = "com.local.UserAgent057.settings.answers.translateTranscript"
@@ -159,6 +160,13 @@ final class AppSettingsStore: @unchecked Sendable {
         }
     }
 
+    var profileActiveDomains: Set<String>? {
+        get { (defaults.array(forKey: Keys.profileActiveDomains) as? [String]).map(Set.init) }
+        set {
+            if let newValue { defaults.set(newValue.sorted(), forKey: Keys.profileActiveDomains) } else { defaults.removeObject(forKey: Keys.profileActiveDomains) }
+        }
+    }
+
     var claudeModel: ExpansionModelChoice {
         get { ExpansionModelChoice(rawValue: defaults.string(forKey: Keys.claudeModel) ?? "") ?? .sonnet }
         set { defaults.set(newValue.rawValue, forKey: Keys.claudeModel) }
@@ -181,10 +189,10 @@ final class AppSettingsStore: @unchecked Sendable {
 
     func profileFolderConfiguration() -> ProfileFolderConfiguration {
         guard let data = profileFolderBookmark, let resolved = ProfileFolderBookmark.resolve(data) else {
-            return ProfileFolderConfiguration(folder: nil, selectedPaths: profileSelectedPaths)
+            return ProfileFolderConfiguration(folder: nil, selectedPaths: profileSelectedPaths, activeDomains: profileActiveDomains)
         }
         if let refreshed = resolved.refreshed { profileFolderBookmark = refreshed }
-        return ProfileFolderConfiguration(folder: resolved.url, selectedPaths: profileSelectedPaths)
+        return ProfileFolderConfiguration(folder: resolved.url, selectedPaths: profileSelectedPaths, activeDomains: profileActiveDomains)
     }
 
     var retentionPolicy: RetentionPolicy {

@@ -5,10 +5,12 @@ import Foundation
 public struct ProfileFolderConfiguration: Sendable, Equatable {
     public let folder: URL?
     public let selectedPaths: Set<String>?
+    public let activeDomains: Set<String>?
 
-    public init(folder: URL?, selectedPaths: Set<String>?) {
+    public init(folder: URL?, selectedPaths: Set<String>?, activeDomains: Set<String>? = nil) {
         self.folder = folder
         self.selectedPaths = selectedPaths
+        self.activeDomains = activeDomains
     }
 }
 
@@ -35,6 +37,17 @@ public actor MarkdownFolderProfileProvider: ProfileKnowledgeProviding {
         } catch {
             throw ProfileKnowledgeError.folderUnavailable(path: folder.path)
         }
+    }
+
+    public func domainCandidates() -> [ExpertDomainCandidate] {
+        guard let folder = configuration().folder else { return [] }
+        return ExpertDomainScanner.scan(folder)
+    }
+
+    public static func effectiveActiveDomains(stored: Set<String>?, candidates: [ExpertDomainCandidate]) -> [String] {
+        let names = candidates.map(\.name)
+        guard let stored else { return names }
+        return names.filter { stored.contains($0) }
     }
 
     public func snapshot() throws -> ProfileSnapshot {
@@ -66,7 +79,47 @@ public actor MarkdownFolderProfileProvider: ProfileKnowledgeProviding {
             }
             documents.append(document)
         }
-        return makeSnapshot(source: .markdownFolder(path: folder.path), documents: documents)
+        let domains = try loadDomains(folder: folder, stored: config.activeDomains)
+        return makeSnapshot(source: .markdownFolder(path: folder.path), documents: documents, domains: domains)
+    }
+
+    private func loadDomains(folder: URL, stored: Set<String>?) throws -> [ExpertDomain] {
+        let candidates = ExpertDomainScanner.scan(folder)
+        let active = Set(Self.effectiveActiveDomains(stored: stored, candidates: candidates))
+        var domains: [ExpertDomain] = []
+        var total = 0
+        for candidate in candidates where active.contains(candidate.name) {
+            var role: String?
+            var documents: [ProfileDocument] = []
+            for file in candidate.files {
+                let actualName = try actualFileName(folder: folder, domain: candidate.name, relativePath: file.relativePath)
+                let url = folder.appendingPathComponent(ExpertDomainScanner.folderName).appendingPathComponent(candidate.name).appendingPathComponent(actualName)
+                guard let data = try? Data(contentsOf: url), let text = Self.decode(data) else {
+                    throw ProfileKnowledgeError.unreadable(relativePath: file.relativePath)
+                }
+                if file.relativePath == ExpertDomainScanner.path(domain: candidate.name, file: ExpertDomainScanner.roleFileName) {
+                    let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                    role = trimmed.isEmpty ? nil : trimmed
+                } else {
+                    documents.append(ProfileDocument(relativePath: file.relativePath, text: text))
+                }
+            }
+            let domain = ExpertDomain(name: candidate.name, role: role, documents: documents)
+            total += domain.byteCount
+            if total > limits.domainMaxBytes {
+                throw ProfileKnowledgeError.tooLarge(bytes: total, limit: limits.domainMaxBytes)
+            }
+            domains.append(domain)
+        }
+        return domains
+    }
+
+    private func actualFileName(folder: URL, domain: String, relativePath: String) throws -> String {
+        let fileName = String(relativePath.split(separator: "/").last ?? "")
+        guard fileName == ExpertDomainScanner.roleFileName else { return fileName }
+        let directory = folder.appendingPathComponent(ExpertDomainScanner.folderName).appendingPathComponent(domain)
+        let entries = (try? FileManager.default.contentsOfDirectory(atPath: directory.path)) ?? []
+        return entries.first { $0.precomposedStringWithCanonicalMapping.lowercased() == ExpertDomainScanner.roleFileName } ?? fileName
     }
 
     public func realtimeDigest() -> String {
@@ -91,14 +144,15 @@ public actor MarkdownFolderProfileProvider: ProfileKnowledgeProviding {
         return makeSnapshot(source: .legacyText, documents: [ProfileDocument(relativePath: "background.txt", text: text.precomposedStringWithCanonicalMapping)])
     }
 
-    private func makeSnapshot(source: ProfileSource, documents: [ProfileDocument]) -> ProfileSnapshot {
+    private func makeSnapshot(source: ProfileSource, documents: [ProfileDocument], domains: [ExpertDomain] = []) -> ProfileSnapshot {
         let total = documents.reduce(0) { $0 + $1.byteCount }
         return ProfileSnapshot(
             source: source,
             documents: documents,
             fingerprint: Self.fingerprint(documents),
             estimatedTokens: ProfileTokenEstimator.estimate(documents.map(\.text)),
-            sizeStatus: total > limits.warningBytes ? .warning : .ok
+            sizeStatus: total > limits.warningBytes ? .warning : .ok,
+            domains: domains
         )
     }
 

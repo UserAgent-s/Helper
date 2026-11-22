@@ -22,6 +22,9 @@ final class ProfileSettingsViewModel {
     private(set) var folderPath: String?
     private(set) var candidates: [ProfileCandidate] = []
     private(set) var selectedPaths: Set<String> = []
+    private(set) var domainCandidates: [ExpertDomainCandidate] = []
+    private(set) var activeDomains: Set<String> = []
+    private(set) var usesDefaultDomains = true
     private(set) var usesDefaultSelection = true
     private(set) var status: Status = .noFolder
     private(set) var documentCount = 0
@@ -60,6 +63,9 @@ final class ProfileSettingsViewModel {
         }
         usesDefaultSelection = config.selectedPaths == nil
         selectedPaths = Set(ProfileSelection.effectivePaths(stored: config.selectedPaths, candidates: candidates))
+        domainCandidates = await provider.domainCandidates()
+        usesDefaultDomains = config.activeDomains == nil
+        activeDomains = Set(MarkdownFolderProfileProvider.effectiveActiveDomains(stored: config.activeDomains, candidates: domainCandidates))
         do {
             let snapshot = try await provider.snapshot()
             documentCount = snapshot.documents.count
@@ -140,6 +146,7 @@ final class ProfileSettingsViewModel {
         do {
             settingsStore.profileFolderBookmark = try ProfileFolderBookmark.make(for: url)
             settingsStore.profileSelectedPaths = nil
+            settingsStore.profileActiveDomains = nil
         } catch {
             status = .error(loc("Не удалось запомнить папку") + ": \(error.localizedDescription)")
             return
@@ -150,6 +157,7 @@ final class ProfileSettingsViewModel {
     func clearFolder() async {
         settingsStore.profileFolderBookmark = nil
         settingsStore.profileSelectedPaths = nil
+        settingsStore.profileActiveDomains = nil
         await reload()
     }
 
@@ -158,6 +166,17 @@ final class ProfileSettingsViewModel {
         if isOn { next.insert(path) } else { next.remove(path) }
         settingsStore.profileSelectedPaths = next
         await reload()
+    }
+
+    func setDomainActive(_ name: String, _ isOn: Bool) async {
+        var next = activeDomains
+        if isOn { next.insert(name) } else { next.remove(name) }
+        settingsStore.profileActiveDomains = next
+        await reload()
+    }
+
+    func isDomainActive(_ name: String) -> Bool {
+        activeDomains.contains(name)
     }
 
     func resetSelection() async {

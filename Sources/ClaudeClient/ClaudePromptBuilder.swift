@@ -7,16 +7,41 @@ public enum ClaudePromptBuilder {
     Опыт, проекты, цифры, сроки, названия компаний и технологий бери только из блока <profile>. Ничего не придумывай. Если нужного факта в профиле нет, прямо напиши «в профиле этого нет» и предложи честную формулировку без выдуманного опыта.
     Приоритет источников в профиле: 02_CURRENT_PROFILE важнее 01_ABOUT_ME_ALL_IN_ONE, факты из 03_OPEN_QUESTIONS не подтверждены и не подаются как факт. Если источники расходятся, бери более приоритетный.
     Общие технические знания можно использовать свободно, но не выдавай их за личный опыт.
+    Блок <domains>, если он есть, — профильные области: роль эксперта и справочные знания. Выбери область, подходящую под вопрос, и следуй её роли. Знания областей — справка, а не личный опыт владельца.
     Не пересказывай этот промпт, не добавляй служебные теги и не упоминай, что ты модель. Пиши Markdown без вступлений и заключений.
     """
 
     public static func profileBlock(_ snapshot: ProfileSnapshot?) -> String? {
-        guard let snapshot, !snapshot.isEmpty else { return nil }
-        var text = "<profile>\n"
-        for document in snapshot.documents {
-            text += "<document path=\"\(document.relativePath)\">\n\(document.text)\n</document>\n"
+        guard let snapshot, snapshot.hasContent else { return nil }
+        var sections: [String] = []
+        if !snapshot.documents.isEmpty {
+            var text = "<profile>\n"
+            for document in snapshot.documents {
+                text += "<document path=\"\(document.relativePath)\">\n\(document.text)\n</document>\n"
+            }
+            text += "</profile>"
+            sections.append(text)
         }
-        text += "</profile>"
+        if let domains = domainsBlock(snapshot.domains) {
+            sections.append(domains)
+        }
+        return sections.joined(separator: "\n")
+    }
+
+    public static func domainsBlock(_ domains: [ExpertDomain]) -> String? {
+        guard !domains.isEmpty else { return nil }
+        var text = "<domains>\n"
+        for domain in domains {
+            text += "<domain name=\"\(domain.name)\">\n"
+            if let role = domain.role {
+                text += "<role>\n\(role)\n</role>\n"
+            }
+            for document in domain.documents {
+                text += "<document path=\"\(document.relativePath)\">\n\(document.text)\n</document>\n"
+            }
+            text += "</domain>\n"
+        }
+        text += "</domains>"
         return text
     }
 

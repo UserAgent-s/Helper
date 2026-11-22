@@ -7,9 +7,26 @@ public enum RealtimeInstructions {
         system(for: length, profile: .interviewFirstPerson, background: background)
     }
 
-    public static func system(for length: AnswerLength, profile: InstructionProfile, background: String = "") -> String {
-        let sections = [base(for: profile), backgroundSection(background), formatSection(for: length)].filter { !$0.isEmpty }
+    public static func system(for length: AnswerLength, profile: InstructionProfile, background: String = "", domains: [ExpertDomain] = []) -> String {
+        let sections = [base(for: profile), backgroundSection(background), expertiseSection(domains), formatSection(for: length)].filter { !$0.isEmpty }
         return sections.joined(separator: "\n\n")
+    }
+
+    public static let domainRoleLimit = 300
+
+    static func expertiseSection(_ domains: [ExpertDomain]) -> String {
+        guard !domains.isEmpty else { return "" }
+        let lines = domains.map { domain -> String in
+            let role = (domain.role ?? "").split(whereSeparator: \.isNewline).joined(separator: " ").trimmingCharacters(in: .whitespaces)
+            guard !role.isEmpty else { return "- \(domain.name)" }
+            let brief = role.count > domainRoleLimit ? String(role.prefix(domainRoleLimit)) + "…" : role
+            return "- \(domain.name): \(brief)"
+        }
+        return """
+        # Expertise areas
+        The user prepared these expertise areas for this conversation. Pick the one that fits the question and follow its role. They describe how to answer, not the user's personal experience.
+        \(lines.joined(separator: "\n"))
+        """
     }
 
     static func base(for profile: InstructionProfile) -> String {

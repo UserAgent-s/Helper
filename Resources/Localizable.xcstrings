@@ -5383,6 +5383,167 @@
           }
         }
       }
+    },
+    "Профильные области": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Профильные области"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expertise areas"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Профільні області"
+          }
+        }
+      }
+    },
+    "Областей нет. Создайте в папке профиля Domains/<область>/ с файлами *.md и, при желании, _role.md с ролью эксперта.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Областей нет. Создайте в папке профиля Domains/<область>/ с файлами *.md и, при желании, _role.md с ролью эксперта."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No areas yet. In the profile folder create Domains/<area>/ with *.md files and, optionally, _role.md describing the expert role."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Областей немає. Створіть у теці профілю Domains/<область>/ з файлами *.md і, за бажанням, _role.md з роллю експерта."
+          }
+        }
+      }
+    },
+    "роль": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "роль"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "role"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "роль"
+          }
+        }
+      }
+    },
+    "файлов: %d": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "файлов: %d"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "files: %d"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "файлів: %d"
+          }
+        }
+      }
+    },
+    "Пока вы ничего не выбирали, включены все области.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Пока вы ничего не выбирали, включены все области."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Until you choose, all areas are on."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Поки ви нічого не обирали, увімкнено всі області."
+          }
+        }
+      }
+    },
+    "Выбор областей изменён вручную.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выбор областей изменён вручную."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Area selection changed manually."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вибір областей змінено вручну."
+          }
+        }
+      }
+    },
+    "Активные области целиком уходят в Anthropic при раскрытии ответа; в живые ответы OpenAI — только их названия и начало роли. Неактивные не покидают Mac. Выбор применяется со следующей сессии.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Активные области целиком уходят в Anthropic при раскрытии ответа; в живые ответы OpenAI — только их названия и начало роли. Неактивные не покидают Mac. Выбор применяется со следующей сессии."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active areas are sent to Anthropic in full when an answer is expanded; live OpenAI answers get only their names and the start of each role. Inactive areas never leave the Mac. Changes apply from the next session."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Активні області повністю йдуть в Anthropic під час розкриття відповіді; у живі відповіді OpenAI — лише їхні назви й початок ролі. Неактивні не залишають Mac. Вибір застосовується з наступної сесії."
+          }
+        }
+      }
     }
   }
 }

@@ -195,7 +195,8 @@ final class CompositionRoot {
                 return await instructionsFreezer.instructions(for: sessionID) {
                     let profile = settingsStore.instructionProfile
                     let digest = await realtimeDigestStore.current()
-                    return (profile, digest.source, RealtimeInstructions.system(for: settingsStore.answerLength, profile: profile, background: digest.text))
+                    let domains = (try? await profileKnowledge.snapshot())?.domains ?? []
+                    return (profile, digest.source, RealtimeInstructions.system(for: settingsStore.answerLength, profile: profile, background: digest.text, domains: domains))
                 }
             },
             questionAnswerLogger: questionAnswerLogger,
