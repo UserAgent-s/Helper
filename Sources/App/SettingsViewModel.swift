@@ -17,6 +17,7 @@ final class SettingsViewModel {
     private let recordingsDirectory: URL
     private let overlayPreferences = OverlayPreferencesStore()
     private let overlaySwitch: OverlaySwitch
+    private let menuBarIconSwitch: MenuBarIconSwitch
     private let exportsDirectory: URL?
     private let companionService: CompanionService?
     private(set) var companionPort: UInt16?
@@ -90,6 +91,11 @@ final class SettingsViewModel {
     var overlayEnabled: Bool {
         get { overlaySwitch.isEnabled }
         set { overlaySwitch.setEnabled(newValue) }
+    }
+
+    var menuBarIconVisible: Bool {
+        get { menuBarIconSwitch.isVisible }
+        set { menuBarIconSwitch.setVisible(newValue) }
     }
 
     var autoSummaryOnStop: Bool {
@@ -189,6 +195,7 @@ final class SettingsViewModel {
         recordingsDirectory: URL,
         companionService: CompanionService? = nil,
         overlaySwitch: OverlaySwitch? = nil,
+        menuBarIconSwitch: MenuBarIconSwitch? = nil,
         exportsDirectory: URL? = nil,
         profile: ProfileSettingsViewModel? = nil
     ) {
@@ -199,6 +206,7 @@ final class SettingsViewModel {
         self.claudePrewarmOnSessionStart = settingsStore.claudePrewarmOnSessionStart
         self.companionService = companionService
         self.overlaySwitch = overlaySwitch ?? OverlaySwitch()
+        self.menuBarIconSwitch = menuBarIconSwitch ?? MenuBarIconSwitch()
         self.exportsDirectory = exportsDirectory
         self.companionServerEnabled = settingsStore.companionServerEnabled
         self.companionPortText = String(settingsStore.companionPort)

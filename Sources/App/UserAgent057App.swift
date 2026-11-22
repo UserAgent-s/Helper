@@ -100,7 +100,8 @@ final class OverlayCoordinator {
             modeViewModel: root.modeViewModel,
             sessionViewModel: root.sessionControlViewModel,
             navigationState: root.navigationState,
-            overlaySwitch: root.overlaySwitch
+            overlaySwitch: root.overlaySwitch,
+            menuBarIconSwitch: root.menuBarIconSwitch
         )
         root.sessionControlViewModel.registerHotKeys(on: windowController, preferences: preferences)
         let screenTrigger = root.screenTrigger

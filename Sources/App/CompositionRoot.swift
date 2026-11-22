@@ -70,6 +70,7 @@ final class CompositionRoot {
     let companionService: CompanionService
     let modeActivityGuard = ModeActivityGuard()
     let overlaySwitch = OverlaySwitch()
+    let menuBarIconSwitch = MenuBarIconSwitch()
     let exportsDirectory: URL
     let companionPairingViewModel: CompanionPairingViewModel
 
@@ -403,6 +404,7 @@ final class CompositionRoot {
             recordingsDirectory: recordingsDirectory,
             companionService: companionService,
             overlaySwitch: overlaySwitch,
+            menuBarIconSwitch: menuBarIconSwitch,
             exportsDirectory: exportsDirectory,
             profile: ProfileSettingsViewModel(settingsStore: settingsStore, provider: profileKnowledge, digestStore: realtimeDigestStore)
         )

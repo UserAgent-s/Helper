@@ -11,6 +11,7 @@ final class MenuBarController: NSObject {
     private let sessionViewModel: SessionControlViewModel?
     private let navigationState: AppNavigationState
     private let overlaySwitch: OverlaySwitch
+    private let menuBarIconSwitch: MenuBarIconSwitch
 
     private let statusLabelItem: NSMenuItem
     private let sessionItem: NSMenuItem
@@ -28,12 +29,13 @@ final class MenuBarController: NSObject {
     private let quitItem: NSMenuItem
     private var languageOptionItems: [AppLanguage: NSMenuItem] = [:]
 
-    init(overlayViewModel: AnswerOverlayViewModel, modeViewModel: ModeSwitcherViewModel, sessionViewModel: SessionControlViewModel? = nil, navigationState: AppNavigationState, overlaySwitch: OverlaySwitch) {
+    init(overlayViewModel: AnswerOverlayViewModel, modeViewModel: ModeSwitcherViewModel, sessionViewModel: SessionControlViewModel? = nil, navigationState: AppNavigationState, overlaySwitch: OverlaySwitch, menuBarIconSwitch: MenuBarIconSwitch = MenuBarIconSwitch()) {
         self.overlayViewModel = overlayViewModel
         self.modeViewModel = modeViewModel
         self.sessionViewModel = sessionViewModel
         self.navigationState = navigationState
         self.overlaySwitch = overlaySwitch
+        self.menuBarIconSwitch = menuBarIconSwitch
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusLabelItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
@@ -97,6 +99,13 @@ final class MenuBarController: NSObject {
         observeLanguage()
         observeOverlaySwitch()
         observeSessionState()
+        observeMenuBarIconSwitch()
+    }
+
+    var isStatusItemVisible: Bool { statusItem.isVisible }
+
+    func tearDown() {
+        NSStatusBar.system.removeStatusItem(statusItem)
     }
 
     @objc private func toggleSessionTapped() { Task { await sessionViewModel?.toggle() } }
@@ -257,6 +266,24 @@ final class MenuBarController: NSObject {
             }
         }
         syncOverlayItem()
+    }
+
+    private func observeMenuBarIconSwitch() {
+        withObservationTracking {
+            _ = menuBarIconSwitch.isVisible
+        } onChange: { [weak self] in
+            Task { @MainActor in
+                self?.syncStatusItemVisibility()
+                self?.observeMenuBarIconSwitch()
+            }
+        }
+        syncStatusItemVisibility()
+    }
+
+    private func syncStatusItemVisibility() {
+        let visible = menuBarIconSwitch.isVisible
+        guard statusItem.isVisible != visible else { return }
+        statusItem.isVisible = visible
     }
 
     private func syncOverlayItem() {

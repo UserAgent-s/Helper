@@ -5314,6 +5314,75 @@
           }
         }
       }
+    },
+    "Строка меню": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Строка меню"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menu bar"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Рядок меню"
+          }
+        }
+      }
+    },
+    "Показывать значок в строке меню": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показывать значок в строке меню"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show icon in the menu bar"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показувати значок у рядку меню"
+          }
+        }
+      }
+    },
+    "Если значок скрыт, режимы и сессия управляются в главном окне, горячими клавишами и с подключённого устройства.": {
+      "extractionState": "manual",
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Если значок скрыт, режимы и сессия управляются в главном окне, горячими клавишами и с подключённого устройства."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When the icon is hidden, control modes and the session from the main window, hotkeys, or a connected device."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Якщо значок приховано, режимами й сесією керують у головному вікні, гарячими клавішами та з підключеного пристрою."
+          }
+        }
+      }
     }
   }
 }

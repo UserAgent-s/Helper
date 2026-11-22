@@ -23,6 +23,7 @@ final class OverlayPreferencesStore {
         static let style = "com.local.UserAgent057.overlay.style"
         static let fontFamily = "com.local.UserAgent057.overlay.fontFamily"
         static let enabled = "com.local.UserAgent057.overlay.enabled"
+        static let menuBarIconVisible = "com.local.UserAgent057.menuBar.iconVisible"
     }
 
     init(defaults: UserDefaults = .standard) {
@@ -32,6 +33,11 @@ final class OverlayPreferencesStore {
     var isOverlayEnabled: Bool {
         get { defaults.object(forKey: Keys.enabled) as? Bool ?? true }
         set { defaults.set(newValue, forKey: Keys.enabled) }
+    }
+
+    var isMenuBarIconVisible: Bool {
+        get { defaults.object(forKey: Keys.menuBarIconVisible) as? Bool ?? true }
+        set { defaults.set(newValue, forKey: Keys.menuBarIconVisible) }
     }
 
     var position: OverlayPosition {

@@ -572,6 +572,13 @@ struct AppearanceSettingsTab: View {
 
     var body: some View {
         Form {
+            Section(loc("Строка меню")) {
+                Toggle(loc("Показывать значок в строке меню"), isOn: $viewModel.menuBarIconVisible)
+                    .accessibilityIdentifier("settings.menuBarIconVisible")
+                Text(loc("Если значок скрыт, режимы и сессия управляются в главном окне, горячими клавишами и с подключённого устройства."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             Section(loc("Оверлей ответов")) {
                 Toggle(loc("Показывать оверлей на этом Mac"), isOn: $viewModel.overlayEnabled)
                     .accessibilityIdentifier("settings.overlayEnabled")
