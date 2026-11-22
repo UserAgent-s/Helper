@@ -62,7 +62,7 @@ Also:
 - Never connect an unknown or unvetted MCP server to the meeting-recordings
   store — audio and transcripts may contain confidential information.
 
-## Plan execution workflow (plan v3, branch `codex/useragent057-m0`)
+## Plan execution workflow (plan v3, branch `master`; remote `helper` = github.com/UserAgent-s/Helper, default branch master)
 
 - Progress journal and plan data live in `.claude/handoff/` (gitignored, local only): `HANDOFF.md`, `plan_v2.json`, `v3.json`, `v3_rest.txt`. Read `HANDOFF.md` first; its `## Next:` line names the step to do.
 - Read a step: `python3 -c "import json;d=json.load(open('.claude/handoff/plan_v2.json'));m=[x for x in d['milestones'] if x['id']=='M4'][0];s=[x for x in m['steps'] if x['id']=='S4.8'][0];[print('##',k,'\n',s[k]) for k in s]"`.
